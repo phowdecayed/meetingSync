@@ -1,0 +1,239 @@
+"use client";
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { meetingSchema } from "@/lib/validators/meeting";
+import { Meeting } from "@/lib/data";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useMeetingStore } from "@/store/use-meeting-store";
+import { useAuthStore } from "@/store/use-auth-store";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { format } from "date-fns";
+import { Card, CardContent } from "./ui/card";
+
+type MeetingFormProps = {
+  existingMeeting?: Meeting;
+};
+
+export function MeetingForm({ existingMeeting }: MeetingFormProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const { addMeeting, updateMeeting } = useMeetingStore();
+  const { user } = useAuthStore();
+
+  const isEditMode = !!existingMeeting;
+
+  const defaultValues = isEditMode && existingMeeting ? {
+      title: existingMeeting.title,
+      date: new Date(existingMeeting.date),
+      time: format(new Date(existingMeeting.date), "HH:mm"),
+      duration: existingMeeting.duration,
+      participants: existingMeeting.participants.join(', '),
+      description: existingMeeting.description || "",
+  } : {
+      title: "",
+      date: new Date(),
+      time: format(new Date(), "HH:mm"),
+      duration: 30,
+      participants: "",
+      description: "",
+  };
+
+  const form = useForm<z.infer<typeof meetingSchema>>({
+    resolver: zodResolver(meetingSchema),
+    defaultValues,
+  });
+
+  async function onSubmit(values: z.infer<typeof meetingSchema>) {
+    setIsLoading(true);
+
+    if (!user) {
+        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in." });
+        setIsLoading(false);
+        return;
+    }
+
+    const [hours, minutes] = values.time.split(':').map(Number);
+    const combinedDateTime = new Date(values.date);
+    combinedDateTime.setHours(hours, minutes, 0, 0);
+
+    const meetingData = {
+        title: values.title,
+        date: combinedDateTime,
+        duration: values.duration,
+        participants: values.participants.split(',').map(e => e.trim()).filter(Boolean),
+        description: values.description,
+        organizerId: user.id
+    };
+
+    try {
+        if (isEditMode && existingMeeting) {
+            await updateMeeting(existingMeeting.id, meetingData);
+            toast({ title: "Success", description: "Meeting updated successfully." });
+        } else {
+            const newMeeting = await addMeeting(meetingData);
+            toast({ 
+                title: "Success",
+                description: "Meeting created successfully.",
+                action: (
+                    <div className="text-xs text-muted-foreground">
+                        Assigned to Zoom Account ID: {newMeeting.zoomAccountId}
+                    </div>
+                )
+            });
+        }
+        router.push('/dashboard');
+        router.refresh();
+    } catch (error) {
+        toast({ variant: "destructive", title: "Error", description: "Something went wrong." });
+    } finally {
+        setIsLoading(false);
+    }
+  }
+
+  return (
+    <Card>
+        <CardContent className="p-6">
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Meeting Title</FormLabel>
+                        <FormControl>
+                        <Input placeholder="e.g., Quarterly Review" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <FormField
+                        control={form.control}
+                        name="date"
+                        render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel>Date</FormLabel>
+                            <Popover>
+                            <PopoverTrigger asChild>
+                                <FormControl>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                    "pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                    )}
+                                >
+                                    {field.value ? (
+                                    format(field.value, "PPP")
+                                    ) : (
+                                    <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                                </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
+                                initialFocus
+                                />
+                            </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="time"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Time (24h format)</FormLabel>
+                            <FormControl>
+                                <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="duration"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Duration (in minutes)</FormLabel>
+                            <FormControl>
+                                <Input type="number" placeholder="30" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                <FormField
+                    control={form.control}
+                    name="participants"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Participants</FormLabel>
+                        <FormControl>
+                        <Input placeholder="user1@example.com, user2@example.com" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                            Enter a comma-separated list of email addresses.
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormControl>
+                        <Textarea placeholder="Agenda, notes, and links..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <div className="flex justify-end gap-4">
+                    <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+                    <Button type="submit" disabled={isLoading}>
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isEditMode ? "Save Changes" : "Create Meeting"}
+                    </Button>
+                </div>
+                </form>
+            </Form>
+        </CardContent>
+    </Card>
+  );
+}
