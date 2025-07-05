@@ -1,28 +1,47 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/use-auth-store';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user, isLoading } = useAuthStore();
+  const { toast } = useToast();
+
+  // State for integration settings
+  const [zoomAccountId, setZoomAccountId] = useState('ACCOUNT_ID_FROM_ZOOM');
+  const [zoomClientId, setZoomClientId] = useState('CLIENT_ID_FROM_ZOOM');
+  const [zoomClientSecret, setZoomClientSecret] = useState('CLIENT_SECRET_FROM_ZOOM');
+  const [isSaving, setIsSaving] = useState(false);
+
 
   useEffect(() => {
-    // This effect is for client-side protection, though the UI handles it gracefully.
     if (!isLoading && user && user.role !== 'admin') {
       // You could redirect, but showing the message is clearer for the user.
       // router.push('/dashboard');
     }
   }, [user, isLoading, router]);
+  
+  const handleSaveIntegrations = async () => {
+    setIsSaving(true);
+    // In a real app, you would encrypt and save these to a secure backend.
+    await new Promise(res => setTimeout(res, 1500));
+    setIsSaving(false);
+    toast({
+        title: "Integrations Saved",
+        description: "Your Zoom API credentials have been updated.",
+    });
+  };
 
   if (isLoading || !user) {
     return (
@@ -84,16 +103,47 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Integrations</CardTitle>
-          <CardDescription>Manage third-party integrations.</CardDescription>
+          <CardTitle>Zoom Integration</CardTitle>
+          <CardDescription>
+            Connect using Server-to-Server OAuth credentials from your Zoom account.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="zoom-api-key">Zoom API Key</Label>
-            <Input id="zoom-api-key" type="password" defaultValue="••••••••••••••••" disabled />
-          </div>
-          <Button disabled>Update Integrations</Button>
+        <CardContent className="space-y-6">
+            <div className="space-y-2">
+                <Label htmlFor="zoom-account-id">Account ID</Label>
+                <Input 
+                    id="zoom-account-id"
+                    value={zoomAccountId}
+                    onChange={(e) => setZoomAccountId(e.target.value)}
+                    placeholder="Your Zoom Account ID"
+                />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="zoom-client-id">Client ID</Label>
+                <Input 
+                    id="zoom-client-id"
+                    value={zoomClientId}
+                    onChange={(e) => setZoomClientId(e.target.value)}
+                    placeholder="Your Zoom App's Client ID"
+                />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="zoom-client-secret">Client Secret</Label>
+                <Input 
+                    id="zoom-client-secret" 
+                    type="password" 
+                    value={zoomClientSecret}
+                    onChange={(e) => setZoomClientSecret(e.target.value)}
+                    placeholder="Your Zoom App's Client Secret"
+                />
+            </div>
         </CardContent>
+        <CardFooter className="justify-end">
+            <Button onClick={handleSaveIntegrations} disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Credentials
+            </Button>
+        </CardFooter>
       </Card>
     </div>
   );
