@@ -65,12 +65,14 @@ export function DashboardHeader() {
                 <span>Profile</span>
               </DropdownMenuItem>
             </Link>
-            <Link href="/settings" passHref>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-            </Link>
+            {user?.role === 'admin' && (
+              <Link href="/settings" passHref>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+              </Link>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
