@@ -6,12 +6,27 @@ import { MeetingCalendar } from '@/components/meeting-calendar';
 import { type Meeting } from '@/lib/data';
 import { format } from 'date-fns';
 import { Clock, User, Eye } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MeetingDetailsDialog } from './meeting-details-dialog';
 import { Button } from './ui/button';
 
+const LOCAL_STORAGE_KEY = 'schedule-view-mode';
+
 export function ScheduleView({ meetings }: { meetings: Meeting[] }) {
   const [meetingToView, setMeetingToView] = useState<Meeting | null>(null);
+  const [activeTab, setActiveTab] = useState('list');
+
+  useEffect(() => {
+      const storedValue = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (storedValue === 'list' || storedValue === 'calendar') {
+          setActiveTab(storedValue);
+      }
+  }, []);
+
+  const handleTabChange = (value: string) => {
+      setActiveTab(value);
+      localStorage.setItem(LOCAL_STORAGE_KEY, value);
+  };
     
   // Group meetings by date for list view
   const upcomingMeetings = meetings.filter(m => new Date(m.date) >= new Date());
@@ -73,7 +88,7 @@ export function ScheduleView({ meetings }: { meetings: Meeting[] }) {
     
     return (
         <>
-            <Tabs defaultValue="list" className="w-full">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="mb-4">
                 <TabsTrigger value="list">List View</TabsTrigger>
                 <TabsTrigger value="calendar">Calendar View</TabsTrigger>
