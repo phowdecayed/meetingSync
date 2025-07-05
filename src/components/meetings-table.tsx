@@ -41,6 +41,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Card } from '@/components/ui/card';
 
 type MeetingsTableProps = {
   initialMeetings: Meeting[];
