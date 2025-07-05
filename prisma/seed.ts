@@ -1,9 +1,12 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Start seeding...');
+
+  const passwordHash = await bcrypt.hash('password123', 10);
 
   // Create users
   const adminUser = await prisma.user.upsert({
@@ -13,6 +16,7 @@ async function main() {
       email: 'admin@example.com',
       name: 'Admin User',
       role: 'admin',
+      passwordHash: passwordHash,
     },
   });
 
@@ -23,12 +27,13 @@ async function main() {
       email: 'member@example.com',
       name: 'Member User',
       role: 'member',
+      passwordHash: passwordHash,
     },
   });
   
-  await prisma.user.upsert({ where: { email: 'carol@example.com' }, update: {}, create: { email: 'carol@example.com', name: 'Carol Danvers', role: 'member' }});
-  await prisma.user.upsert({ where: { email: 'peter@example.com' }, update: {}, create: { email: 'peter@example.com', name: 'Peter Parker', role: 'member' }});
-  await prisma.user.upsert({ where: { email: 'tony@example.com' }, update: {}, create: { email: 'tony@example.com', name: 'Tony Stark', role: 'member' }});
+  await prisma.user.upsert({ where: { email: 'carol@example.com' }, update: {}, create: { email: 'carol@example.com', name: 'Carol Danvers', role: 'member', passwordHash: passwordHash }});
+  await prisma.user.upsert({ where: { email: 'peter@example.com' }, update: {}, create: { email: 'peter@example.com', name: 'Peter Parker', role: 'member', passwordHash: passwordHash }});
+  await prisma.user.upsert({ where: { email: 'tony@example.com' }, update: {}, create: { email: 'tony@example.com', name: 'Tony Stark', role: 'member', passwordHash: passwordHash }});
 
 
   console.log(`Upserted users`);

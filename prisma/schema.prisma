@@ -2,8 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -12,28 +11,29 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  role      String   @default("member") // "admin" or "member"
-  meetings  Meeting[]
+  id    String @id @default(cuid())
+  email String @unique
+  name  String
+  role  String // "admin" or "member"
+  passwordHash String?
+  meetings   Meeting[] @relation("OrganizerMeetings")
 }
 
 model Meeting {
-  id            String   @id @default(cuid())
-  title         String
-  date          DateTime
-  duration      Int
-  participants  String // Comma-separated emails
-  description   String?
-  organizer     User     @relation(fields: [organizerId], references: [id])
-  organizerId   String
-  zoomAccount   ZoomAccount @relation(fields: [zoomAccountId], references: [id])
+  id           String   @id @default(cuid())
+  title        String
+  date         DateTime
+  duration     Int
+  participants String // Comma-separated list of emails
+  description  String?
+  organizer    User     @relation("OrganizerMeetings", fields: [organizerId], references: [id])
+  organizerId  String
+  zoomAccount  ZoomAccount @relation(fields: [zoomAccountId], references: [id])
   zoomAccountId String
 }
 
 model ZoomAccount {
-  id      String    @id @default(cuid())
-  email   String    @unique
+  id      String @id @default(cuid())
+  email   String @unique
   meetings Meeting[]
 }

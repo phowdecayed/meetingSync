@@ -14,7 +14,7 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { getMeetings, type Meeting } from '@/lib/data';
+import { getMeetings, type Meeting, changeUserPassword } from '@/lib/data';
 
 const profileSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -97,16 +97,28 @@ export default function ProfilePage() {
   }
   
   async function onPasswordSubmit(values: z.infer<typeof passwordSchema>) {
+    if (!user) return;
     setIsPasswordSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-    // In a real app, you'd call an API to change the password.
-    // We'll just show a success toast for this demo.
-    toast({
-        title: "Password Updated",
-        description: "Your password has been successfully changed.",
-    });
-    passwordForm.reset();
-    setIsPasswordSaving(false);
+    try {
+        await changeUserPassword({
+            userId: user.id,
+            currentPassword: values.currentPassword,
+            newPassword: values.newPassword,
+        });
+        toast({
+            title: "Password Updated",
+            description: "Your password has been successfully changed.",
+        });
+        passwordForm.reset();
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: (error as Error).message,
+        });
+    } finally {
+        setIsPasswordSaving(false);
+    }
   }
 
   if (isAuthLoading || !user) {

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
-import { type User, createUser, getUserByEmail, updateAuthUser } from '@/lib/data';
+import { type User, createUser, verifyUserCredentials, updateAuthUser, changeUserPassword } from '@/lib/data';
+import bcrypt from 'bcrypt';
 
 // A custom storage implementation that safely handles server-side rendering.
 const safeLocalStorage: StateStorage = {
@@ -47,22 +48,18 @@ export const useAuthStore = create<AuthState>()(
       isLoading: true, // Start with loading true to check persistence
       _setLoading: (isLoading) => set({ isLoading }),
       login: async (email, password) => {
-        const user = await getUserByEmail(email);
+        const user = await verifyUserCredentials(email, password);
         if (!user) {
-          throw new Error('User not found.');
+          throw new Error('Invalid email or password.');
         }
-        // In a real app, you would verify the password here.
         set({ isAuthenticated: true, user });
       },
       register: async (name, email, password) => {
-        // The createUser function handles the existence check now
         try {
-            const newUser = await createUser({ name, email, role: 'member' });
-            // In a real app, you would also handle the password here.
-            // After creating the user, we log them in.
+            const passwordHash = await bcrypt.hash(password, 10);
+            const newUser = await createUser({ name, email, role: 'member', passwordHash });
             set({ isAuthenticated: true, user: newUser });
         } catch (error) {
-            // Re-throw the error to be caught by the form handler
             throw error;
         }
       },
