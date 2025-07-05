@@ -1,13 +1,17 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MeetingCalendar } from '@/components/meeting-calendar';
 import { type Meeting } from '@/lib/data';
 import { format } from 'date-fns';
-import { Clock, User, Loader2 } from 'lucide-react';
+import { Clock, User, Eye } from 'lucide-react';
+import { useState } from 'react';
+import { MeetingDetailsDialog } from './meeting-details-dialog';
+import { Button } from './ui/button';
 
 export function ScheduleView({ meetings }: { meetings: Meeting[] }) {
+  const [meetingToView, setMeetingToView] = useState<Meeting | null>(null);
     
   // Group meetings by date for list view
   const upcomingMeetings = meetings.filter(m => new Date(m.date) >= new Date());
@@ -53,6 +57,11 @@ export function ScheduleView({ meetings }: { meetings: Meeting[] }) {
                                         <span className="truncate">{meeting.participants.join(', ')}</span>
                                     </div>
                                 </CardContent>
+                                <CardFooter>
+                                    <Button variant="outline" className="w-full" onClick={() => setMeetingToView(meeting)}>
+                                        <Eye className="mr-2 h-4 w-4" /> View Details
+                                    </Button>
+                                </CardFooter>
                             </Card>
                         ))}
                     </div>
@@ -63,25 +72,32 @@ export function ScheduleView({ meetings }: { meetings: Meeting[] }) {
   }
     
     return (
-        <Tabs defaultValue="list" className="w-full">
-            <TabsList className="mb-4">
-            <TabsTrigger value="list">List View</TabsTrigger>
-            <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-            </TabsList>
-            <TabsContent value="list">
-                <ListView />
-            </TabsContent>
-            <TabsContent value="calendar">
-            {meetings.length === 0 ? (
-                <Card>
-                <CardContent className="p-8 text-center text-muted-foreground">
-                    You have no meetings to show in the calendar.
-                </CardContent>
-                </Card>
-            ) : (
-                <MeetingCalendar meetings={meetings} />
-            )}
-            </TabsContent>
-      </Tabs>
+        <>
+            <Tabs defaultValue="list" className="w-full">
+                <TabsList className="mb-4">
+                <TabsTrigger value="list">List View</TabsTrigger>
+                <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+                </TabsList>
+                <TabsContent value="list">
+                    <ListView />
+                </TabsContent>
+                <TabsContent value="calendar">
+                {meetings.length === 0 ? (
+                    <Card>
+                    <CardContent className="p-8 text-center text-muted-foreground">
+                        You have no meetings to show in the calendar.
+                    </CardContent>
+                    </Card>
+                ) : (
+                    <MeetingCalendar meetings={meetings} />
+                )}
+                </TabsContent>
+            </Tabs>
+            <MeetingDetailsDialog 
+                isOpen={!!meetingToView}
+                onClose={() => setMeetingToView(null)}
+                meeting={meetingToView}
+            />
+        </>
     );
 }

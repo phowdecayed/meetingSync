@@ -52,7 +52,7 @@ export function SidebarNav() {
                 <SidebarMenuButton
                   isActive={item.href === '/profile' ? pathname === item.href : pathname.startsWith(item.href)}
                   tooltip={{ children: item.label, side: "right" }}
-                  className="justify-start group-data-[collapsible=icon]:justify-center"
+                  className="group-data-[collapsible=icon]:justify-center"
                 >
                   <item.icon />
                   <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>

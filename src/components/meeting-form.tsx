@@ -182,7 +182,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                             control={form.control}
                             name="time"
                             render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="flex flex-col">
                                 <FormLabel>Time (24h format)</FormLabel>
                                 <FormControl>
                                     <Input type="time" {...field} />
@@ -195,7 +195,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                             control={form.control}
                             name="duration"
                             render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="flex flex-col">
                                 <FormLabel>Duration (in minutes)</FormLabel>
                                 <FormControl>
                                     <Input type="number" placeholder="30" {...field} />
