@@ -102,12 +102,35 @@ export const removeZoomAccount = async (id:string): Promise<{ success: boolean }
     return { success: true };
 };
 
-// Simulate load balancing by picking a random Zoom account
+// Simulate load balancing by finding the account with the fewest upcoming meetings.
 const getLeastUtilizedAccount = (): string => {
   if (zoomAccounts.length === 0) {
     return 'default-zoom-account'; // Fallback if no accounts are configured
   }
-  return zoomAccounts[Math.floor(Math.random() * zoomAccounts.length)].id;
+
+  const now = new Date();
+  const upcomingMeetings = meetings.filter(m => new Date(m.date) >= now);
+
+  const usageCounts = new Map<string, number>();
+  zoomAccounts.forEach(acc => usageCounts.set(acc.id, 0));
+
+  upcomingMeetings.forEach(meeting => {
+    if (usageCounts.has(meeting.zoomAccountId)) {
+      usageCounts.set(meeting.zoomAccountId, usageCounts.get(meeting.zoomAccountId)! + 1);
+    }
+  });
+
+  let leastUtilizedAccountId = zoomAccounts[0].id;
+  let minMeetings = usageCounts.get(leastUtilizedAccountId) ?? Infinity;
+
+  for (const [accountId, count] of usageCounts.entries()) {
+    if (count < minMeetings) {
+      minMeetings = count;
+      leastUtilizedAccountId = accountId;
+    }
+  }
+
+  return leastUtilizedAccountId;
 }
 
 export const getMeetings = async (): Promise<Meeting[]> => {
