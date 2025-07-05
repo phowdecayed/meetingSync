@@ -24,7 +24,7 @@ export let users: User[] = [
   { id: 'user-5', name: 'Tony Stark', email: 'tony@example.com', role: 'member' },
 ];
 
-export const zoomAccounts = [
+export let zoomAccounts = [
   { id: 'zoom-1', email: 'corp-zoom-1@example.com' },
   { id: 'zoom-2', email: 'corp-zoom-2@example.com' },
   { id: 'zoom-3', email: 'corp-zoom-3@example.com' },
@@ -73,8 +73,40 @@ export let meetings: Meeting[] = [
 
 // --- Mock API Functions ---
 
+// Zoom Account Management
+export const getZoomAccounts = async (): Promise<{ id: string; email: string; }[]> => {
+    await new Promise(res => setTimeout(res, 300));
+    return zoomAccounts;
+};
+
+export const addZoomAccount = async (email: string): Promise<{ id: string; email: string; }> => {
+    await new Promise(res => setTimeout(res, 500));
+    if (zoomAccounts.some(acc => acc.email === email)) {
+        throw new Error("An account with this email already exists.");
+    }
+    const newAccount = {
+        id: `zoom-${Date.now()}`,
+        email: email,
+    };
+    zoomAccounts.push(newAccount);
+    return newAccount;
+};
+
+export const removeZoomAccount = async (id:string): Promise<{ success: boolean }> => {
+    await new Promise(res => setTimeout(res, 500));
+    const initialLength = zoomAccounts.length;
+    zoomAccounts = zoomAccounts.filter(acc => acc.id !== id);
+    if (zoomAccounts.length === initialLength) {
+        throw new Error("Zoom account not found.");
+    }
+    return { success: true };
+};
+
 // Simulate load balancing by picking a random Zoom account
 const getLeastUtilizedAccount = (): string => {
+  if (zoomAccounts.length === 0) {
+    return 'default-zoom-account'; // Fallback if no accounts are configured
+  }
   return zoomAccounts[Math.floor(Math.random() * zoomAccounts.length)].id;
 }
 

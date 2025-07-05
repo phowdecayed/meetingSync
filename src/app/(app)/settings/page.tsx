@@ -9,41 +9,109 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2, Plus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { getZoomAccounts, addZoomAccount, removeZoomAccount } from '@/lib/data';
+
+type ZoomAccount = {
+  id: string;
+  email: string;
+};
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { user, isLoading } = useAuthStore();
+  const { user, isLoading: isAuthLoading } = useAuthStore();
   const { toast } = useToast();
 
-  // State for integration settings
-  const [zoomAccountId, setZoomAccountId] = useState('ACCOUNT_ID_FROM_ZOOM');
+  // State for global API credentials
   const [zoomClientId, setZoomClientId] = useState('CLIENT_ID_FROM_ZOOM');
   const [zoomClientSecret, setZoomClientSecret] = useState('CLIENT_SECRET_FROM_ZOOM');
   const [isSaving, setIsSaving] = useState(false);
 
+  // State for zoom account pool
+  const [accounts, setAccounts] = useState<ZoomAccount[]>([]);
+  const [isAccountsLoading, setIsAccountsLoading] = useState(true);
+  const [newAccountEmail, setNewAccountEmail] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && user && user.role !== 'admin') {
-      // You could redirect, but showing the message is clearer for the user.
+    if (!isAuthLoading && user && user.role !== 'admin') {
       // router.push('/dashboard');
     }
-  }, [user, isLoading, router]);
+  }, [user, isAuthLoading, router]);
+
+  useEffect(() => {
+    async function loadAccounts() {
+      if (user?.role !== 'admin') return;
+      setIsAccountsLoading(true);
+      try {
+        const fetchedAccounts = await getZoomAccounts();
+        setAccounts(fetchedAccounts);
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to load Zoom accounts.' })
+      } finally {
+        setIsAccountsLoading(false);
+      }
+    }
+    loadAccounts();
+  }, [user, toast]);
   
-  const handleSaveIntegrations = async () => {
+  const handleSaveCredentials = async () => {
     setIsSaving(true);
-    // In a real app, you would encrypt and save these to a secure backend.
     await new Promise(res => setTimeout(res, 1500));
     setIsSaving(false);
     toast({
-        title: "Integrations Saved",
+        title: "Credentials Saved",
         description: "Your Zoom API credentials have been updated.",
     });
   };
 
-  if (isLoading || !user) {
+  const handleAddAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAccountEmail.trim()) return;
+    setIsAdding(true);
+    try {
+        const newAccount = await addZoomAccount(newAccountEmail);
+        setAccounts([...accounts, newAccount]);
+        setNewAccountEmail('');
+        toast({
+            title: "Account Added",
+            description: `Successfully added ${newAccount.email}.`,
+        });
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: (error as Error).message,
+        });
+    } finally {
+        setIsAdding(false);
+    }
+  };
+
+  const handleRemoveAccount = async (id: string) => {
+    setDeletingId(id);
+    try {
+        await removeZoomAccount(id);
+        setAccounts(accounts.filter(acc => acc.id !== id));
+        toast({
+            title: "Account Removed",
+            description: `The account has been removed from the pool.`,
+        });
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: (error as Error).message,
+        });
+    } finally {
+        setDeletingId(null);
+    }
+  };
+
+  if (isAuthLoading || !user) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -103,21 +171,12 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Zoom Integration</CardTitle>
+          <CardTitle>Zoom API Credentials</CardTitle>
           <CardDescription>
-            Connect using Server-to-Server OAuth credentials from your Zoom account.
+            Connect using Server-to-Server OAuth credentials. These apply to all accounts in the pool.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-            <div className="space-y-2">
-                <Label htmlFor="zoom-account-id">Account ID</Label>
-                <Input 
-                    id="zoom-account-id"
-                    value={zoomAccountId}
-                    onChange={(e) => setZoomAccountId(e.target.value)}
-                    placeholder="Your Zoom Account ID"
-                />
-            </div>
             <div className="space-y-2">
                 <Label htmlFor="zoom-client-id">Client ID</Label>
                 <Input 
@@ -139,10 +198,63 @@ export default function SettingsPage() {
             </div>
         </CardContent>
         <CardFooter className="justify-end">
-            <Button onClick={handleSaveIntegrations} disabled={isSaving}>
+            <Button onClick={handleSaveCredentials} disabled={isSaving}>
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Credentials
             </Button>
+        </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+            <CardTitle>Zoom Account Pool</CardTitle>
+            <CardDescription>Manage the pool of Zoom accounts used for scheduling meetings to load balance requests.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            {isAccountsLoading ? (
+                <div className="flex justify-center items-center h-24">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {accounts.map(account => (
+                        <div key={account.id} className="flex items-center justify-between rounded-lg border p-3 pl-4">
+                            <span className="text-sm font-medium">{account.email}</span>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground hover:text-destructive h-8 w-8"
+                                disabled={deletingId === account.id}
+                                onClick={() => handleRemoveAccount(account.id)}
+                            >
+                                {deletingId === account.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                )}
+                                <span className="sr-only">Remove Account</span>
+                            </Button>
+                        </div>
+                    ))}
+                    {accounts.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">No accounts in the pool. Add one below.</p>
+                    )}
+                </div>
+            )}
+        </CardContent>
+        <CardFooter className="border-t pt-6">
+            <form onSubmit={handleAddAccount} className="flex w-full items-center gap-2">
+                <Input
+                    placeholder="new-account@example.com"
+                    value={newAccountEmail}
+                    onChange={(e) => setNewAccountEmail(e.target.value)}
+                    disabled={isAdding}
+                />
+                <Button type="submit" disabled={isAdding || !newAccountEmail.trim()}>
+                    {isAdding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                    Add
+                </Button>
+            </form>
         </CardFooter>
       </Card>
     </div>
