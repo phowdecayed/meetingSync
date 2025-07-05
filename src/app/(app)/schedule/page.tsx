@@ -24,9 +24,19 @@ export default function SchedulePage() {
       const allMeetings = await getMeetings();
       const now = new Date();
       
-      const userMeetings = allMeetings.filter(m => 
-        (m.organizerId === user.id || m.participants.includes(user.email)) && new Date(m.date) >= now
-      ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const userMeetings = allMeetings.filter(m => {
+        const isUpcoming = new Date(m.date) >= now;
+        if (!isUpcoming) {
+            return false;
+        }
+        
+        // Admin users see all upcoming meetings on their schedule
+        if (user.role === 'admin') {
+            return true;
+        }
+        
+        return m.organizerId === user.id || m.participants.includes(user.email);
+      }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       setMeetings(userMeetings);
       setIsLoading(false);
