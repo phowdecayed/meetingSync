@@ -82,9 +82,9 @@ export function UserCombobox({ allUsers, selectedUsers, onChange, className }: U
               {allUsers.map((user) => (
                 <CommandItem
                   key={user.id}
-                  value={`${user.name} ${user.email}`}
-                  onSelect={() => {
-                    handleSelect(user.email);
+                  value={user.email}
+                  onSelect={(currentValue) => {
+                    handleSelect(currentValue);
                     setOpen(true);
                   }}
                 >
