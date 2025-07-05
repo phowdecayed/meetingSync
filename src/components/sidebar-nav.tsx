@@ -50,7 +50,7 @@ export function SidebarNav() {
                   className="justify-start group-data-[collapsible=icon]:justify-center"
                 >
                   <item.icon />
-                  <span>{item.label}</span>
+                  <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
