@@ -90,7 +90,7 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
       <TableCell>{format(new Date(meeting.date), 'PP p')}</TableCell>
       <TableCell>{meeting.duration} min</TableCell>
       <TableCell>
-        <Badge variant="secondary">{meeting.participants.length} Participant{meeting.participants.length !== 1 ? 's' : ''}</Badge>
+        <Badge variant="secondary" className="whitespace-nowrap">{meeting.participants.length} Participant{meeting.participants.length !== 1 ? 's' : ''}</Badge>
       </TableCell>
       <TableCell>
         <AlertDialog>
