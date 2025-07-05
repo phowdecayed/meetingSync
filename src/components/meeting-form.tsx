@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { meetingSchema } from "@/lib/validators/meeting";
-import { Meeting } from "@/lib/data";
+import { Meeting, User } from "@/lib/data";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useMeetingStore } from "@/store/use-meeting-store";
@@ -28,12 +28,14 @@ import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { Card, CardContent } from "./ui/card";
+import { UserCombobox } from "./user-combobox";
 
 type MeetingFormProps = {
+  allUsers: User[];
   existingMeeting?: Meeting;
 };
 
-export function MeetingForm({ existingMeeting }: MeetingFormProps) {
+export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -48,14 +50,14 @@ export function MeetingForm({ existingMeeting }: MeetingFormProps) {
       date: new Date(existingMeeting.date),
       time: format(new Date(existingMeeting.date), "HH:mm"),
       duration: existingMeeting.duration,
-      participants: existingMeeting.participants.join(', '),
+      participants: existingMeeting.participants,
       description: existingMeeting.description || "",
   } : {
       title: "",
       date: new Date(),
       time: format(new Date(), "HH:mm"),
       duration: 30,
-      participants: "",
+      participants: [],
       description: "",
   };
 
@@ -81,7 +83,7 @@ export function MeetingForm({ existingMeeting }: MeetingFormProps) {
         title: values.title,
         date: combinedDateTime,
         duration: values.duration,
-        participants: values.participants.split(',').map(e => e.trim()).filter(Boolean),
+        participants: values.participants,
         description: values.description,
         organizerId: user.id
     };
@@ -203,10 +205,14 @@ export function MeetingForm({ existingMeeting }: MeetingFormProps) {
                     <FormItem>
                         <FormLabel>Participants</FormLabel>
                         <FormControl>
-                        <Input placeholder="user1@example.com, user2@example.com" {...field} />
+                            <UserCombobox 
+                                allUsers={allUsers.filter(u => u.email !== user?.email)}
+                                selectedUsers={field.value ?? []}
+                                onChange={field.onChange}
+                            />
                         </FormControl>
                         <FormDescription>
-                            Enter a comma-separated list of email addresses.
+                            Select users to invite to the meeting.
                         </FormDescription>
                         <FormMessage />
                     </FormItem>

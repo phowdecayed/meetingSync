@@ -1,5 +1,5 @@
 import { MeetingForm } from "@/components/meeting-form";
-import { getMeetingById } from "@/lib/data";
+import { getMeetingById, getUsers } from "@/lib/data";
 import { notFound } from "next/navigation";
 
 type EditMeetingPageProps = {
@@ -7,7 +7,10 @@ type EditMeetingPageProps = {
 }
 
 export default async function EditMeetingPage({ params }: EditMeetingPageProps) {
-    const meeting = await getMeetingById(params.id);
+    const [meeting, allUsers] = await Promise.all([
+        getMeetingById(params.id),
+        getUsers()
+    ]);
 
     if (!meeting) {
         notFound();
@@ -19,7 +22,7 @@ export default async function EditMeetingPage({ params }: EditMeetingPageProps) 
                 <h1 className="text-3xl font-headline font-bold">Edit Meeting</h1>
                 <p className="text-muted-foreground">Update the details for your meeting.</p>
             </div>
-            <MeetingForm existingMeeting={meeting} />
+            <MeetingForm existingMeeting={meeting} allUsers={allUsers} />
         </div>
     )
 }
