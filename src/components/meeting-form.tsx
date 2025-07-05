@@ -27,9 +27,9 @@ import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
-import { format } from "date-fns";
-import { Card, CardContent } from "./ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { UserCombobox } from "./user-combobox";
+import { format } from "date-fns";
 
 type MeetingFormProps = {
   allUsers: User[];
@@ -115,133 +115,139 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
   }
 
   return (
-    <Card>
-        <CardContent className="p-6">
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Meeting Title</FormLabel>
-                        <FormControl>
-                        <Input placeholder="e.g., Quarterly Review" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+            <Card className="max-w-3xl mx-auto">
+                <CardHeader>
+                    <CardTitle>{isEditMode ? "Edit Meeting" : "Create New Meeting"}</CardTitle>
+                    <CardDescription>
+                        {isEditMode ? "Update the details for your meeting." : "Fill in the details to schedule your next meeting."}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
                     <FormField
                         control={form.control}
-                        name="date"
+                        name="title"
                         render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>Date</FormLabel>
-                            <Popover>
-                            <PopoverTrigger asChild>
+                        <FormItem>
+                            <FormLabel>Meeting Title</FormLabel>
+                            <FormControl>
+                            <Input placeholder="e.g., Quarterly Review" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <FormField
+                            control={form.control}
+                            name="date"
+                            render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>Date</FormLabel>
+                                <Popover>
+                                <PopoverTrigger asChild>
+                                    <FormControl>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                        "pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground"
+                                        )}
+                                    >
+                                        {field.value ? (
+                                        format(field.value, "PPP")
+                                        ) : (
+                                        <span>Pick a date</span>
+                                        )}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                    </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
+                                    initialFocus
+                                    />
+                                </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="time"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Time (24h format)</FormLabel>
                                 <FormControl>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                    "pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                    )}
-                                >
-                                    {field.value ? (
-                                    format(field.value, "PPP")
-                                    ) : (
-                                    <span>Pick a date</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
+                                    <Input type="time" {...field} />
                                 </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
-                                initialFocus
-                                />
-                            </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                     <FormField
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="duration"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Duration (in minutes)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="30" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </div>
+                    <FormField
                         control={form.control}
-                        name="time"
+                        name="participants"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Time (24h format)</FormLabel>
+                            <FormLabel>Participants</FormLabel>
                             <FormControl>
-                                <Input type="time" {...field} />
+                                <UserCombobox 
+                                    allUsers={allUsers.filter(u => u.email !== user?.email)}
+                                    selectedUsers={field.value ?? []}
+                                    onChange={field.onChange}
+                                />
                             </FormControl>
+                            <FormDescription>
+                                Select users to invite to the meeting.
+                            </FormDescription>
                             <FormMessage />
                         </FormItem>
                         )}
                     />
                     <FormField
                         control={form.control}
-                        name="duration"
+                        name="description"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Duration (in minutes)</FormLabel>
+                            <FormLabel>Description (Optional)</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder="30" {...field} />
+                            <Textarea placeholder="Agenda, notes, and links..." {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                         )}
                     />
-                </div>
-                <FormField
-                    control={form.control}
-                    name="participants"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Participants</FormLabel>
-                        <FormControl>
-                            <UserCombobox 
-                                allUsers={allUsers.filter(u => u.email !== user?.email)}
-                                selectedUsers={field.value ?? []}
-                                onChange={field.onChange}
-                            />
-                        </FormControl>
-                        <FormDescription>
-                            Select users to invite to the meeting.
-                        </FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Description (Optional)</FormLabel>
-                        <FormControl>
-                        <Textarea placeholder="Agenda, notes, and links..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <div className="flex justify-end gap-4">
+                </CardContent>
+                <CardFooter className="flex justify-end gap-4">
                     <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
                     <Button type="submit" disabled={isLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isEditMode ? "Save Changes" : "Create Meeting"}
                     </Button>
-                </div>
-                </form>
-            </Form>
-        </CardContent>
-    </Card>
+                </CardFooter>
+            </Card>
+        </form>
+    </Form>
   );
 }

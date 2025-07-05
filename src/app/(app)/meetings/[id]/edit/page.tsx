@@ -17,12 +17,6 @@ export default async function EditMeetingPage({ params }: EditMeetingPageProps) 
     }
 
     return (
-        <div>
-            <div className="mb-8">
-                <h1 className="text-3xl font-headline font-bold">Edit Meeting</h1>
-                <p className="text-muted-foreground">Update the details for your meeting.</p>
-            </div>
-            <MeetingForm existingMeeting={meeting} allUsers={allUsers} />
-        </div>
+        <MeetingForm existingMeeting={meeting} allUsers={allUsers} />
     )
 }
