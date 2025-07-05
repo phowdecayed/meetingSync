@@ -44,7 +44,7 @@ export function DashboardHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={`https://placehold.co/100x100.png`} alt={user?.name} data-ai-hint="user avatar" />
+                <AvatarImage src={user?.name ? `https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name)}` : undefined} alt={user?.name} data-ai-hint="user avatar" />
                 <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
               </Avatar>
             </Button>
