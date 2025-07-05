@@ -1,14 +1,9 @@
 import { getMeetings, getUsers, type User } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BarChart as BarChartIcon, Calendar, Clock } from 'lucide-react';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format, addDays, isSameDay, eachDayOfInterval } from 'date-fns';
+import { MeetingsOverviewChart } from '@/components/meetings-overview-chart';
 
 function getInitials(name: string = ""): string {
   if (!name) return "";
@@ -53,13 +48,7 @@ export default async function DashboardPage() {
     date: format(day, 'EEE'),
     meetings: allMeetings.filter(m => isSameDay(new Date(m.date), day)).length,
   }));
-  const chartConfig = {
-    meetings: {
-      label: "Meetings",
-      color: "hsl(var(--primary))",
-    },
-  };
-
+  
   // Data for upcoming meetings list
   const next5UpcomingMeetings = upcomingMeetings
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -108,40 +97,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
-          <CardHeader>
-            <CardTitle>Meetings Overview</CardTitle>
-            <CardDescription>Number of meetings in the next 7 days.</CardDescription>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={10}
-                  allowDecimals={false}
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent indicator="dot" />}
-                />
-                <Bar dataKey="meetings" fill="var(--color-meetings)" radius={4} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+        <MeetingsOverviewChart chartData={chartData} />
         <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>Upcoming Meetings</CardTitle>
