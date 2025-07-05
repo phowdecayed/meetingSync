@@ -11,8 +11,8 @@ import {
   SidebarFooter
 } from "@/components/ui/sidebar";
 import { Home, Settings, Users, Video, Calendar, User } from "lucide-react";
-import { Button } from "./ui/button";
 import { useAuthStore } from "@/store/use-auth-store";
+import { ThemeToggle } from "./theme-toggle";
 
 const allMenuItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -40,13 +40,14 @@ export function SidebarNav() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu>
+        <SidebarMenu className="gap-2">
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href} passHref>
                 <SidebarMenuButton
                   isActive={item.href === '/profile' ? pathname === item.href : pathname.startsWith(item.href)}
                   tooltip={{ children: item.label, side: "right" }}
+                  className="justify-start group-data-[collapsible=icon]:justify-center"
                 >
                   <item.icon />
                   <span>{item.label}</span>
@@ -56,6 +57,12 @@ export function SidebarNav() {
           ))}
         </SidebarMenu>
       </SidebarContent>
+      <SidebarFooter className="items-center">
+        <ThemeToggle />
+        <p className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+          v0.1.0
+        </p>
+      </SidebarFooter>
     </>
   );
 }
