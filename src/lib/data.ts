@@ -17,8 +17,8 @@ export type User = {
   role: 'admin' | 'member';
 };
 
-// This type can be simplified as we are not storing password hashes anymore
-export type FullUser = User & { passwordHash?: string };
+// Add password for mock user creation and verification
+export type FullUser = User & { password?: string };
 
 
 // --- MOCK IMPLEMENTATION ---
@@ -32,11 +32,11 @@ const initializeMockData = async () => {
   if (mockInitialized) return;
 
   mockUsers = [
-    { id: 'clx1', name: 'Admin User', email: 'admin@example.com', role: 'admin' },
-    { id: 'clx2', name: 'Member User', email: 'member@example.com', role: 'member' },
-    { id: 'clx3', name: 'Carol Danvers', email: 'carol@example.com', role: 'member' },
-    { id: 'clx4', name: 'Peter Parker', email: 'peter@example.com', role: 'member' },
-    { id: 'clx5', name: 'Tony Stark', email: 'tony@example.com', role: 'member' },
+    { id: 'clx1', name: 'Admin User', email: 'admin@example.com', role: 'admin', password: 'password123' },
+    { id: 'clx2', name: 'Member User', email: 'member@example.com', role: 'member', password: 'password123' },
+    { id: 'clx3', name: 'Carol Danvers', email: 'carol@example.com', role: 'member', password: 'password123' },
+    { id: 'clx4', name: 'Peter Parker', email: 'peter@example.com', role: 'member', password: 'password123' },
+    { id: 'clx5', name: 'Tony Stark', email: 'tony@example.com', role: 'member', password: 'password123' },
   ];
 
   mockZoomAccounts = [
@@ -117,13 +117,13 @@ export const deleteMeeting = async (id: string): Promise<{ success: boolean }> =
     mockMeetings = mockMeetings.filter(m => m.id !== id);
     return { success: true };
 }
-export const getUsers = async (): Promise<User[]> => { await initializeMockData(); return mockUsers.map(({passwordHash, ...user}) => user); }
-export const createUser = async (data: { name: string; email: string; role: 'admin' | 'member' }): Promise<User> => {
+export const getUsers = async (): Promise<User[]> => { await initializeMockData(); return mockUsers.map(({password, ...user}) => user); }
+export const createUser = async (data: { name: string; email: string; role: 'admin' | 'member', password?: string }): Promise<User> => {
     await initializeMockData();
     if (mockUsers.find(u => u.email === data.email)) throw new Error('A user with this email already exists.');
     const newUser: FullUser = { id: `u${Date.now()}`, ...data };
     mockUsers.push(newUser);
-    const { passwordHash, ...userToReturn } = newUser;
+    const { password, ...userToReturn } = newUser;
     return userToReturn;
 }
 export const updateUserRole = async(id: string, role: 'admin' | 'member'): Promise<User> => {
@@ -131,7 +131,7 @@ export const updateUserRole = async(id: string, role: 'admin' | 'member'): Promi
     const userIndex = mockUsers.findIndex(u => u.id === id);
     if (userIndex === -1) throw new Error("User not found");
     mockUsers[userIndex].role = role;
-    const { passwordHash, ...userToReturn } = mockUsers[userIndex];
+    const { password, ...userToReturn } = mockUsers[userIndex];
     return userToReturn;
 }
 export const deleteUserById = async(id: string): Promise<{ success: boolean }> => {
@@ -143,7 +143,7 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
     await initializeMockData();
     const user = mockUsers.find(u => u.email === email);
     if (!user) return null;
-    const { passwordHash, ...userToReturn } = user;
+    const { password, ...userToReturn } = user;
     return userToReturn;
 }
 export const updateAuthUser = async(id: string, data: { name: string }): Promise<User> => {
@@ -151,15 +151,13 @@ export const updateAuthUser = async(id: string, data: { name: string }): Promise
     const userIndex = mockUsers.findIndex(u => u.id === id);
     if (userIndex === -1) throw new Error("User not found");
     mockUsers[userIndex].name = data.name;
-    const { passwordHash, ...userToReturn } = mockUsers[userIndex];
+    const { password, ...userToReturn } = mockUsers[userIndex];
     return userToReturn;
 }
 export const verifyUserCredentials = async (email: string, pass: string): Promise<User | null> => {
     await initializeMockData();
-    // This is a mock function, so we'll just find the user by email and ignore the password.
-    // In a real app, you would compare a hashed password.
-    const user = mockUsers.find(u => u.email === email);
+    const user = mockUsers.find(u => u.email === email && u.password === pass);
     if (!user) return null;
-    const { passwordHash, ...userToReturn } = user;
+    const { password, ...userToReturn } = user;
     return userToReturn;
 }

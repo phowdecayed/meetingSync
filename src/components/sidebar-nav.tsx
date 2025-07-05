@@ -11,7 +11,7 @@ import {
   SidebarFooter
 } from "@/components/ui/sidebar";
 import { Home, Settings, Users, Video, Calendar, User } from "lucide-react";
-import { useAuthStore } from "@/store/use-auth-store";
+import { useSession } from "next-auth/react";
 import { ThemeToggle } from "./theme-toggle";
 
 const allMenuItems = [
@@ -25,7 +25,8 @@ const allMenuItems = [
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { user } = useAuthStore();
+  const { data: session } = useSession();
+  const user = session?.user;
 
   const menuItems = allMenuItems.filter(item => !item.adminOnly || user?.role === 'admin');
 

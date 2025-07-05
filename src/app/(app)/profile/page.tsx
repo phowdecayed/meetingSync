@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuthStore } from '@/store/use-auth-store';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,7 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { getMeetings, type Meeting } from '@/lib/data';
+import { getMeetings, updateAuthUser, type Meeting } from '@/lib/data';
 
 const profileSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -25,7 +25,8 @@ function getInitials(name: string = ""): string {
 }
 
 export default function ProfilePage() {
-  const { user, isLoading: isAuthLoading, updateUser } = useAuthStore();
+  const { data: session, status, update: updateSession } = useSession();
+  const user = session?.user;
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -57,9 +58,14 @@ export default function ProfilePage() {
   }, [user]);
 
   async function onSubmit(values: z.infer<typeof profileSchema>) {
+    if (!user) return;
     setIsSaving(true);
     try {
-      await updateUser({ name: values.name });
+      await updateAuthUser(user.id, { name: values.name });
+
+      // Trigger a session update to reflect the new name
+      await updateSession({ user: { ...session?.user, name: values.name } });
+
       toast({
         title: "Profile Updated",
         description: "Your name has been successfully updated.",
@@ -76,7 +82,7 @@ export default function ProfilePage() {
     }
   }
 
-  if (isAuthLoading || !user) {
+  if (status === 'loading' || !user) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -85,9 +91,9 @@ export default function ProfilePage() {
   }
   
   const meetingsOrganized = meetings.filter(m => m.organizerId === user.id).length;
-  const meetingsAttended = meetings.filter(m => m.participants.includes(user.email) && m.organizerId !== user.id).length;
+  const meetingsAttended = meetings.filter(m => m.participants.includes(user.email ?? '') && m.organizerId !== user.id).length;
   const now = new Date();
-  const upcomingMeetingsCount = meetings.filter(m => (m.organizerId === user.id || m.participants.includes(user.email)) && new Date(m.date) >= now).length;
+  const upcomingMeetingsCount = meetings.filter(m => (m.organizerId === user.id || m.participants.includes(user.email ?? '')) && new Date(m.date) >= now).length;
 
 
   return (
@@ -115,7 +121,7 @@ export default function ProfilePage() {
                 <CardContent className="space-y-6">
                     <div className="flex items-center gap-6">
                     <Avatar className="h-20 w-20">
-                        <AvatarImage src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name)}`} alt={user.name} data-ai-hint="user avatar" />
+                        <AvatarImage src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name ?? '')}`} alt={user.name ?? ''} data-ai-hint="user avatar" />
                         <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
@@ -141,12 +147,12 @@ export default function ProfilePage() {
                     />
                     <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" value={user.email} readOnly />
+                    <Input id="email" value={user.email ?? ''} readOnly />
                     </div>
                 </CardContent>
                 {isEditing && (
                     <CardFooter className="justify-end gap-4">
-                    <Button type="button" variant="outline" onClick={() => { setIsEditing(false); form.reset({ name: user.name }); }}>Cancel</Button>
+                    <Button type="button" variant="outline" onClick={() => { setIsEditing(false); form.reset({ name: user.name ?? '' }); }}>Cancel</Button>
                     <Button type="submit" disabled={isSaving}>
                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Save Changes

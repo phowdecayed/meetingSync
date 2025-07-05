@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuthStore } from "@/store/use-auth-store";
+import { useSession, signOut } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,16 +13,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { LogOut, PlusCircle, Settings, User } from "lucide-react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function DashboardHeader() {
-  const { user, logout } = useAuthStore();
+  const { data: session } = useSession();
+  const user = session?.user;
   const router = useRouter();
 
   const handleLogout = () => {
-    logout();
-    router.push('/login');
+    signOut({ callbackUrl: '/login' });
   };
 
   const getInitials = (name: string = "") => {
@@ -44,7 +44,7 @@ export function DashboardHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={user?.name ? `https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name)}` : undefined} alt={user?.name} data-ai-hint="user avatar" />
+                <AvatarImage src={user?.name ? `https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name)}` : undefined} alt={user?.name ?? ''} data-ai-hint="user avatar" />
                 <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
               </Avatar>
             </Button>

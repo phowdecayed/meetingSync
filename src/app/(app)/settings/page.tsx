@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/use-auth-store';
+import { useSession } from 'next-auth/react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,8 +19,8 @@ type ZoomAccount = {
 };
 
 export default function SettingsPage() {
-  const router = useRouter();
-  const { user, isLoading: isAuthLoading } = useAuthStore();
+  const { data: session, status } = useSession();
+  const user = session?.user;
   const { toast } = useToast();
 
   // State for global API credentials
@@ -35,12 +34,6 @@ export default function SettingsPage() {
   const [newAccountEmail, setNewAccountEmail] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isAuthLoading && user && user.role !== 'admin') {
-      // router.push('/dashboard');
-    }
-  }, [user, isAuthLoading, router]);
 
   useEffect(() => {
     async function loadAccounts() {
@@ -111,7 +104,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (isAuthLoading || !user) {
+  if (status === 'loading' || !user) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

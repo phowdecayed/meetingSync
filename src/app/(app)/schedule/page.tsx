@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { getMeetings, type Meeting } from '@/lib/data';
-import { useAuthStore } from '@/store/use-auth-store';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Loader2, User, Clock } from 'lucide-react';
@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MeetingCalendar } from '@/components/meeting-calendar';
 
 export default function SchedulePage() {
-  const { user } = useAuthStore();
+  const { data: session } = useSession();
+  const user = session?.user;
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -31,7 +32,7 @@ export default function SchedulePage() {
             return true;
         }
         
-        return m.organizerId === user.id || m.participants.includes(user.email);
+        return m.organizerId === user.id || m.participants.includes(user.email ?? '');
       }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       setMeetings(userMeetings);

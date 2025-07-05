@@ -15,11 +15,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import Link from 'next/link';
-import { useAuthStore } from '@/store/use-auth-store';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { signIn } from 'next-auth/react';
+import { createUser } from '@/lib/data';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -34,7 +35,6 @@ const registerSchema = z.object({
 
 export function LoginForm() {
   const router = useRouter();
-  const { login } = useAuthStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -48,19 +48,22 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    try {
-      await login(values.email, values.password);
-      router.push('/dashboard');
-    } catch (error) {
+    const result = await signIn('credentials', {
+      redirect: false,
+      email: values.email,
+      password: values.password,
+    });
+    
+    if (result?.error) {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: (error as Error).message,
+        description: "Invalid email or password.",
       });
-    } finally {
       setIsLoading(false);
+    } else {
+      router.push('/dashboard');
+      router.refresh(); // Refresh to ensure session is fully loaded
     }
   }
 
@@ -116,7 +119,6 @@ export function LoginForm() {
 
 export function RegisterForm() {
   const router = useRouter();
-  const { register } = useAuthStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -131,17 +133,35 @@ export function RegisterForm() {
 
   async function onSubmit(values: z.infer<typeof registerSchema>) {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
     try {
-      await register(values.name, values.email, values.password);
-      router.push('/dashboard');
+      await createUser({ name: values.name, email: values.email, role: 'member', password: values.password });
+
+      // After successful creation, sign the user in
+      const signInResult = await signIn('credentials', {
+        email: values.email,
+        password: values.password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        toast({
+          variant: "destructive",
+          title: "Login after registration failed",
+          description: "Please try logging in manually.",
+        });
+        setIsLoading(false);
+        router.push('/login');
+      } else {
+        router.push('/dashboard');
+        router.refresh();
+      }
+
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Registration Failed",
         description: (error as Error).message,
       });
-    } finally {
       setIsLoading(false);
     }
   }

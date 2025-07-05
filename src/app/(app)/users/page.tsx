@@ -2,8 +2,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/use-auth-store';
+import { useSession } from 'next-auth/react';
 import { getUsers, updateUserRole, deleteUserById, createUser, type User } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -67,12 +66,13 @@ const addUserSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email.' }),
   role: z.enum(['admin', 'member']),
+  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
 
 
 export default function UsersPage() {
-  const router = useRouter();
-  const { user: currentUser, isAuthLoading } = useAuthStore();
+  const { data: session, status } = useSession();
+  const currentUser = session?.user;
   const { toast } = useToast();
 
   const [users, setUsers] = useState<User[]>([]);
@@ -92,6 +92,7 @@ export default function UsersPage() {
       name: '',
       email: '',
       role: 'member',
+      password: ''
     },
   });
 
@@ -106,12 +107,6 @@ export default function UsersPage() {
     }
     loadUsers();
   }, [currentUser]);
-
-  useEffect(() => {
-    if (!isAuthLoading && currentUser && currentUser.role !== 'admin') {
-      router.push('/dashboard');
-    }
-  }, [currentUser, isAuthLoading, router]);
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return users;
@@ -194,7 +189,7 @@ export default function UsersPage() {
   };
 
 
-  if (isAuthLoading || !currentUser) {
+  if (status === 'loading' || !currentUser) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -352,6 +347,19 @@ export default function UsersPage() {
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
                       <Input placeholder="name@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={addUserForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

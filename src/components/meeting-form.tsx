@@ -22,7 +22,7 @@ import { Meeting } from "@/lib/data";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useMeetingStore } from "@/store/use-meeting-store";
-import { useAuthStore } from "@/store/use-auth-store";
+import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
@@ -38,7 +38,8 @@ export function MeetingForm({ existingMeeting }: MeetingFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const { addMeeting, updateMeeting } = useMeetingStore();
-  const { user } = useAuthStore();
+  const { data: session } = useSession();
+  const user = session?.user;
 
   const isEditMode = !!existingMeeting;
 
