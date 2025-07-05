@@ -7,6 +7,8 @@ import { useAuthStore } from '@/store/use-auth-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Loader2, User, Clock } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MeetingCalendar } from '@/components/meeting-calendar';
 
 export default function SchedulePage() {
   const { user } = useAuthStore();
@@ -22,15 +24,9 @@ export default function SchedulePage() {
       
       setIsLoading(true);
       const allMeetings = await getMeetings();
-      const now = new Date();
       
       const userMeetings = allMeetings.filter(m => {
-        const isUpcoming = new Date(m.date) >= now;
-        if (!isUpcoming) {
-            return false;
-        }
-        
-        // Admin users see all upcoming meetings on their schedule
+        // Admin users see all meetings on their schedule
         if (user.role === 'admin') {
             return true;
         }
@@ -45,8 +41,9 @@ export default function SchedulePage() {
     fetchAndFilterMeetings();
   }, [user]);
 
-  // Group meetings by date
-  const groupedByDate = meetings.reduce((acc, meeting) => {
+  // Group meetings by date for list view
+  const upcomingMeetings = meetings.filter(m => new Date(m.date) >= new Date());
+  const groupedByDate = upcomingMeetings.reduce((acc, meeting) => {
     const dateKey = format(new Date(meeting.date), 'PPPP'); // e.g., "Saturday, August 24th, 2024"
     if (!acc[dateKey]) {
       acc[dateKey] = [];
@@ -57,24 +54,17 @@ export default function SchedulePage() {
 
   const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-headline font-bold">My Schedule</h1>
-        <p className="text-muted-foreground">Your upcoming meetings and appointments.</p>
-      </div>
-
-      {isLoading ? (
-        <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : meetings.length === 0 ? (
-        <Card>
-            <CardContent className="p-8 text-center text-muted-foreground">
-                You have no upcoming meetings scheduled.
-            </CardContent>
-        </Card>
-      ) : (
+  const ListView = () => {
+    if (upcomingMeetings.length === 0) {
+        return (
+            <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                    You have no upcoming meetings scheduled.
+                </CardContent>
+            </Card>
+        );
+    }
+    return (
         <div className="space-y-6">
             {sortedDates.map(date => (
                 <div key={date}>
@@ -101,7 +91,46 @@ export default function SchedulePage() {
                 </div>
             ))}
         </div>
-      )}
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-headline font-bold">My Schedule</h1>
+        <p className="text-muted-foreground">Your upcoming meetings and appointments.</p>
+      </div>
+
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="list">List View</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+        </TabsList>
+        <TabsContent value="list">
+          {isLoading ? (
+            <div className="flex h-64 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <ListView />
+          )}
+        </TabsContent>
+        <TabsContent value="calendar">
+          {isLoading ? (
+            <div className="flex h-64 items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : meetings.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground">
+                You have no meetings to show in the calendar.
+              </CardContent>
+            </Card>
+          ) : (
+            <MeetingCalendar meetings={meetings} />
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

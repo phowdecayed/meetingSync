@@ -86,3 +86,30 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+.rdp-day_has-meeting {
+  font-weight: bold;
+  position: relative;
+}
+
+.rdp-day_has-meeting::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: hsl(var(--accent));
+}
+
+.rdp-day_today.rdp-day_has-meeting::after {
+  background-color: hsl(var(--accent-foreground));
+}
+
+.rdp-day_selected.rdp-day_has-meeting::after,
+.rdp-day_selected:focus.rdp-day_has-meeting::after,
+.rdp-day_selected:hover.rdp-day_has-meeting::after {
+    background-color: hsl(var(--primary-foreground));
+}
