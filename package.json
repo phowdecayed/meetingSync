@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "prisma migrate dev && next dev --turbopack -p 9002",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
+    "dev": "FIREBASE_STUDIO_ENV=true prisma migrate dev && next dev --turbopack -p 9002",
+    "genkit:dev": "FIREBASE_STUDIO_ENV=true genkit start -- tsx src/ai/dev.ts",
+    "genkit:watch": "FIREBASE_STUDIO_ENV=true genkit start -- tsx --watch src/ai/dev.ts",
     "build": "prisma migrate deploy && next build",
     "start": "next start",
     "lint": "next lint",
