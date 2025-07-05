@@ -20,7 +20,7 @@ const allMenuItems = [
   { href: "/schedule", label: "My Schedule", icon: Calendar },
   { href: "/profile", label: "My Profile", icon: User },
   { href: "/users", label: "User Management", icon: Users, adminOnly: true },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/settings", label: "Settings", icon: Settings, adminOnly: true },
 ];
 
 export function SidebarNav() {
@@ -56,13 +56,6 @@ export function SidebarNav() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="group-data-[collapsed=icon]:hidden">
-        <div className="rounded-lg bg-accent/50 p-4 text-center">
-            <h3 className="font-bold">Upgrade to Pro</h3>
-            <p className="text-sm text-muted-foreground mt-2">Unlock advanced features and get unlimited meeting scheduling.</p>
-            <Button size="sm" className="mt-4 w-full">Upgrade</Button>
-        </div>
-      </SidebarFooter>
     </>
   );
 }
