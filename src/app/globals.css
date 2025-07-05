@@ -109,3 +109,9 @@
 .rdp-day_selected:hover.rdp-day_has-meeting::after {
     background-color: hsl(var(--primary-foreground));
 }
+
+.sidebarIcon {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* A little space between icon and text is nice! */
+}
