@@ -1,6 +1,32 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import { users, type User, createUser } from '@/lib/data'; // Mock user data
+
+// A custom storage implementation that safely handles server-side rendering.
+const safeLocalStorage: StateStorage = {
+  getItem: (name) => {
+    try {
+      return localStorage.getItem(name);
+    } catch (error) {
+      // On the server, localStorage is not available.
+      return null;
+    }
+  },
+  setItem: (name, value) => {
+    try {
+      localStorage.setItem(name, value);
+    } catch (error) {
+      // On the server, localStorage is not available.
+    }
+  },
+  removeItem: (name) => {
+    try {
+      localStorage.removeItem(name);
+    } catch (error) {
+      // On the server, localStorage is not available.
+    }
+  },
+};
 
 type AuthState = {
   isAuthenticated: boolean;
@@ -64,7 +90,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage', // name of the item in the storage (must be unique)
-      storage: createJSONStorage(() => localStorage), // (optional) by default, 'localStorage' is used
+      storage: createJSONStorage(() => safeLocalStorage), // (optional) by default, 'localStorage' is used
       onRehydrateStorage: () => (state) => {
         if (state) {
           state._setLoading(false);
