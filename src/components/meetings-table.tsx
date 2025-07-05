@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   Table,
   TableBody,
@@ -29,7 +30,6 @@ import {
 import type { Meeting } from '@/lib/data';
 import { format } from 'date-fns';
 import { useMeetingStore } from '@/store/use-meeting-store';
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -56,7 +56,8 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
   const { meetings, setMeetings, deleteMeeting } = useMeetingStore();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [meetingToView, setMeetingToView] = useState<Meeting | null>(null);
-
+  const { data: session } = useSession();
+  const currentUser = session?.user;
 
   useEffect(() => {
     setMeetings(initialMeetings);
@@ -85,7 +86,10 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
     }
   };
 
-  const MeetingRow = ({ meeting }: { meeting: Meeting }) => (
+  const MeetingRow = ({ meeting }: { meeting: Meeting }) => {
+    const canManage = currentUser?.role === 'admin' || currentUser?.id === meeting.organizerId;
+    
+    return (
     <TableRow>
       <TableCell>
         <div className="font-medium">{meeting.title}</div>
@@ -109,15 +113,19 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
                 <DropdownMenuItem onClick={() => setMeetingToView(meeting)}>
                     <Eye className="mr-2 h-4 w-4" /> View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push(`/meetings/${meeting.id}/edit`)}>
-                    <Edit className="mr-2 h-4 w-4" /> Edit
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <AlertDialogTrigger asChild>
-                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                    </DropdownMenuItem>
-                </AlertDialogTrigger>
+                {canManage && (
+                    <>
+                        <DropdownMenuItem onClick={() => router.push(`/meetings/${meeting.id}/edit`)}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                    </>
+                )}
             </DropdownMenuContent>
             </DropdownMenu>
             <AlertDialogContent>
@@ -142,7 +150,7 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
         </AlertDialog>
       </TableCell>
     </TableRow>
-  );
+  )};
   
   const MeetingTableContent = ({ data }: { data: Meeting[] }) => {
     if (data.length === 0) {
