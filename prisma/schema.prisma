@@ -1,41 +1,36 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.1.x"]
+}
+
 datasource db {
   provider = "sqlite"
   url      = "file:./dev.db"
 }
 
-generator client {
-  provider = "prisma-client-js"
+model User {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  name                String
+  role                String // 'admin' or 'member'
+  meetingsOrganized   Meeting[] @relation("Organizer")
 }
 
 model Meeting {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   title         String
   date          DateTime
   duration      Int
-  participants  String // Comma-separated list of emails
+  participants  String // Comma-separated emails
   description   String?
-  organizer     User     @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  organizer     User        @relation("Organizer", fields: [organizerId], references: [id])
   organizerId   String
-  zoomAccount   ZoomAccount @relation(fields: [zoomAccountId], references: [id], onDelete: Cascade)
+  zoomAccount   ZoomAccount @relation(fields: [zoomAccountId], references: [id])
   zoomAccountId String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-model User {
-  id        String    @id @default(cuid())
-  name      String
-  email     String    @unique
-  role      String    @default("member") // "admin" or "member"
-  meetings  Meeting[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
 }
 
 model ZoomAccount {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  meetings  Meeting[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id       String    @id @default(cuid())
+  email    String    @unique
+  meetings Meeting[]
 }
