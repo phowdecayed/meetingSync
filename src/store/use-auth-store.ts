@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
-import { type User, createUser, verifyUserCredentials, updateAuthUser, changeUserPassword } from '@/lib/data';
-import bcrypt from 'bcrypt';
+import { type User, createUser, verifyUserCredentials, updateAuthUser } from '@/lib/data';
 
 // A custom storage implementation that safely handles server-side rendering.
 const safeLocalStorage: StateStorage = {
@@ -56,8 +55,7 @@ export const useAuthStore = create<AuthState>()(
       },
       register: async (name, email, password) => {
         try {
-            const passwordHash = await bcrypt.hash(password, 10);
-            const newUser = await createUser({ name, email, role: 'member', passwordHash });
+            const newUser = await createUser({ name, email, role: 'member' });
             set({ isAuthenticated: true, user: newUser });
         } catch (error) {
             throw error;

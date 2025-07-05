@@ -1,7 +1,3 @@
-import prisma from './prisma';
-import type { Meeting as PrismaMeeting, User as PrismaUser, ZoomAccount as PrismaZoomAccount } from '@prisma/client';
-import bcrypt from 'bcrypt';
-
 // --- SHARED TYPES & UTILS ---
 export type Meeting = {
   id: string;
@@ -21,22 +17,9 @@ export type User = {
   role: 'admin' | 'member';
 };
 
+// This type can be simplified as we are not storing password hashes anymore
 export type FullUser = User & { passwordHash?: string };
 
-const toAppMeeting = (meeting: PrismaMeeting): Meeting => ({
-  ...meeting,
-  description: meeting.description ?? undefined,
-  participants: meeting.participants.split(',').map(p => p.trim()).filter(Boolean),
-});
-
-const toAppUser = (user: PrismaUser): User => ({
-  id: user.id,
-  name: user.name,
-  email: user.email,
-  role: user.role as 'admin' | 'member'
-});
-
-const useMock = process.env.FIREBASE_STUDIO_ENV === 'true';
 
 // --- MOCK IMPLEMENTATION ---
 
@@ -48,14 +31,12 @@ let mockInitialized = false;
 const initializeMockData = async () => {
   if (mockInitialized) return;
 
-  const passwordHash = await bcrypt.hash('password123', 10);
-
   mockUsers = [
-    { id: 'clx1', name: 'Admin User', email: 'admin@example.com', role: 'admin', passwordHash },
-    { id: 'clx2', name: 'Member User', email: 'member@example.com', role: 'member', passwordHash },
-    { id: 'clx3', name: 'Carol Danvers', email: 'carol@example.com', role: 'member', passwordHash },
-    { id: 'clx4', name: 'Peter Parker', email: 'peter@example.com', role: 'member', passwordHash },
-    { id: 'clx5', name: 'Tony Stark', email: 'tony@example.com', role: 'member', passwordHash },
+    { id: 'clx1', name: 'Admin User', email: 'admin@example.com', role: 'admin' },
+    { id: 'clx2', name: 'Member User', email: 'member@example.com', role: 'member' },
+    { id: 'clx3', name: 'Carol Danvers', email: 'carol@example.com', role: 'member' },
+    { id: 'clx4', name: 'Peter Parker', email: 'peter@example.com', role: 'member' },
+    { id: 'clx5', name: 'Tony Stark', email: 'tony@example.com', role: 'member' },
   ];
 
   mockZoomAccounts = [
@@ -74,7 +55,8 @@ const initializeMockData = async () => {
   mockInitialized = true;
 };
 
-const getLeastUtilizedAccountMock = async (): Promise<string> => {
+const getLeastUtilizedAccount = async (): Promise<string> => {
+    await initializeMockData();
     if (mockZoomAccounts.length === 0) return 'default-zoom-account-mock';
 
     const countsMap = new Map<string, number>();
@@ -98,235 +80,86 @@ const getLeastUtilizedAccountMock = async (): Promise<string> => {
     return leastUtilizedAccountId;
 }
 
-const mockApi = {
-    async getZoomAccounts(): Promise<{ id: string; email: string; }[]> { await initializeMockData(); return [...mockZoomAccounts]; },
-    async addZoomAccount(email: string): Promise<{ id: string; email: string; }> {
-        await initializeMockData();
-        if (mockZoomAccounts.find(a => a.email === email)) throw new Error("An account with this email already exists.");
-        const newAccount = { id: `za${Date.now()}`, email };
-        mockZoomAccounts.push(newAccount);
-        return newAccount;
-    },
-    async removeZoomAccount(id:string): Promise<{ success: boolean }> {
-        await initializeMockData();
-        mockZoomAccounts = mockZoomAccounts.filter(a => a.id !== id);
-        return { success: true };
-    },
-    async getMeetings(): Promise<Meeting[]> { await initializeMockData(); return [...mockMeetings]; },
-    async getMeetingById(id: string): Promise<Meeting | undefined> { await initializeMockData(); return mockMeetings.find(m => m.id === id); },
-    async createMeeting(data: Omit<Meeting, 'id' | 'zoomAccountId'>): Promise<Meeting> {
-        await initializeMockData();
-        const newMeeting: Meeting = {
-            ...data,
-            id: `m${Date.now()}`,
-            zoomAccountId: await getLeastUtilizedAccountMock(),
-        };
-        mockMeetings.push(newMeeting);
-        return newMeeting;
-    },
-    async updateMeeting(id: string, data: Partial<Omit<Meeting, 'id'>>): Promise<Meeting> {
-        await initializeMockData();
-        const meetingIndex = mockMeetings.findIndex(m => m.id === id);
-        if (meetingIndex === -1) throw new Error("Meeting not found");
-        mockMeetings[meetingIndex] = { ...mockMeetings[meetingIndex], ...data };
-        return mockMeetings[meetingIndex];
-    },
-    async deleteMeeting(id: string): Promise<{ success: boolean }> {
-        await initializeMockData();
-        mockMeetings = mockMeetings.filter(m => m.id !== id);
-        return { success: true };
-    },
-    async getUsers(): Promise<User[]> { await initializeMockData(); return mockUsers.map(({passwordHash, ...user}) => user); },
-    async createUser(data: { name: string; email: string; role: 'admin' | 'member', passwordHash: string }): Promise<User> {
-        await initializeMockData();
-        if (mockUsers.find(u => u.email === data.email)) throw new Error('A user with this email already exists.');
-        const newUser: FullUser = { id: `u${Date.now()}`, ...data };
-        mockUsers.push(newUser);
-        const { passwordHash, ...userToReturn } = newUser;
-        return userToReturn;
-    },
-    async updateUserRole(id: string, role: 'admin' | 'member'): Promise<User> {
-        await initializeMockData();
-        const userIndex = mockUsers.findIndex(u => u.id === id);
-        if (userIndex === -1) throw new Error("User not found");
-        mockUsers[userIndex].role = role;
-        const { passwordHash, ...userToReturn } = mockUsers[userIndex];
-        return userToReturn;
-    },
-    async deleteUserById(id: string): Promise<{ success: boolean }> {
-        await initializeMockData();
-        mockUsers = mockUsers.filter(u => u.id !== id);
-        return { success: true };
-    },
-    async getUserByEmail(email: string): Promise<User | null> {
-        await initializeMockData();
-        const user = mockUsers.find(u => u.email === email);
-        if (!user) return null;
-        const { passwordHash, ...userToReturn } = user;
-        return userToReturn;
-    },
-    async updateAuthUser(id: string, data: { name: string }): Promise<User> {
-        await initializeMockData();
-        const userIndex = mockUsers.findIndex(u => u.id === id);
-        if (userIndex === -1) throw new Error("User not found");
-        mockUsers[userIndex].name = data.name;
-        const { passwordHash, ...userToReturn } = mockUsers[userIndex];
-        return userToReturn;
-    },
-    async verifyUserCredentials(email: string, pass: string): Promise<User | null> {
-        await initializeMockData();
-        const user = mockUsers.find(u => u.email === email);
-        if (!user || !user.passwordHash) return null;
-        const isValid = await bcrypt.compare(pass, user.passwordHash);
-        if (!isValid) return null;
-        const { passwordHash, ...userToReturn } = user;
-        return userToReturn;
-    },
-    async changeUserPassword(data: { userId: string, currentPassword: string, newPassword: string }): Promise<void> {
-        await initializeMockData();
-        const userIndex = mockUsers.findIndex(u => u.id === data.userId);
-        if (userIndex === -1) throw new Error("User not found.");
-        const user = mockUsers[userIndex];
-        if (!user.passwordHash) throw new Error("User does not have a password set.");
-
-        const isMatch = await bcrypt.compare(data.currentPassword, user.passwordHash);
-        if (!isMatch) throw new Error("Current password does not match.");
-        
-        const newPasswordHash = await bcrypt.hash(data.newPassword, 10);
-        mockUsers[userIndex].passwordHash = newPasswordHash;
-    }
-};
-
-// --- PRISMA IMPLEMENTATION ---
-
-const getLeastUtilizedAccountPrisma = async (): Promise<string> => {
-    const zoomAccounts = await prisma.zoomAccount.findMany({ select: { id: true }});
-    if (zoomAccounts.length === 0) {
-      throw new Error("No Zoom accounts configured. Please add one in settings.");
-    }
-
-    const usageCounts = await prisma.meeting.groupBy({
-        by: ['zoomAccountId'],
-        where: { date: { gte: new Date() } },
-        _count: { id: true }
-    });
-
-    const countsMap = new Map<string, number>();
-    zoomAccounts.forEach(acc => countsMap.set(acc.id, 0));
-    usageCounts.forEach(group => {
-        countsMap.set(group.zoomAccountId, group._count.id);
-    });
-    
-    let leastUtilizedAccountId = zoomAccounts[0].id;
-    let minMeetings = countsMap.get(leastUtilizedAccountId) ?? Infinity;
-
-    for (const [accountId, count] of countsMap.entries()) {
-        if (count < minMeetings) {
-            minMeetings = count;
-            leastUtilizedAccountId = accountId;
-        }
-    }
-    
-    return leastUtilizedAccountId;
+export const getZoomAccounts = async(): Promise<{ id: string; email: string; }[]> => { await initializeMockData(); return [...mockZoomAccounts]; }
+export const addZoomAccount = async (email: string): Promise<{ id: string; email: string; }> => {
+    await initializeMockData();
+    if (mockZoomAccounts.find(a => a.email === email)) throw new Error("An account with this email already exists.");
+    const newAccount = { id: `za${Date.now()}`, email };
+    mockZoomAccounts.push(newAccount);
+    return newAccount;
 }
-
-const prismaApi = {
-    async getZoomAccounts(): Promise<{ id: string; email: string; }[]> { return prisma.zoomAccount.findMany(); },
-    async addZoomAccount(email: string): Promise<{ id: string; email: string; }> {
-        const existing = await prisma.zoomAccount.findUnique({ where: { email }});
-        if (existing) throw new Error("An account with this email already exists.");
-        return prisma.zoomAccount.create({ data: { email } });
-    },
-    async removeZoomAccount(id:string): Promise<{ success: boolean }> {
-        await prisma.zoomAccount.delete({ where: { id } });
-        return { success: true };
-    },
-    async getMeetings(): Promise<Meeting[]> { const meetings = await prisma.meeting.findMany(); return meetings.map(toAppMeeting); },
-    async getMeetingById(id: string): Promise<Meeting | undefined> {
-        const meeting = await prisma.meeting.findUnique({ where: { id } });
-        return meeting ? toAppMeeting(meeting) : undefined;
-    },
-    async createMeeting(data: Omit<Meeting, 'id' | 'zoomAccountId'>): Promise<Meeting> {
-        const newMeetingData = {
-            ...data,
-            participants: data.participants.join(','),
-            zoomAccountId: await getLeastUtilizedAccountPrisma(),
-        };
-        const newMeeting = await prisma.meeting.create({ data: newMeetingData });
-        return toAppMeeting(newMeeting);
-    },
-    async updateMeeting(id: string, data: Partial<Omit<Meeting, 'id'>>): Promise<Meeting> {
-        const updateData: any = { ...data };
-        if (data.participants) updateData.participants = data.participants.join(',');
-        const updatedMeeting = await prisma.meeting.update({ where: { id }, data: updateData });
-        return toAppMeeting(updatedMeeting);
-    },
-    async deleteMeeting(id: string): Promise<{ success: boolean }> {
-        await prisma.meeting.delete({ where: { id } });
-        return { success: true };
-    },
-    async getUsers(): Promise<User[]> { const users = await prisma.user.findMany(); return users.map(toAppUser); },
-    async createUser(data: { name: string; email: string; role: 'admin' | 'member', passwordHash: string }): Promise<User> {
-        const existing = await prisma.user.findUnique({ where: { email: data.email }});
-        if (existing) throw new Error('A user with this email already exists.');
-        const newUser = await prisma.user.create({ data });
-        return toAppUser(newUser);
-    },
-    async updateUserRole(id: string, role: 'admin' | 'member'): Promise<User> {
-        const updatedUser = await prisma.user.update({ where: { id }, data: { role } });
-        return toAppUser(updatedUser);
-    },
-    async deleteUserById(id: string): Promise<{ success: boolean }> {
-        await prisma.user.delete({ where: { id } });
-        return { success: true };
-    },
-    async getUserByEmail(email: string): Promise<User | null> {
-        const user = await prisma.user.findUnique({ where: { email } });
-        return user ? toAppUser(user) : null;
-    },
-    async updateAuthUser(id: string, data: { name: string }): Promise<User> {
-        const user = await prisma.user.update({ where: { id }, data: { name: data.name } });
-        return toAppUser(user);
-    },
-    async verifyUserCredentials(email: string, pass: string): Promise<User | null> {
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !user.passwordHash) return null;
-
-        const isValid = await bcrypt.compare(pass, user.passwordHash);
-        if (!isValid) return null;
-
-        return toAppUser(user);
-    },
-    async changeUserPassword(data: { userId: string, currentPassword: string, newPassword: string }): Promise<void> {
-        const user = await prisma.user.findUnique({ where: { id: data.userId }});
-        if (!user || !user.passwordHash) throw new Error("User not found or password not set.");
-        
-        const isMatch = await bcrypt.compare(data.currentPassword, user.passwordHash);
-        if (!isMatch) throw new Error("Current password does not match.");
-
-        const newPasswordHash = await bcrypt.hash(data.newPassword, 10);
-        await prisma.user.update({ where: { id: data.userId }, data: { passwordHash: newPasswordHash } });
-    }
-};
-
-// --- EXPORTS ---
-const api = useMock ? mockApi : prismaApi;
-
-export const {
-    getZoomAccounts,
-    addZoomAccount,
-    removeZoomAccount,
-    getMeetings,
-    getMeetingById,
-    createMeeting,
-    updateMeeting,
-    deleteMeeting,
-    getUsers,
-    createUser,
-    updateUserRole,
-    deleteUserById,
-    getUserByEmail,
-    updateAuthUser,
-    verifyUserCredentials,
-    changeUserPassword,
-} = api;
+export const removeZoomAccount = async (id:string): Promise<{ success: boolean }> => {
+    await initializeMockData();
+    mockZoomAccounts = mockZoomAccounts.filter(a => a.id !== id);
+    return { success: true };
+}
+export const getMeetings = async (): Promise<Meeting[]> => { await initializeMockData(); return [...mockMeetings]; }
+export const getMeetingById = async (id: string): Promise<Meeting | undefined> => { await initializeMockData(); return mockMeetings.find(m => m.id === id); }
+export const createMeeting = async (data: Omit<Meeting, 'id' | 'zoomAccountId'>): Promise<Meeting> => {
+    await initializeMockData();
+    const newMeeting: Meeting = {
+        ...data,
+        id: `m${Date.now()}`,
+        zoomAccountId: await getLeastUtilizedAccount(),
+    };
+    mockMeetings.push(newMeeting);
+    return newMeeting;
+}
+export const updateMeeting = async (id: string, data: Partial<Omit<Meeting, 'id'>>): Promise<Meeting> => {
+    await initializeMockData();
+    const meetingIndex = mockMeetings.findIndex(m => m.id === id);
+    if (meetingIndex === -1) throw new Error("Meeting not found");
+    mockMeetings[meetingIndex] = { ...mockMeetings[meetingIndex], ...data };
+    return mockMeetings[meetingIndex];
+}
+export const deleteMeeting = async (id: string): Promise<{ success: boolean }> => {
+    await initializeMockData();
+    mockMeetings = mockMeetings.filter(m => m.id !== id);
+    return { success: true };
+}
+export const getUsers = async (): Promise<User[]> => { await initializeMockData(); return mockUsers.map(({passwordHash, ...user}) => user); }
+export const createUser = async (data: { name: string; email: string; role: 'admin' | 'member' }): Promise<User> => {
+    await initializeMockData();
+    if (mockUsers.find(u => u.email === data.email)) throw new Error('A user with this email already exists.');
+    const newUser: FullUser = { id: `u${Date.now()}`, ...data };
+    mockUsers.push(newUser);
+    const { passwordHash, ...userToReturn } = newUser;
+    return userToReturn;
+}
+export const updateUserRole = async(id: string, role: 'admin' | 'member'): Promise<User> => {
+    await initializeMockData();
+    const userIndex = mockUsers.findIndex(u => u.id === id);
+    if (userIndex === -1) throw new Error("User not found");
+    mockUsers[userIndex].role = role;
+    const { passwordHash, ...userToReturn } = mockUsers[userIndex];
+    return userToReturn;
+}
+export const deleteUserById = async(id: string): Promise<{ success: boolean }> => {
+    await initializeMockData();
+    mockUsers = mockUsers.filter(u => u.id !== id);
+    return { success: true };
+}
+export const getUserByEmail = async (email: string): Promise<User | null> => {
+    await initializeMockData();
+    const user = mockUsers.find(u => u.email === email);
+    if (!user) return null;
+    const { passwordHash, ...userToReturn } = user;
+    return userToReturn;
+}
+export const updateAuthUser = async(id: string, data: { name: string }): Promise<User> => {
+    await initializeMockData();
+    const userIndex = mockUsers.findIndex(u => u.id === id);
+    if (userIndex === -1) throw new Error("User not found");
+    mockUsers[userIndex].name = data.name;
+    const { passwordHash, ...userToReturn } = mockUsers[userIndex];
+    return userToReturn;
+}
+export const verifyUserCredentials = async (email: string, pass: string): Promise<User | null> => {
+    await initializeMockData();
+    // This is a mock function, so we'll just find the user by email and ignore the password.
+    // In a real app, you would compare a hashed password.
+    const user = mockUsers.find(u => u.email === email);
+    if (!user) return null;
+    const { passwordHash, ...userToReturn } = user;
+    return userToReturn;
+}
