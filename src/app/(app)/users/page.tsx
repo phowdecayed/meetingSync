@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/use-auth-store';
 import { getUsers, updateUserRole, deleteUserById, createUser, type User } from '@/lib/data';
@@ -71,11 +72,12 @@ const addUserSchema = z.object({
 
 export default function UsersPage() {
   const router = useRouter();
-  const { user: currentUser, isLoading: isAuthLoading } = useAuthStore();
+  const { user: currentUser, isAuthLoading } = useAuthStore();
   const { toast } = useToast();
 
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // State for dialogs
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
@@ -98,7 +100,8 @@ export default function UsersPage() {
       if (currentUser?.role !== 'admin') return;
       setIsLoading(true);
       const fetchedUsers = await getUsers();
-      setUsers(fetchedUsers);
+      const sortedUsers = fetchedUsers.sort((a, b) => a.name.localeCompare(b.name));
+      setUsers(sortedUsers);
       setIsLoading(false);
     }
     loadUsers();
@@ -110,6 +113,14 @@ export default function UsersPage() {
     }
   }, [currentUser, isAuthLoading, router]);
 
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery) return users;
+    return users.filter(user =>
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [users, searchQuery]);
+
   const handleOpenEditDialog = (user: User) => {
     setUserToEdit(user);
     setNewRole(user.role);
@@ -120,7 +131,7 @@ export default function UsersPage() {
 
     try {
       await updateUserRole(userToEdit.id, newRole);
-      setUsers(users.map(u => u.id === userToEdit.id ? { ...u, role: newRole } : u));
+      setUsers(users.map(u => u.id === userToEdit.id ? { ...u, role: newRole } : u).sort((a, b) => a.name.localeCompare(b.name)));
       toast({
         title: "Success",
         description: `User ${userToEdit.name}'s role has been updated to ${newRole}.`,
@@ -164,7 +175,7 @@ export default function UsersPage() {
     setIsCreatingUser(true);
     try {
       const newUser = await createUser({ ...values, role: values.role as 'admin' | 'member' });
-      setUsers([...users, newUser]);
+      setUsers([...users, newUser].sort((a, b) => a.name.localeCompare(b.name)));
       toast({
         title: "User Created",
         description: `User ${newUser.name} has been added to the system.`,
@@ -202,81 +213,99 @@ export default function UsersPage() {
     );
   }
   
-  const UserTable = () => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>User</TableHead>
-          <TableHead className="hidden sm:table-cell">Email</TableHead>
-          <TableHead className="hidden md:table-cell">Role</TableHead>
-          <TableHead><span className="sr-only">Actions</span></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {users.map((user) => (
-          <TableRow key={user.id}>
-            <TableCell>
-              <div className="flex items-center gap-4">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={`https://placehold.co/100x100.png`} alt={user.name} data-ai-hint="user avatar" />
-                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                </Avatar>
-                <div>
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-sm text-muted-foreground sm:hidden">{user.email}</div>
-                </div>
-              </div>
-            </TableCell>
-            <TableCell className="hidden sm:table-cell">{user.email}</TableCell>
-            <TableCell className="hidden md:table-cell">
-              <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-              </Badge>
-            </TableCell>
-            <TableCell className="text-right">
-              {user.id !== currentUser.id && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Open menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => handleOpenEditDialog(user)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      <span>Edit Role</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={() => handleOpenDeleteDialog(user)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      <span>Delete</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
+  const UserTable = ({ data }: { data: User[] }) => {
+    if (data.length === 0) {
+      return (
+        <div className="text-center p-8 text-muted-foreground">
+          {searchQuery ? "No users match your search." : "No users found in the system."}
+        </div>
+      );
+    }
+    
+    return (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead className="hidden sm:table-cell">Email</TableHead>
+              <TableHead className="hidden md:table-cell">Role</TableHead>
+              <TableHead><span className="sr-only">Actions</span></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell>
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={`https://placehold.co/100x100.png`} alt={user.name} data-ai-hint="user avatar" />
+                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <div className="font-medium">{user.name}</div>
+                        <div className="text-sm text-muted-foreground sm:hidden">{user.email}</div>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">{user.email}</TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  {user.id !== currentUser.id && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleOpenEditDialog(user)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          <span>Edit Role</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleOpenDeleteDialog(user)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Delete</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+    );
+  }
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-headline font-bold">User Management</h1>
-          <p className="text-muted-foreground">View and manage all users in the system.</p>
+          <p className="text-muted-foreground">View, search, and manage all users in the system.</p>
         </div>
-        <Button onClick={() => setIsAddUserOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add User
-        </Button>
+        <div className="flex items-center gap-2">
+            <Input
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-auto sm:w-64"
+            />
+            <Button onClick={() => setIsAddUserOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add User
+            </Button>
+        </div>
       </div>
 
       <Card>
@@ -286,7 +315,7 @@ export default function UsersPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <UserTable />
+            <UserTable data={filteredUsers} />
           )}
         </CardContent>
       </Card>
