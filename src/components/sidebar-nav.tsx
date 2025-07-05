@@ -10,7 +10,7 @@ import {
   SidebarContent,
   SidebarFooter
 } from "@/components/ui/sidebar";
-import { Home, Settings, Users, Video, Calendar } from "lucide-react";
+import { Home, Settings, Users, Video, Calendar, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuthStore } from "@/store/use-auth-store";
 
@@ -18,6 +18,7 @@ const allMenuItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/meetings", label: "All Meetings", icon: Video },
   { href: "/schedule", label: "My Schedule", icon: Calendar },
+  { href: "/profile", label: "My Profile", icon: User },
   { href: "/users", label: "User Management", icon: Users, adminOnly: true },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -44,7 +45,7 @@ export function SidebarNav() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href} passHref>
                 <SidebarMenuButton
-                  isActive={pathname.startsWith(item.href)}
+                  isActive={item.href === '/profile' ? pathname === item.href : pathname.startsWith(item.href)}
                   tooltip={{ children: item.label, side: "right" }}
                 >
                   <item.icon />
