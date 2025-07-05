@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -16,11 +17,11 @@ import { ThemeToggle } from "./theme-toggle";
 
 const allMenuItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/meetings", label: "All Meetings", icon: Video },
-  { href: "/schedule", label: "My Schedule", icon: Calendar },
+  { href: "/meetings", label: "All Meetings", icon: Video, roles: ['admin'] },
+  { href: "/schedule", label: "My Schedule", icon: Calendar, roles: ['member'] },
   { href: "/profile", label: "My Profile", icon: User },
-  { href: "/users", label: "User Management", icon: Users, adminOnly: true },
-  { href: "/settings", label: "Settings", icon: Settings, adminOnly: true },
+  { href: "/users", label: "User Management", icon: Users, roles: ['admin'] },
+  { href: "/settings", label: "Settings", icon: Settings, roles: ['admin'] },
 ];
 
 export function SidebarNav() {
@@ -28,7 +29,10 @@ export function SidebarNav() {
   const { data: session } = useSession();
   const user = session?.user;
 
-  const menuItems = allMenuItems.filter(item => !item.adminOnly || user?.role === 'admin');
+  const menuItems = allMenuItems.filter(item => {
+    if (!item.roles) return true;
+    return user?.role && item.roles.includes(user.role);
+  });
 
   return (
     <>
