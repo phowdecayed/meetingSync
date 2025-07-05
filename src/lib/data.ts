@@ -1,3 +1,5 @@
+import bcrypt from 'bcryptjs';
+
 // --- SHARED TYPES & UTILS ---
 export type Meeting = {
   id: string;
@@ -31,12 +33,14 @@ let mockInitialized = false;
 const initializeMockData = async () => {
   if (mockInitialized) return;
 
+  const passwordHash = await bcrypt.hash('password123', 10);
+
   mockUsers = [
-    { id: 'clx1', name: 'Admin User', email: 'admin@example.com', role: 'admin', password: 'password123' },
-    { id: 'clx2', name: 'Member User', email: 'member@example.com', role: 'member', password: 'password123' },
-    { id: 'clx3', name: 'Carol Danvers', email: 'carol@example.com', role: 'member', password: 'password123' },
-    { id: 'clx4', name: 'Peter Parker', email: 'peter@example.com', role: 'member', password: 'password123' },
-    { id: 'clx5', name: 'Tony Stark', email: 'tony@example.com', role: 'member', password: 'password123' },
+    { id: 'clx1', name: 'Admin User', email: 'admin@example.com', role: 'admin', password: passwordHash },
+    { id: 'clx2', name: 'Member User', email: 'member@example.com', role: 'member', password: passwordHash },
+    { id: 'clx3', name: 'Carol Danvers', email: 'carol@example.com', role: 'member', password: passwordHash },
+    { id: 'clx4', name: 'Peter Parker', email: 'peter@example.com', role: 'member', password: passwordHash },
+    { id: 'clx5', name: 'Tony Stark', email: 'tony@example.com', role: 'member', password: passwordHash },
   ];
 
   mockZoomAccounts = [
@@ -121,7 +125,9 @@ export const getUsers = async (): Promise<User[]> => { await initializeMockData(
 export const createUser = async (data: { name: string; email: string; role: 'admin' | 'member', password?: string }): Promise<User> => {
     await initializeMockData();
     if (mockUsers.find(u => u.email === data.email)) throw new Error('A user with this email already exists.');
-    const newUser: FullUser = { id: `u${Date.now()}`, ...data };
+    if (!data.password) throw new Error('Password is required.');
+    const passwordHash = await bcrypt.hash(data.password, 10);
+    const newUser: FullUser = { id: `u${Date.now()}`, ...data, password: passwordHash };
     mockUsers.push(newUser);
     const { password, ...userToReturn } = newUser;
     return userToReturn;
@@ -156,8 +162,12 @@ export const updateAuthUser = async(id: string, data: { name: string }): Promise
 }
 export const verifyUserCredentials = async (email: string, pass: string): Promise<User | null> => {
     await initializeMockData();
-    const user = mockUsers.find(u => u.email === email && u.password === pass);
-    if (!user) return null;
+    const user = mockUsers.find(u => u.email === email);
+    if (!user || !user.password) return null;
+
+    const passwordsMatch = await bcrypt.compare(pass, user.password);
+    if (!passwordsMatch) return null;
+    
     const { password, ...userToReturn } = user;
     return userToReturn;
 }
