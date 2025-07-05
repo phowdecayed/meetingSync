@@ -321,7 +321,7 @@ export default function UsersPage() {
           <DialogHeader>
             <DialogTitle>Add New User</DialogTitle>
             <DialogDescription>
-              Enter the details for the new user. An initial password will not be set.
+              Enter the details for the new user.
             </DialogDescription>
           </DialogHeader>
           <Form {...addUserForm}>

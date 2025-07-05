@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -17,12 +18,13 @@ import {
 } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import type { Meeting } from '@/lib/data';
 import { format } from 'date-fns';
@@ -42,6 +44,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Card } from '@/components/ui/card';
+import { MeetingDetailsDialog } from './meeting-details-dialog';
 
 type MeetingsTableProps = {
   initialMeetings: Meeting[];
@@ -52,6 +55,7 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
   const { toast } = useToast();
   const { meetings, setMeetings, deleteMeeting } = useMeetingStore();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [meetingToView, setMeetingToView] = useState<Meeting | null>(null);
 
 
   useEffect(() => {
@@ -85,14 +89,14 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
     <TableRow>
       <TableCell>
         <div className="font-medium">{meeting.title}</div>
-        <div className="text-sm text-muted-foreground">{meeting.description?.substring(0, 50) || 'No description'}...</div>
+        <div className="text-sm text-muted-foreground truncate max-w-xs">{meeting.description || 'No description'}</div>
       </TableCell>
       <TableCell>{format(new Date(meeting.date), 'PP p')}</TableCell>
       <TableCell>{meeting.duration} min</TableCell>
       <TableCell>
         <Badge variant="secondary" className="whitespace-nowrap">{meeting.participants.length} Participant{meeting.participants.length !== 1 ? 's' : ''}</Badge>
       </TableCell>
-      <TableCell>
+      <TableCell className="text-right">
         <AlertDialog>
             <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -102,9 +106,13 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setMeetingToView(meeting)}>
+                    <Eye className="mr-2 h-4 w-4" /> View Details
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push(`/meetings/${meeting.id}/edit`)}>
                     <Edit className="mr-2 h-4 w-4" /> Edit
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <AlertDialogTrigger asChild>
                     <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
                         <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -148,7 +156,7 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Title</TableHead>
+            <TableHead className="w-[40%]">Title</TableHead>
             <TableHead>Date & Time</TableHead>
             <TableHead>Duration</TableHead>
             <TableHead>Participants</TableHead>
@@ -163,21 +171,28 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
   }
 
   return (
-    <Tabs defaultValue="upcoming">
-      <TabsList>
-        <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-        <TabsTrigger value="past">Past</TabsTrigger>
-      </TabsList>
-      <TabsContent value="upcoming">
-        <Card>
-          <MeetingTableContent data={upcomingMeetings} />
-        </Card>
-      </TabsContent>
-      <TabsContent value="past">
-        <Card>
-            <MeetingTableContent data={pastMeetings} />
-        </Card>
-      </TabsContent>
-    </Tabs>
+    <>
+        <Tabs defaultValue="upcoming">
+        <TabsList>
+            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+            <TabsTrigger value="past">Past</TabsTrigger>
+        </TabsList>
+        <TabsContent value="upcoming">
+            <Card>
+            <MeetingTableContent data={upcomingMeetings} />
+            </Card>
+        </TabsContent>
+        <TabsContent value="past">
+            <Card>
+                <MeetingTableContent data={pastMeetings} />
+            </Card>
+        </TabsContent>
+        </Tabs>
+        <MeetingDetailsDialog 
+            isOpen={!!meetingToView}
+            onClose={() => setMeetingToView(null)}
+            meeting={meetingToView}
+        />
+    </>
   );
 }
