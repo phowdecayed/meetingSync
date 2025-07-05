@@ -33,41 +33,43 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
   return (
     <Card>
         <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-            <Calendar
-                mode="single"
-                selected={selectedDay}
-                onSelect={setSelectedDay}
-                modifiers={{ hasMeeting: daysWithMeetings }}
-                modifiersClassNames={{ hasMeeting: 'rdp-day_has-meeting' }}
-                className="md:col-span-1 border rounded-lg p-2"
-            />
-            <div className="md:col-span-2">
-                <h3 className="text-lg font-semibold mb-4">
-                Meetings on {selectedDay ? format(selectedDay, 'PPP') : '...'}
-                </h3>
-                <div className="space-y-4 h-[450px] overflow-y-auto pr-2">
-                    {selectedDayMeetings.length > 0 ? (
-                    selectedDayMeetings.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(meeting => (
-                        <div key={meeting.id} className="p-4 rounded-lg border">
-                        <h4 className="font-semibold">{meeting.title}</h4>
-                        <div className="flex items-center text-sm text-muted-foreground mt-2">
-                            <Clock className="mr-2 h-4 w-4" />
-                            <span>{format(new Date(meeting.date), 'p')} ({meeting.duration} min)</span>
-                        </div>
-                        {meeting.participants.length > 0 && (
-                            <div className="flex items-center text-sm text-muted-foreground mt-1">
-                                <User className="mr-2 h-4 w-4" />
-                                <span className="truncate">{meeting.participants.join(', ')}</span>
-                            </div>
-                        )}
-                        </div>
-                    ))
-                    ) : (
-                    <p className="text-muted-foreground pt-4">No meetings scheduled for this day.</p>
-                    )}
-                </div>
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+              <div className="lg:col-span-1 flex justify-center">
+                <Calendar
+                    mode="single"
+                    selected={selectedDay}
+                    onSelect={setSelectedDay}
+                    modifiers={{ hasMeeting: daysWithMeetings }}
+                    modifiersClassNames={{ hasMeeting: 'rdp-day_has-meeting' }}
+                    className="border rounded-lg p-2"
+                />
+              </div>
+              <div className="lg:col-span-2">
+                  <h3 className="text-lg font-semibold mb-4">
+                  Meetings on {selectedDay ? format(selectedDay, 'PPP') : '...'}
+                  </h3>
+                  <div className="space-y-4 h-[300px] lg:h-[450px] overflow-y-auto pr-2">
+                      {selectedDayMeetings.length > 0 ? (
+                      selectedDayMeetings.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(meeting => (
+                          <div key={meeting.id} className="p-4 rounded-lg border">
+                          <h4 className="font-semibold">{meeting.title}</h4>
+                          <div className="flex items-center text-sm text-muted-foreground mt-2">
+                              <Clock className="mr-2 h-4 w-4" />
+                              <span>{format(new Date(meeting.date), 'p')} ({meeting.duration} min)</span>
+                          </div>
+                          {meeting.participants.length > 0 && (
+                              <div className="flex items-center text-sm text-muted-foreground mt-1">
+                                  <User className="mr-2 h-4 w-4" />
+                                  <span className="truncate">{meeting.participants.join(', ')}</span>
+                              </div>
+                          )}
+                          </div>
+                      ))
+                      ) : (
+                      <p className="text-muted-foreground pt-4">No meetings scheduled for this day.</p>
+                      )}
+                  </div>
+              </div>
             </div>
         </CardContent>
     </Card>
