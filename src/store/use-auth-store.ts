@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { users } from '@/lib/data'; // Mock user data
 
-type User = {
+export type User = {
   id: string;
   name: string;
   email: string;

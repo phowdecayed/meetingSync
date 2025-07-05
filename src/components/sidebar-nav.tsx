@@ -12,17 +12,21 @@ import {
 } from "@/components/ui/sidebar";
 import { Home, Settings, Users, Video, Calendar } from "lucide-react";
 import { Button } from "./ui/button";
+import { useAuthStore } from "@/store/use-auth-store";
 
-const menuItems = [
+const allMenuItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/meetings", label: "All Meetings", icon: Video },
   { href: "/schedule", label: "My Schedule", icon: Calendar },
-  { href: "/users", label: "User Management", icon: Users },
+  { href: "/users", label: "User Management", icon: Users, adminOnly: true },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { user } = useAuthStore();
+
+  const menuItems = allMenuItems.filter(item => !item.adminOnly || user?.role === 'admin');
 
   return (
     <>
