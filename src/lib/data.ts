@@ -9,9 +9,19 @@ export type Meeting = {
   zoomAccountId: string;
 };
 
-export const users = [
-  { id: 'user-1', name: 'Admin User', email: 'admin@example.com', role: 'admin' as const },
-  { id: 'user-2', name: 'Member User', email: 'member@example.com', role: 'member' as const },
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'member';
+};
+
+export let users: User[] = [
+  { id: 'user-1', name: 'Admin User', email: 'admin@example.com', role: 'admin' },
+  { id: 'user-2', name: 'Member User', email: 'member@example.com', role: 'member' },
+  { id: 'user-3', name: 'Carol Danvers', email: 'carol@example.com', role: 'member' },
+  { id: 'user-4', name: 'Peter Parker', email: 'peter@example.com', role: 'member' },
+  { id: 'user-5', name: 'Tony Stark', email: 'tony@example.com', role: 'member' },
 ];
 
 export const zoomAccounts = [
@@ -107,4 +117,29 @@ export const deleteMeeting = async (id: string): Promise<{ success: boolean }> =
     throw new Error("Meeting not found");
   }
   return { success: true };
+}
+
+export const getUsers = async (): Promise<User[]> => {
+  await new Promise(res => setTimeout(res, 500));
+  return users;
+};
+
+export const updateUserRole = async (id: string, role: 'admin' | 'member'): Promise<User> => {
+    await new Promise(res => setTimeout(res, 500));
+    const userIndex = users.findIndex(u => u.id === id);
+    if (userIndex === -1) {
+        throw new Error("User not found");
+    }
+    users[userIndex].role = role;
+    return users[userIndex];
+}
+
+export const deleteUserById = async (id: string): Promise<{ success: boolean }> => {
+    await new Promise(res => setTimeout(res, 500));
+    const initialLength = users.length;
+    users = users.filter(u => u.id !== id);
+    if (users.length === initialLength) {
+        throw new Error("User not found");
+    }
+    return { success: true };
 }

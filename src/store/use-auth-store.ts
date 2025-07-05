@@ -1,13 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { users } from '@/lib/data'; // Mock user data
-
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'member';
-};
+import { users, type User } from '@/lib/data'; // Mock user data
 
 type AuthState = {
   isAuthenticated: boolean;
