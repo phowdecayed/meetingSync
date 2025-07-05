@@ -1,3 +1,6 @@
+import prisma from './prisma';
+import type { Meeting as PrismaMeeting, User as PrismaUser } from '@prisma/client';
+
 export type Meeting = {
   id: string;
   title: string;
@@ -16,200 +19,149 @@ export type User = {
   role: 'admin' | 'member';
 };
 
-export let users: User[] = [
-  { id: 'user-1', name: 'Admin User', email: 'admin@example.com', role: 'admin' },
-  { id: 'user-2', name: 'Member User', email: 'member@example.com', role: 'member' },
-  { id: 'user-3', name: 'Carol Danvers', email: 'carol@example.com', role: 'member' },
-  { id: 'user-4', name: 'Peter Parker', email: 'peter@example.com', role: 'member' },
-  { id: 'user-5', name: 'Tony Stark', email: 'tony@example.com', role: 'member' },
-];
+const toAppMeeting = (meeting: PrismaMeeting): Meeting => ({
+  ...meeting,
+  description: meeting.description ?? undefined,
+  participants: meeting.participants.split(',').map(p => p.trim()).filter(Boolean),
+});
 
-export let zoomAccounts = [
-  { id: 'zoom-1', email: 'corp-zoom-1@example.com' },
-  { id: 'zoom-2', email: 'corp-zoom-2@example.com' },
-  { id: 'zoom-3', email: 'corp-zoom-3@example.com' },
-];
-
-export let meetings: Meeting[] = [
-  {
-    id: 'mtg-1',
-    title: 'Quarterly Business Review',
-    date: new Date(new Date().setDate(new Date().getDate() + 3)),
-    duration: 60,
-    participants: ['ceo@example.com', 'cto@example.com'],
-    description: 'Review of Q3 performance and planning for Q4.',
-    organizerId: 'user-1',
-    zoomAccountId: 'zoom-1',
-  },
-  {
-    id: 'mtg-2',
-    title: 'Project Phoenix - Standup',
-    date: new Date(new Date().setDate(new Date().getDate() + 1)),
-    duration: 15,
-    participants: ['member@example.com', 'dev1@example.com', 'dev2@example.com'],
-    organizerId: 'user-2',
-    zoomAccountId: 'zoom-2',
-  },
-  {
-    id: 'mtg-3',
-    title: 'Marketing Strategy Session',
-    date: new Date(new Date().setDate(new Date().getDate() + 5)),
-    duration: 90,
-    participants: ['marketing-head@example.com', 'admin@example.com'],
-    description: 'Brainstorming for next year\'s marketing campaigns.',
-    organizerId: 'user-1',
-    zoomAccountId: 'zoom-1',
-  },
-  {
-    id: 'mtg-4',
-    title: 'Past Meeting: Design Sync',
-    date: new Date(new Date().setDate(new Date().getDate() - 2)),
-    duration: 45,
-    participants: ['designer1@example.com', 'designer2@example.com'],
-    organizerId: 'user-2',
-    zoomAccountId: 'zoom-3',
-  },
-];
+const toAppUser = (user: PrismaUser): User => ({
+  ...user,
+  role: user.role as 'admin' | 'member'
+});
 
 // --- Mock API Functions ---
 
 // Zoom Account Management
 export const getZoomAccounts = async (): Promise<{ id: string; email: string; }[]> => {
-    await new Promise(res => setTimeout(res, 300));
-    return zoomAccounts;
+    return prisma.zoomAccount.findMany();
 };
 
 export const addZoomAccount = async (email: string): Promise<{ id: string; email: string; }> => {
-    await new Promise(res => setTimeout(res, 500));
-    if (zoomAccounts.some(acc => acc.email === email)) {
+    const existing = await prisma.zoomAccount.findUnique({ where: { email }});
+    if (existing) {
         throw new Error("An account with this email already exists.");
     }
-    const newAccount = {
-        id: `zoom-${Date.now()}`,
-        email: email,
-    };
-    zoomAccounts.push(newAccount);
-    return newAccount;
+    return prisma.zoomAccount.create({ data: { email } });
 };
 
 export const removeZoomAccount = async (id:string): Promise<{ success: boolean }> => {
-    await new Promise(res => setTimeout(res, 500));
-    const initialLength = zoomAccounts.length;
-    zoomAccounts = zoomAccounts.filter(acc => acc.id !== id);
-    if (zoomAccounts.length === initialLength) {
-        throw new Error("Zoom account not found.");
-    }
+    await prisma.zoomAccount.delete({ where: { id } });
     return { success: true };
 };
 
 // Simulate load balancing by finding the account with the fewest upcoming meetings.
-const getLeastUtilizedAccount = (): string => {
-  if (zoomAccounts.length === 0) {
-    return 'default-zoom-account'; // Fallback if no accounts are configured
-  }
-
-  const now = new Date();
-  const upcomingMeetings = meetings.filter(m => new Date(m.date) >= now);
-
-  const usageCounts = new Map<string, number>();
-  zoomAccounts.forEach(acc => usageCounts.set(acc.id, 0));
-
-  upcomingMeetings.forEach(meeting => {
-    if (usageCounts.has(meeting.zoomAccountId)) {
-      usageCounts.set(meeting.zoomAccountId, usageCounts.get(meeting.zoomAccountId)! + 1);
+const getLeastUtilizedAccount = async (): Promise<string> => {
+    const zoomAccounts = await prisma.zoomAccount.findMany({ select: { id: true }});
+    if (zoomAccounts.length === 0) {
+      return 'default-zoom-account'; // Fallback if no accounts are configured
     }
-  });
 
-  let leastUtilizedAccountId = zoomAccounts[0].id;
-  let minMeetings = usageCounts.get(leastUtilizedAccountId) ?? Infinity;
+    const usageCounts = await prisma.meeting.groupBy({
+        by: ['zoomAccountId'],
+        where: {
+            date: {
+                gte: new Date()
+            }
+        },
+        _count: {
+            id: true
+        }
+    });
 
-  for (const [accountId, count] of usageCounts.entries()) {
-    if (count < minMeetings) {
-      minMeetings = count;
-      leastUtilizedAccountId = accountId;
+    const countsMap = new Map<string, number>();
+    zoomAccounts.forEach(acc => countsMap.set(acc.id, 0));
+    usageCounts.forEach(group => {
+        countsMap.set(group.zoomAccountId, group._count.id);
+    });
+    
+    let leastUtilizedAccountId = zoomAccounts[0].id;
+    let minMeetings = countsMap.get(leastUtilizedAccountId) ?? Infinity;
+
+    for (const [accountId, count] of countsMap.entries()) {
+        if (count < minMeetings) {
+            minMeetings = count;
+            leastUtilizedAccountId = accountId;
+        }
     }
-  }
-
-  return leastUtilizedAccountId;
+    
+    return leastUtilizedAccountId;
 }
 
 export const getMeetings = async (): Promise<Meeting[]> => {
-  await new Promise(res => setTimeout(res, 500)); // Simulate network delay
-  return meetings;
+  const meetings = await prisma.meeting.findMany();
+  return meetings.map(toAppMeeting);
 };
 
 export const getMeetingById = async (id: string): Promise<Meeting | undefined> => {
-  await new Promise(res => setTimeout(res, 300));
-  return meetings.find(m => m.id === id);
+  const meeting = await prisma.meeting.findUnique({ where: { id } });
+  return meeting ? toAppMeeting(meeting) : undefined;
 }
 
 export const createMeeting = async (data: Omit<Meeting, 'id' | 'zoomAccountId'>): Promise<Meeting> => {
-  await new Promise(res => setTimeout(res, 1000));
-  const newMeeting: Meeting = {
-    ...data,
-    id: `mtg-${Date.now()}`,
-    zoomAccountId: getLeastUtilizedAccount(),
+  const newMeetingData = {
+      ...data,
+      participants: data.participants.join(','),
+      zoomAccountId: await getLeastUtilizedAccount(),
   };
-  meetings.push(newMeeting);
-  return newMeeting;
+  const newMeeting = await prisma.meeting.create({ data: newMeetingData });
+  return toAppMeeting(newMeeting);
 };
 
 export const updateMeeting = async (id: string, data: Partial<Omit<Meeting, 'id'>>): Promise<Meeting> => {
-  await new Promise(res => setTimeout(res, 1000));
-  const meetingIndex = meetings.findIndex(m => m.id === id);
-  if (meetingIndex === -1) {
-    throw new Error("Meeting not found");
-  }
-  meetings[meetingIndex] = { ...meetings[meetingIndex], ...data };
-  return meetings[meetingIndex];
+    const updateData: any = { ...data };
+    if (data.participants) {
+        updateData.participants = data.participants.join(',');
+    }
+    
+    const updatedMeeting = await prisma.meeting.update({
+        where: { id },
+        data: updateData,
+    });
+    return toAppMeeting(updatedMeeting);
 }
 
 export const deleteMeeting = async (id: string): Promise<{ success: boolean }> => {
-  await new Promise(res => setTimeout(res, 500));
-  const initialLength = meetings.length;
-  meetings = meetings.filter(m => m.id !== id);
-  if (meetings.length === initialLength) {
-    throw new Error("Meeting not found");
-  }
-  return { success: true };
+    await prisma.meeting.delete({ where: { id } });
+    return { success: true };
 }
 
 export const getUsers = async (): Promise<User[]> => {
-  await new Promise(res => setTimeout(res, 500));
-  return users;
+  const users = await prisma.user.findMany();
+  return users.map(toAppUser);
 };
 
 export const createUser = async (data: { name: string; email: string; role: 'admin' | 'member'}): Promise<User> => {
-  await new Promise(res => setTimeout(res, 500));
-  if (users.some(u => u.email === data.email)) {
-    throw new Error('A user with this email already exists.');
-  }
-  const newUser: User = {
-    id: `user-${Date.now()}`,
-    name: data.name,
-    email: data.email,
-    role: data.role,
-  };
-  users.push(newUser);
-  return newUser;
+    const existing = await prisma.user.findUnique({ where: { email: data.email }});
+    if (existing) {
+        throw new Error('A user with this email already exists.');
+    }
+  const newUser = await prisma.user.create({ data });
+  return toAppUser(newUser);
 };
 
 export const updateUserRole = async (id: string, role: 'admin' | 'member'): Promise<User> => {
-    await new Promise(res => setTimeout(res, 500));
-    const userIndex = users.findIndex(u => u.id === id);
-    if (userIndex === -1) {
-        throw new Error("User not found");
-    }
-    users[userIndex].role = role;
-    return users[userIndex];
+    const updatedUser = await prisma.user.update({
+        where: { id },
+        data: { role },
+    });
+    return toAppUser(updatedUser);
 }
 
 export const deleteUserById = async (id: string): Promise<{ success: boolean }> => {
-    await new Promise(res => setTimeout(res, 500));
-    const initialLength = users.length;
-    users = users.filter(u => u.id !== id);
-    if (users.length === initialLength) {
-        throw new Error("User not found");
-    }
+    await prisma.user.delete({ where: { id } });
     return { success: true };
+}
+
+export const getUserByEmail = async (email: string): Promise<User | null> => {
+    const user = await prisma.user.findUnique({ where: { email } });
+    return user ? toAppUser(user) : null;
+}
+
+export const updateAuthUser = async (id: string, data: { name: string }): Promise<User> => {
+    const user = await prisma.user.update({
+        where: { id },
+        data: { name: data.name }
+    });
+    return toAppUser(user);
 }

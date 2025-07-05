@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
-import { users, type User, createUser } from '@/lib/data'; // Mock user data
+import { type User, createUser, getUserByEmail, updateAuthUser } from '@/lib/data';
 
 // A custom storage implementation that safely handles server-side rendering.
 const safeLocalStorage: StateStorage = {
@@ -47,7 +47,7 @@ export const useAuthStore = create<AuthState>()(
       isLoading: true, // Start with loading true to check persistence
       _setLoading: (isLoading) => set({ isLoading }),
       login: async (email, password) => {
-        const user = users.find((u) => u.email === email);
+        const user = await getUserByEmail(email);
         if (!user) {
           throw new Error('User not found.');
         }
@@ -71,17 +71,9 @@ export const useAuthStore = create<AuthState>()(
         if (!currentUser) {
           throw new Error('User not authenticated');
         }
-        await new Promise(resolve => setTimeout(resolve, 500)); // simulate API call
         
-        const updatedUser = { ...currentUser, name: data.name };
+        const updatedUser = await updateAuthUser(currentUser.id, { name: data.name });
         
-        // This is for demonstration purposes to keep the mock array in sync.
-        // It won't persist across hard reloads, but will persist in the session.
-        const userIndex = users.findIndex(u => u.id === currentUser.id);
-        if (userIndex !== -1) {
-            users[userIndex].name = data.name;
-        }
-
         set({ user: updatedUser });
       },
       logout: () => {
