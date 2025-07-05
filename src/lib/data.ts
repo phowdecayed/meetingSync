@@ -124,6 +124,21 @@ export const getUsers = async (): Promise<User[]> => {
   return users;
 };
 
+export const createUser = async (data: { name: string; email: string; role: 'admin' | 'member'}): Promise<User> => {
+  await new Promise(res => setTimeout(res, 500));
+  if (users.some(u => u.email === data.email)) {
+    throw new Error('A user with this email already exists.');
+  }
+  const newUser: User = {
+    id: `user-${Date.now()}`,
+    name: data.name,
+    email: data.email,
+    role: data.role,
+  };
+  users.push(newUser);
+  return newUser;
+};
+
 export const updateUserRole = async (id: string, role: 'admin' | 'member'): Promise<User> => {
     await new Promise(res => setTimeout(res, 500));
     const userIndex = users.findIndex(u => u.id === id);

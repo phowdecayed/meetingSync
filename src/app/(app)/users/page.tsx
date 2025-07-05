@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/use-auth-store';
-import { getUsers, updateUserRole, deleteUserById, type User } from '@/lib/data';
+import { getUsers, updateUserRole, deleteUserById, createUser, type User } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
@@ -49,13 +49,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { Loader2, MoreHorizontal, Edit, Trash2, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 
 function getInitials(name: string = "") {
   return name.split(' ').map(n => n[0]).join('').toUpperCase();
 }
+
+const addUserSchema = z.object({
+  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email.' }),
+  role: z.enum(['admin', 'member']),
+});
+
 
 export default function UsersPage() {
   const router = useRouter();
@@ -69,6 +81,17 @@ export default function UsersPage() {
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [newRole, setNewRole] = useState<'admin' | 'member'>('member');
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+
+  const addUserForm = useForm<z.infer<typeof addUserSchema>>({
+    resolver: zodResolver(addUserSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      role: 'member',
+    },
+  });
 
   useEffect(() => {
     async function loadUsers() {
@@ -134,6 +157,28 @@ export default function UsersPage() {
       });
     } finally {
       setUserToDelete(null);
+    }
+  };
+
+  const handleAddUser = async (values: z.infer<typeof addUserSchema>) => {
+    setIsCreatingUser(true);
+    try {
+      const newUser = await createUser({ ...values, role: values.role as 'admin' | 'member' });
+      setUsers([...users, newUser]);
+      toast({
+        title: "User Created",
+        description: `User ${newUser.name} has been added to the system.`,
+      });
+      setIsAddUserOpen(false);
+      addUserForm.reset();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: (error as Error).message || "Failed to create user.",
+      });
+    } finally {
+      setIsCreatingUser(false);
     }
   };
 
@@ -228,7 +273,7 @@ export default function UsersPage() {
           <h1 className="text-3xl font-headline font-bold">User Management</h1>
           <p className="text-muted-foreground">View and manage all users in the system.</p>
         </div>
-        <Button onClick={() => router.push('/register')}>
+        <Button onClick={() => setIsAddUserOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add User
         </Button>
@@ -245,6 +290,76 @@ export default function UsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add User Dialog */}
+      <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>
+              Enter the details for the new user. An initial password will not be set.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...addUserForm}>
+            <form onSubmit={addUserForm.handleSubmit(handleAddUser)} className="space-y-4">
+              <FormField
+                control={addUserForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={addUserForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="name@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                  control={addUserForm.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="member">Member</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsAddUserOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={isCreatingUser}>
+                  {isCreatingUser && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Create User
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Role Dialog */}
       <Dialog open={!!userToEdit} onOpenChange={(isOpen) => !isOpen && setUserToEdit(null)}>
