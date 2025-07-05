@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { type Meeting } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, User, Link as LinkIcon, Info, Users } from 'lucide-react';
+import { Clock, User, Link as LinkIcon, Info, Users, Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from './ui/badge';
 
@@ -61,7 +62,7 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                                 </CardHeader>
                                 <CardContent className="space-y-4 pt-0">
                                     <div className="flex items-start gap-4">
-                                      <Calendar className="h-5 w-5 mt-1 text-muted-foreground" />
+                                      <CalendarIcon className="h-5 w-5 mt-1 text-muted-foreground" />
                                       <div>
                                         <h4 className="font-semibold text-sm">Date & Time</h4>
                                         <p className="text-sm text-muted-foreground">{format(new Date(meeting.date), 'PPPP p')}</p>
