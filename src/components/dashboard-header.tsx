@@ -31,10 +31,7 @@ export function DashboardHeader() {
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-      <div className="flex items-center gap-2">
-        <SidebarTrigger className="md:hidden" />
-        <h1 className="hidden md:block font-headline text-2xl font-bold text-primary">MeetingSync</h1>
-      </div>
+      <SidebarTrigger />
       
       <div className="flex w-full items-center justify-end gap-4">
         <Link href="/meetings/new" passHref>
