@@ -109,13 +109,13 @@ export const createMeeting = async (data: Omit<Meeting, 'id'>): Promise<Meeting>
     });
 
     // Check for overlap
-    const isOverlap = meetingsOnDay.some((m) => {
+    const overlapCount = meetingsOnDay.reduce((count, m) => {
       const existingStart = new Date(m.date);
       const existingEnd = new Date(existingStart.getTime() + m.duration * 60 * 1000);
-      return newStart < existingEnd && newEnd > existingStart;
-    });
-    if (isOverlap) {
-      throw new Error('There is already a meeting scheduled during this timeslot.');
+      return newStart < existingEnd && newEnd > existingStart ? count + 1 : count;
+    }, 0);
+    if (overlapCount >= 2) {
+      throw new Error('A maximum of 2 meetings can run simultaneously in the same timeslot.');
     }
 
     // Create Zoom meeting first with detailed settings based on API requirements

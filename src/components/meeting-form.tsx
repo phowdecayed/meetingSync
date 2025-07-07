@@ -109,18 +109,19 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       const d = new Date(m.date);
       return d >= startOfDay && d <= endOfDay;
     });
-    const isOverlap = meetingsOnDay.some((m) => {
+    // Count overlaps
+    const overlapCount = meetingsOnDay.reduce((count, m) => {
       const existingStart = new Date(m.date);
       const existingEnd = new Date(existingStart.getTime() + m.duration * 60 * 1000);
-      return newStart < existingEnd && newEnd > existingStart;
-    });
-    if (isOverlap) {
-      setOverlapError('There is already a meeting scheduled during this timeslot.');
+      return newStart < existingEnd && newEnd > existingStart ? count + 1 : count;
+    }, 0);
+    if (overlapCount >= 2) {
+      setOverlapError('A maximum of 2 meetings can run simultaneously in the same timeslot.');
       if (!overlapToastShown.current) {
         toast({
           variant: "destructive",
-          title: "Double Booking Detected",
-          description: "There is already a meeting scheduled during this timeslot.",
+          title: "Double Booking Limit",
+          description: "A maximum of 2 meetings can run simultaneously in the same timeslot.",
           duration: 5000,
         });
         overlapToastShown.current = true;
