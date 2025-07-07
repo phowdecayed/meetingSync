@@ -18,6 +18,58 @@ export default function SettingsPage() {
   const user = session?.user;
   const { toast } = useToast();
 
+  // State untuk pengaturan umum
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [allowRegistration, setAllowRegistration] = useState(true);
+  const [defaultRole, setDefaultRole] = useState<'member' | 'admin'>('member');
+
+  useEffect(() => {
+    async function fetchSettings() {
+      setLoadingSettings(true);
+      try {
+        const res = await fetch('/api/settings');
+        if (!res.ok) throw new Error('Gagal mengambil data pengaturan');
+        const data = await res.json();
+        setAllowRegistration(data.allowRegistration);
+        setDefaultRole(data.defaultRole);
+      } catch (err) {
+        toast({
+          variant: 'destructive',
+          title: 'Gagal memuat pengaturan',
+          description: 'Terjadi kesalahan saat mengambil data pengaturan.',
+        });
+      } finally {
+        setLoadingSettings(false);
+      }
+    }
+    fetchSettings();
+  }, [toast]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allowRegistration, defaultRole }),
+      });
+      if (!res.ok) throw new Error('Gagal menyimpan pengaturan');
+      toast({
+        title: 'Berhasil',
+        description: 'Pengaturan berhasil disimpan.',
+      });
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Gagal menyimpan',
+        description: 'Terjadi kesalahan saat menyimpan pengaturan.',
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (status === 'loading' || !user) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -56,27 +108,51 @@ export default function SettingsPage() {
               <CardDescription>Kelola pengaturan umum aplikasi.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
-                <Label htmlFor="allow-registration" className="flex flex-col space-y-1">
-                  <span>Izinkan Registrasi Pengguna Baru</span>
-                  <span className="font-normal leading-snug text-muted-foreground">
-                    Aktifkan atau nonaktifkan halaman registrasi publik.
-                  </span>
-                </Label>
-                <Switch id="allow-registration" defaultChecked disabled />
-              </div>
-              <div className="space-y-2 max-w-sm">
-                <Label htmlFor="default-role">Peran Default untuk Pengguna Baru</Label>
-                <Select defaultValue="member" disabled>
-                  <SelectTrigger id="default-role" className="w-[180px]">
-                    <SelectValue placeholder="Pilih peran" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">Anggota</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {loadingSettings ? (
+                <div className="flex items-center justify-center h-24">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                    <Label htmlFor="allow-registration" className="flex flex-col space-y-1">
+                      <span>Izinkan Registrasi Pengguna Baru</span>
+                      <span className="font-normal leading-snug text-muted-foreground">
+                        Aktifkan atau nonaktifkan halaman registrasi publik.
+                      </span>
+                    </Label>
+                    <Switch
+                      id="allow-registration"
+                      checked={allowRegistration}
+                      onCheckedChange={setAllowRegistration}
+                      disabled={saving || user?.role !== 'admin'}
+                    />
+                  </div>
+                  <div className="space-y-2 max-w-sm">
+                    <Label htmlFor="default-role">Peran Default untuk Pengguna Baru</Label>
+                    <Select
+                      value={defaultRole}
+                      onValueChange={v => setDefaultRole(v as 'member' | 'admin')}
+                      disabled={saving || user?.role !== 'admin'}
+                    >
+                      <SelectTrigger id="default-role" className="w-[180px]">
+                        <SelectValue placeholder="Pilih peran" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="member">Anggota</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {user?.role === 'admin' && (
+                    <div className="pt-2">
+                      <Button onClick={handleSave} disabled={saving}>
+                        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Simpan Pengaturan
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

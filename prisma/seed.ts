@@ -55,6 +55,17 @@ async function main() {
   await prisma.meeting.deleteMany({});
   console.log('Deleted existing meetings');
 
+  // Seed Settings jika belum ada
+  const settingsCount = await prisma.settings.count();
+  if (settingsCount === 0) {
+    await prisma.settings.create({
+      data: {
+        allowRegistration: true,
+        defaultRole: 'member',
+      },
+    });
+    console.log('Seeded default settings');
+  }
 
   console.log('Seeding finished.');
 }

@@ -17,7 +17,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { signIn } from 'next-auth/react';
 import { createUser } from '@/lib/data';
@@ -37,6 +37,21 @@ export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [allowRegistration, setAllowRegistration] = useState(true);
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        if (!res.ok) throw new Error('Gagal mengambil pengaturan');
+        const data = await res.json();
+        setAllowRegistration(data.allowRegistration);
+      } catch (err) {
+        setAllowRegistration(true); // fallback: tetap tampilkan jika gagal
+      }
+    }
+    fetchSettings();
+  }, []);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -111,10 +126,14 @@ export function LoginForm() {
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
-          Don&apos;t have an account?{' '}
-          <Link href="/register" className="font-semibold text-primary hover:underline">
-            Sign Up
-          </Link>
+          {!allowRegistration ? null : (
+            <>
+              Belum punya akun?{' '}
+              <Link href="/register" className="font-semibold text-primary hover:underline">
+                Daftar
+              </Link>
+            </>
+          )}
         </p>
       </CardFooter>
     </Card>
