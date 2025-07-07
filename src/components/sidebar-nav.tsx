@@ -50,9 +50,8 @@ export function SidebarNav() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href} passHref>
                 <SidebarMenuButton
-                  isActive={item.href === '/profile' ? pathname === item.href : pathname.startsWith(item.href)}
-                  tooltip={{ children: item.label, side: "right" }}
-                >
+                  isActive={item.href === '/profile' ? pathname === item.href : pathname?.startsWith(item.href) ?? false}
+                  tooltip={{ children: item.label, side: "right" }}>
                   <item.icon />
                   <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                 </SidebarMenuButton>
@@ -66,6 +65,11 @@ export function SidebarNav() {
         <p className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
           v0.1.0
         </p>
+        <div className="flex items-center justify-center gap-2">
+          <p className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+            &copy; 2025 Pranata Komputer BPKAD.
+          </p>
+        </div>
       </SidebarFooter>
     </>
   );
