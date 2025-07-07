@@ -15,7 +15,7 @@ export async function GET() {
     const zoomCredentials = await prisma.zoomCredentials.findMany({
       select: {
         id: true,
-        apiKey: true,
+        clientId: true,
         accountId: true,
         createdAt: true,
         updatedAt: true,
@@ -41,24 +41,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { apiKey, apiSecret, accountId } = await request.json();
+    const { clientId, clientSecret, accountId } = await request.json();
 
     // Validasi input
-    if (!apiKey || !apiSecret) {
+    if (!clientId || !clientSecret) {
       return NextResponse.json(
-        { error: 'API Key dan API Secret diperlukan' },
+        { error: 'Client ID dan Client Secret diperlukan' },
         { status: 400 }
       );
     }
 
     // Simpan kredensial
-    const result = await saveZoomCredentials({
-      apiKey,
-      apiSecret,
+    const result = await saveZoomCredentials(
+      clientId,
+      clientSecret,
       accountId,
-    });
+    );
 
-    if (!result.success) {
+    if (!result) {
       return NextResponse.json(
         { error: 'Failed to save Zoom credentials' },
         { status: 500 }
@@ -105,4 +105,4 @@ export async function DELETE(request: Request) {
       { status: 500 }
     );
   }
-} 
+}

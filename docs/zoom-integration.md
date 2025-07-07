@@ -20,8 +20,9 @@ Untuk menggunakan fitur integrasi Zoom, Anda perlu membuat aplikasi Server-to-Se
 
 1. Setelah aplikasi dibuat, Anda akan diarahkan ke halaman App Credentials
 2. Catat informasi berikut:
-   - API Key (Account ID)
-   - API Secret
+   - Account ID
+   - Client ID
+   - Client Secret
 
 ### 3. Aktifkan Scopes yang Diperlukan
 
@@ -36,18 +37,17 @@ Untuk menggunakan fitur integrasi Zoom, Anda perlu membuat aplikasi Server-to-Se
 1. Masuk ke aplikasi sebagai admin
 2. Buka halaman Settings
 3. Pada bagian "Zoom Integration", klik "Add Zoom Credentials"
-4. Masukkan API Key dan API Secret yang sudah didapatkan
-5. (Opsional) Masukkan Account ID/User ID jika Anda ingin menggunakan akun tertentu
-6. Klik "Save Credentials"
+4. Masukkan kredensial yang sudah Anda dapatkan:
+   - Account ID
+   - Client ID
+   - Client Secret
+5. Klik "Save Credentials"
 
-## User ID / Account ID
+## Pengaturan Akun
 
-Secara default, API Zoom akan menggunakan akun yang terkait dengan API Key Anda. Jika Anda ingin menggunakan akun spesifik, Anda dapat mendapatkan User ID dengan cara berikut:
+Secara default, aplikasi akan menggunakan kredensial yang Anda berikan untuk membuat meeting atas nama akun utama. Anda tidak perlu menentukan User ID secara spesifik karena otentikasi Server-to-Server OAuth beroperasi di tingkat akun.
 
-1. Masuk ke [Zoom Developer Console](https://developers.zoom.us/)
-2. Pilih aplikasi yang telah Anda buat
-3. Pilih "Testing" di menu kiri
-4. Di panel kanan, klik "List Users" dan catat user ID yang ingin Anda gunakan
+
 
 ## Cara Kerja Integrasi
 
@@ -62,7 +62,6 @@ Setelah konfigurasi selesai:
 
 Jika Anda mengalami masalah dengan integrasi Zoom:
 
-1. Pastikan API Key dan API Secret sudah benar
-2. Pastikan akun yang terkait dengan API Key memiliki izin untuk membuat meeting
-3. Jika menggunakan User ID tertentu, pastikan ID tersebut valid
-4. Periksa apakah scopes yang diperlukan sudah diaktifkan di Zoom App 
+1. Pastikan Account ID, Client ID, dan Client Secret sudah benar.
+2. Pastikan aplikasi Server-to-Server OAuth Anda sudah diaktifkan.
+3. Pastikan scopes yang diperlukan sudah ditambahkan dan diizinkan di aplikasi Zoom Anda.

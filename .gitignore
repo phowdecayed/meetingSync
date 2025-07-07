@@ -45,3 +45,6 @@ firebase-debug.log
 firestore-debug.log
 .idx/*
 .vscode/* 
+
+# prisma
+prisma/dev.db

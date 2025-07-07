@@ -38,75 +38,21 @@ async function main() {
 
   console.log(`Upserted users`);
 
-  // Create Zoom accounts
-  const zoom1 = await prisma.zoomAccount.upsert({
-      where: { email: 'corp-zoom-1@example.com' },
-      update: {},
-      create: { email: 'corp-zoom-1@example.com' }
+  // Delete existing credentials and create a new one
+  await prisma.zoomCredentials.deleteMany({});
+  await prisma.zoomCredentials.create({
+    data: {
+      clientId: 'DUMMY_CLIENT_ID',
+      clientSecret: 'DUMMY_CLIENT_SECRET',
+      accountId: 'DUMMY_ACCOUNT_ID',
+    },
   });
-  const zoom2 = await prisma.zoomAccount.upsert({
-      where: { email: 'corp-zoom-2@example.com' },
-      update: {},
-      create: { email: 'corp-zoom-2@example.com' }
-  });
-  const zoom3 = await prisma.zoomAccount.upsert({
-      where: { email: 'corp-zoom-3@example.com' },
-      update: {},
-      create: { email: 'corp-zoom-3@example.com' }
-  });
-
-  console.log('Upserted zoom accounts');
+  
+  console.log('Upserted zoom credentials');
 
   // Delete existing meetings to avoid duplicates on re-seed
   await prisma.meeting.deleteMany({});
   console.log('Deleted existing meetings');
-
-  // Create meetings
-  await prisma.meeting.create({
-    data: {
-      title: 'Quarterly Business Review',
-      date: new Date(new Date().setDate(new Date().getDate() + 3)),
-      duration: 60,
-      participants: 'ceo@example.com, cto@example.com',
-      description: 'Review of Q3 performance and planning for Q4.',
-      organizerId: adminUser.id,
-      zoomAccountId: zoom1.id,
-    },
-  });
-
-  await prisma.meeting.create({
-    data: {
-      title: 'Project Phoenix - Standup',
-      date: new Date(new Date().setDate(new Date().getDate() + 1)),
-      duration: 15,
-      participants: 'member@example.com, dev1@example.com, dev2@example.com',
-      organizerId: memberUser.id,
-      zoomAccountId: zoom2.id,
-    },
-  });
-
-  await prisma.meeting.create({
-    data: {
-      title: 'Marketing Strategy Session',
-      date: new Date(new Date().setDate(new Date().getDate() + 5)),
-      duration: 90,
-      participants: 'marketing-head@example.com, admin@example.com',
-      description: 'Brainstorming for next year\'s marketing campaigns.',
-      organizerId: adminUser.id,
-      zoomAccountId: zoom1.id,
-    },
-  });
-
-  await prisma.meeting.create({
-    data: {
-        title: 'Past Meeting: Design Sync',
-        date: new Date(new Date().setDate(new Date().getDate() - 2)),
-        duration: 45,
-        participants: 'designer1@example.com, designer2@example.com',
-        organizerId: memberUser.id,
-        zoomAccountId: zoom3.id,
-    }
-  });
 
 
   console.log('Seeding finished.');

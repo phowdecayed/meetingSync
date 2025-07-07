@@ -1,6 +1,6 @@
 import prisma from './prisma';
 import axios from 'axios';
-import jwt from 'jsonwebtoken';
+
 
 // Jenis data untuk response dari Zoom API
 interface ZoomMeeting {
@@ -34,27 +34,62 @@ async function getZoomCredentials() {
   return creds;
 }
 
-// Fungsi untuk generate JWT token
-async function generateJWT() {
+// Fungsi untuk memverifikasi kredensial S2S
+export async function verifyS2SCredentials(clientId: string, clientSecret: string, accountId: string): Promise<any> {
+  try {
+    const response = await axios.post(
+      'https://zoom.us/oauth/token',
+      new URLSearchParams({
+        grant_type: 'account_credentials',
+        account_id: accountId,
+      }).toString(),
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Error verifying S2S credentials:', error.response ? error.response.data : error.message);
+    throw new Error('Could not verify Zoom S2S credentials.');
+  }
+}
+
+// Fungsi untuk mendapatkan S2S access token (menggunakan kredensial dari DB)
+export async function getS2SAccessToken() {
   const creds = await getZoomCredentials();
   
-  const payload = {
-    iss: creds.apiKey,
-    exp: Math.floor(Date.now() / 1000) + 3600, // Token berlaku 1 jam
-  };
-  
-  const token = jwt.sign(payload, creds.apiSecret);
-  return token;
+  try {
+    const response = await axios.post(
+      'https://zoom.us/oauth/token',
+      new URLSearchParams({
+        grant_type: 'account_credentials',
+        account_id: creds.accountId,
+      }),
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${creds.clientId}:${creds.clientSecret}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
+    return response.data.access_token;
+  } catch (error: any) {
+    console.error('Error getting S2S access token:', error.response ? error.response.data : error.message);
+    throw new Error('Could not fetch Zoom S2S access token.');
+  }
 }
 
 // Fungsi untuk mendapatkan instance axios dengan headers yang diperlukan
 async function getZoomApiClient() {
-  const token = await generateJWT();
+  const accessToken = await getS2SAccessToken();
   
   return axios.create({
     baseURL: 'https://api.zoom.us/v2',
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
   });
@@ -62,34 +97,52 @@ async function getZoomApiClient() {
 
 // Fungsi untuk membuat meeting di Zoom
 export async function createZoomMeeting(meetingData: {
-  title: string;
-  date: Date;
+  topic: string;
+  start_time: string;
   duration: number;
-  description?: string;
+  agenda?: string;
+  password?: string;
+  settings?: any;
+  timezone?: string;
+  type?: number;
 }) {
   try {
     const zoomClient = await getZoomApiClient();
-    const creds = await getZoomCredentials();
     
-    // Jika accountId tersedia, gunakan itu
-    // Jika tidak, gunakan "me" yang merujuk ke user yang token-nya digunakan
-    const userId = creds.accountId || 'me';
-    
-    const response = await zoomClient.post(`/users/${userId}/meetings`, {
-      topic: meetingData.title,
-      type: 2, // Scheduled meeting
-      start_time: meetingData.date.toISOString(),
+    // Use 'me' as userId to create the meeting as the authenticated user
+    // This is more reliable than using accountId which might not be a user ID
+    const userId = 'me';
+
+    // Format payload based on the Zoom API requirements
+    const payload = {
+      topic: meetingData.topic,
+      type: meetingData.type || 2, // Scheduled meeting (2 = scheduled)
+      start_time: meetingData.start_time,
       duration: meetingData.duration,
-      timezone: 'Asia/Jakarta',
-      agenda: meetingData.description || '',
+      timezone: meetingData.timezone || 'Asia/Jakarta',
+      agenda: meetingData.agenda || '',
+      password: meetingData.password,
+      pre_schedule: false,
       settings: {
         host_video: true,
         participant_video: true,
         join_before_host: false,
         mute_upon_entry: true,
+        waiting_room: true,
         auto_recording: 'none',
+        approval_type: 2,
+        registration_type: 1,
+        audio: 'both',
+        close_registration: false,
+        alternative_hosts_email_notification: true,
+        contact_name: "BPKAD Jabar",
+        contact_email: "bpkad@jabarprov.go.id",
+        email_notification: true,
+        ...meetingData.settings,
       },
-    });
+    };
+
+    const response = await zoomClient.post(`/users/${userId}/meetings`, payload);
     
     return {
       zoomMeetingId: response.data.id.toString(),
@@ -111,19 +164,32 @@ export async function updateZoomMeeting(
     date: Date;
     duration: number;
     description?: string;
+    password?: string;
   }
 ) {
   try {
     const zoomClient = await getZoomApiClient();
     
-    await zoomClient.patch(`/meetings/${zoomMeetingId}`, {
+    // Format update payload based on Zoom API requirements
+    const updatePayload = {
       topic: meetingData.title,
       type: 2, // Scheduled meeting
       start_time: meetingData.date.toISOString(),
       duration: meetingData.duration,
       timezone: 'Asia/Jakarta',
       agenda: meetingData.description || '',
-    });
+      password: meetingData.password,
+      settings: {
+        host_video: true,
+        participant_video: true,
+        join_before_host: false,
+        mute_upon_entry: true,
+        waiting_room: true,
+        auto_recording: 'none',
+      }
+    };
+    
+    await zoomClient.patch(`/meetings/${zoomMeetingId}`, updatePayload);
     
     // Dapatkan info meeting terbaru setelah diupdate
     const updatedMeeting = await zoomClient.get(`/meetings/${zoomMeetingId}`);
@@ -156,11 +222,9 @@ export async function deleteZoomMeeting(zoomMeetingId: string) {
 export async function listZoomMeetings(nextPageToken?: string) {
   try {
     const zoomClient = await getZoomApiClient();
-    const creds = await getZoomCredentials();
     
-    // Jika accountId tersedia, gunakan itu
-    // Jika tidak, gunakan "me" yang merujuk ke user yang token-nya digunakan
-    const userId = creds.accountId || 'me';
+    // Use 'me' as userId to list meetings for the authenticated user
+    const userId = 'me';
     
     const params: any = {
       page_size: 300,
@@ -184,25 +248,44 @@ export async function listZoomMeetings(nextPageToken?: string) {
 }
 
 // Fungsi untuk menyimpan kredensial Zoom
-export async function saveZoomCredentials(data: {
-  apiKey: string;
-  apiSecret: string;
-  accountId?: string;
-}) {
+export async function saveZoomCredentials(clientId: string, clientSecret: string, accountId: string) {
   try {
-    await prisma.zoomCredentials.create({
+    // Hapus kredensial lama jika ada
+    await prisma.zoomCredentials.deleteMany({});
+
+    // Simpan kredensial baru
+    const newCredentials = await prisma.zoomCredentials.create({
       data: {
-        apiKey: data.apiKey,
-        apiSecret: data.apiSecret,
-        accountId: data.accountId,
+        clientId,
+        clientSecret, // Seharusnya dienkripsi di production
+        accountId,
       },
     });
-    
-    return { success: true };
+    return newCredentials;
   } catch (error) {
-    console.error('Failed to save Zoom credentials:', error);
-    return { success: false };
+    console.error('Error saving Zoom credentials:', error);
+    throw new Error('Could not save Zoom credentials.');
   }
+}
+
+
+// Jenis data untuk response dari Zoom API
+interface ZoomMeeting {
+  id: number;
+  topic: string;
+  type: number;
+  start_time: string;
+  duration: number;
+  timezone: string;
+  password: string;
+  agenda: string;
+  join_url: string;
+  start_url: string;
+}
+
+interface ZoomMeetingsResponse {
+  meetings: ZoomMeeting[];
+  next_page_token?: string;
 }
 
 // Fungsi untuk mendapatkan meeting Zoom berdasarkan ID
@@ -216,4 +299,4 @@ export async function getZoomMeeting(zoomMeetingId: string) {
     console.error('Failed to get Zoom meeting:', error);
     throw new Error('Failed to get Zoom meeting');
   }
-} 
+}

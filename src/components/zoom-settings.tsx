@@ -8,10 +8,12 @@ import { Label } from './ui/label';
 import { Loader2, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+// Tipe data untuk akun Zoom
 type ZoomAccount = {
   id: string;
-  apiKey: string;
-  accountId?: string;
+  clientId: string;
+  clientSecret: string;
+  accountId: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -23,9 +25,12 @@ export function ZoomSettings() {
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const [apiKey, setApiKey] = useState('');
-  const [apiSecret, setApiSecret] = useState('');
+  // State untuk menyimpan kredensial Zoom
+  const [clientId, setClientId] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
   const [accountId, setAccountId] = useState('');
+  const [verifying, setVerifying] = useState(false);
+
 
   useEffect(() => {
     fetchZoomAccounts();
@@ -53,14 +58,52 @@ export function ZoomSettings() {
     }
   }
 
+    // Fungsi untuk menangani verifikasi kredensial
+  async function handleVerify() {
+    if (!clientId || !clientSecret || !accountId) {
+      toast({
+        variant: 'destructive',
+        title: 'Kolom Hilang',
+        description: 'Harap isi semua kolom yang diperlukan untuk verifikasi.',
+      });
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      const response = await fetch('/api/zoom/verify-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, clientSecret, accountId }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast({ title: 'Sukses', description: 'Kredensial berhasil diverifikasi.' });
+      } else {
+        throw new Error(result.message || 'Gagal memverifikasi kredensial.');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error Verifikasi',
+        description: error.message,
+      });
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  // Fungsi untuk menangani submit form
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     
-    if (!apiKey || !apiSecret) {
+    if (!clientId || !clientSecret || !accountId) {
       toast({ 
         variant: "destructive", 
-        title: "Missing Fields", 
-        description: "Please fill in all required fields" 
+        title: "Kolom Hilang", 
+        description: "Harap isi semua kolom yang diperlukan." 
       });
       return;
     }
@@ -72,36 +115,37 @@ export function ZoomSettings() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          apiKey,
-          apiSecret,
-          accountId: accountId || undefined,
+          clientId,
+          clientSecret,
+          accountId,
         }),
       });
       
       if (!response.ok) {
-        throw new Error('Failed to save Zoom credentials');
+        throw new Error('Gagal menyimpan kredensial Zoom');
       }
       
-      toast({ title: "Success", description: "Zoom credentials saved successfully" });
+      toast({ title: "Sukses", description: "Kredensial Zoom berhasil disimpan." });
       
-      // Reset form and hide it
-      setApiKey('');
-      setApiSecret('');
+      // Reset form dan sembunyikan
+      setClientId('');
+      setClientSecret('');
       setAccountId('');
       setShowForm(false);
       
-      // Refresh accounts list
+      // Refresh daftar akun
       fetchZoomAccounts();
     } catch (error) {
       toast({ 
         variant: "destructive", 
         title: "Error", 
-        description: "Failed to save Zoom credentials" 
+        description: "Gagal menyimpan kredensial Zoom" 
       });
     } finally {
       setSubmitting(false);
     }
   }
+
 
   async function handleDelete(id: string) {
     try {
@@ -148,13 +192,13 @@ export function ZoomSettings() {
                 <h3 className="text-lg font-medium">Saved Zoom Credentials</h3>
                 <div className="rounded-md border">
                   <div className="grid grid-cols-3 p-4 font-medium border-b">
-                    <div>API Key</div>
+                    <div>Client ID</div>
                     <div>Account ID</div>
                     <div></div>
                   </div>
                   {accounts.map((account) => (
                     <div key={account.id} className="grid grid-cols-3 p-4 items-center border-b last:border-0">
-                      <div className="truncate">{account.apiKey}</div>
+                      <div className="truncate">{account.clientId}</div>
                       <div className="truncate">{account.accountId || 'Not set'}</div>
                       <div className="flex justify-end">
                         <Button 
@@ -176,55 +220,56 @@ export function ZoomSettings() {
             )}
 
             {showForm ? (
-              <form onSubmit={handleSubmit} className="space-y-4 mt-8">
-                <h3 className="text-lg font-medium">Add New Zoom Credentials</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="apiKey">API Key (required)</Label>
-                  <Input 
-                    id="apiKey" 
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="Enter your Zoom API Key"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="apiSecret">API Secret (required)</Label>
-                  <Input 
-                    id="apiSecret"
-                    type="password" 
-                    value={apiSecret}
-                    onChange={(e) => setApiSecret(e.target.value)}
-                    placeholder="Enter your Zoom API Secret"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="accountId">Account ID / User ID (optional)</Label>
-                  <Input 
-                    id="accountId" 
-                    value={accountId}
-                    onChange={(e) => setAccountId(e.target.value)}
-                    placeholder="Enter your Zoom Account ID or User ID (optional)"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Jika tidak diisi, akan menggunakan user default dari API Key.
-                  </p>
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setShowForm(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Credentials
-                  </Button>
-                </div>
-              </form>
+              <div className="mt-8">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <h3 className="text-lg font-medium">Tambah Kredensial Zoom Baru</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="clientId">Client ID (wajib)</Label>
+                    <Input
+                      id="clientId"
+                      value={clientId}
+                      onChange={(e) => setClientId(e.target.value)}
+                      placeholder="Masukkan Client ID Zoom Anda"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="clientSecret">Client Secret (wajib)</Label>
+                    <Input
+                      id="clientSecret"
+                      type="password"
+                      value={clientSecret}
+                      onChange={(e) => setClientSecret(e.target.value)}
+                      placeholder="Masukkan Client Secret Zoom Anda"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="accountId">Account ID (wajib)</Label>
+                    <Input
+                      id="accountId"
+                      value={accountId}
+                      onChange={(e) => setAccountId(e.target.value)}
+                      placeholder="Masukkan Account ID Zoom Anda"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting || verifying}>
+                      Batal
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={handleVerify} disabled={submitting || verifying}>
+                      {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Verifikasi
+                    </Button>
+                    <Button type="submit" disabled={submitting || verifying}>
+                      {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Simpan
+                    </Button>
+                  </div>
+                </form>
+              </div>
             ) : (
               <div className="mt-4 text-center">
                 <Button onClick={() => setShowForm(true)}>
@@ -252,4 +297,4 @@ export function ZoomSettings() {
       </CardFooter>
     </Card>
   );
-} 
+}

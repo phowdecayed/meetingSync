@@ -52,6 +52,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       duration: existingMeeting.duration,
       participants: existingMeeting.participants,
       description: existingMeeting.description || "",
+      password: existingMeeting.zoomPassword || "",
   } : {
       title: "",
       date: new Date(),
@@ -59,6 +60,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       duration: 30,
       participants: [],
       description: "",
+      password: "",
   };
 
   const form = useForm<z.infer<typeof meetingSchema>>({
@@ -85,6 +87,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
         duration: values.duration,
         participants: values.participants,
         description: values.description,
+        password: values.password,
         organizerId: user.id
     };
 
@@ -194,6 +197,28 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                                 <FormControl>
                                     <Input type="number" placeholder="30" {...field} />
                                 </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>Zoom Meeting Password</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        placeholder="Enter password for Zoom meeting" 
+                                        {...field} 
+                                        value={field.value || ""}
+                                    />
+                                </FormControl>
+                                <FormDescription>
+                                    Password for participants to join the Zoom meeting
+                                </FormDescription>
                                 <FormMessage />
                             </FormItem>
                             )}

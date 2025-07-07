@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = "file:./dev.db?journal_mode=WAL"
 }
 
 model User {
@@ -37,10 +37,10 @@ model Meeting {
 }
 
 model ZoomCredentials {
-  id          String   @id @default(cuid())
-  apiKey      String
-  apiSecret   String
-  accountId   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  clientId     String   // S2S OAuth App Client ID
+  clientSecret String   // S2S OAuth App Client Secret
+  accountId    String   // Account ID used for authentication, not to be confused with User ID for API operations
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

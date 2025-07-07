@@ -11,6 +11,7 @@ export type Meeting = {
   duration: number; // in minutes
   participants: string[];
   description?: string;
+  password?: string; // Password for Zoom meeting
   organizerId: string;
   zoomMeetingId?: string;
   zoomJoinUrl?: string;
@@ -88,19 +89,38 @@ export const getMeetingById = async (id: string): Promise<Meeting | undefined> =
 
 export const createMeeting = async (data: Omit<Meeting, 'id'>): Promise<Meeting> => {
   try {
-    // Create Zoom meeting first
+    // Ensure date is a proper Date object
+    const meetingDate = data.date instanceof Date ? data.date : new Date(data.date);
+    
+    // Create Zoom meeting first with detailed settings based on API requirements
     const zoomMeetingData = await createZoomMeeting({
-      title: data.title,
-      date: data.date,
+      topic: data.title,
+      start_time: meetingDate.toISOString(),
       duration: data.duration,
-      description: data.description
+      agenda: data.description,
+      password: data.password || "rahasia", // Use provided password or default
+      type: 2, // Scheduled meeting (2 = scheduled)
+      settings: {
+        host_video: true,
+        participant_video: true,
+        join_before_host: false,
+        mute_upon_entry: true,
+        waiting_room: true,
+        auto_recording: 'none',
+        approval_type: 2,
+        registration_type: 1,
+        audio: 'both',
+        contact_name: "BPKAD Zoom Book Admin",
+        contact_email: "bpkad@jabarprov.go.id",
+        email_notification: true,
+      }
     });
     
     // Create meeting in our database with Zoom info
     const meeting = await prisma.meeting.create({
       data: {
         title: data.title,
-        date: data.date,
+        date: meetingDate,
         duration: data.duration,
         participants: Array.isArray(data.participants) ? data.participants.join(', ') : data.participants,
         description: data.description || '',
@@ -130,15 +150,19 @@ export const updateMeeting = async (id: string, data: Partial<Omit<Meeting, 'id'
     let zoomData = {};
     
     // If we have meeting title, date, duration, or description changes, update Zoom meeting
-    if (data.title || data.date || data.duration || data.description !== undefined) {
+    if (data.title || data.date || data.duration || data.description !== undefined || data.password !== undefined) {
       if (currentMeeting.zoomMeetingId) {
+        // Ensure date is a proper Date object if provided
+        const meetingDate = data.date ? (data.date instanceof Date ? data.date : new Date(data.date)) : currentMeeting.date;
+        
         const updatedZoomMeeting = await updateZoomMeeting(
           currentMeeting.zoomMeetingId,
           {
             title: data.title || currentMeeting.title,
-            date: data.date || currentMeeting.date,
+            date: meetingDate,
             duration: data.duration || currentMeeting.duration,
             description: data.description !== undefined ? data.description : currentMeeting.description || '',
+            password: data.password !== undefined ? data.password : currentMeeting.zoomPassword || '',
           }
         );
         
@@ -156,12 +180,13 @@ export const updateMeeting = async (id: string, data: Partial<Omit<Meeting, 'id'
       where: { id },
       data: {
         ...(data.title && { title: data.title }),
-        ...(data.date && { date: data.date }),
+        ...(data.date && { date: data.date instanceof Date ? data.date : new Date(data.date) }),
         ...(data.duration && { duration: data.duration }),
         ...(data.participants && { 
           participants: Array.isArray(data.participants) ? data.participants.join(', ') : data.participants 
         }),
         ...(data.description !== undefined && { description: data.description }),
+        ...(data.password !== undefined && { password: data.password }),
         ...(data.organizerId && { organizerId: data.organizerId }),
         ...zoomData,
       }
