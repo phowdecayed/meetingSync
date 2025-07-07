@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Meeting } from '@/lib/data';
 import { format } from 'date-fns';
-import { Calendar, Clock, Users, Link as LinkIcon, Info, User, Copy } from 'lucide-react';
+import { Calendar, Clock, Users, Link as LinkIcon, Info, User, Copy, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
@@ -27,6 +27,8 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
   const { toast } = useToast();
   const { data: session } = useSession();
   const [hostKey, setHostKey] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showHostKey, setShowHostKey] = useState(false);
   
   // Determine if the current user is the organizer
   const isOrganizer = meeting && session?.user?.id === meeting.organizerId;
@@ -148,7 +150,18 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
                 </a>
                 {meeting.zoomPassword && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Password: <span className="font-mono">{meeting.zoomPassword}</span>
+                    Password: 
+                    <span className="font-mono ml-1">
+                      {showPassword ? meeting.zoomPassword : '••••••••'}
+                    </span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 px-2 ml-1"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </Button>
                   </p>
                 )}
               </div>
@@ -172,17 +185,27 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
               <div>
                 <h4 className="font-semibold flex items-center justify-between">
                   <span>Host Key</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 px-2"
-                    onClick={() => copyToClipboard(hostKey, 'Host Key')}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex items-center space-x-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 px-2"
+                      onClick={() => setShowHostKey(!showHostKey)}
+                    >
+                      {showHostKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 px-2"
+                      onClick={() => copyToClipboard(hostKey, 'Host Key')}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </h4>
                 <p className="text-sm text-muted-foreground font-mono">
-                  {hostKey}
+                  {showHostKey ? hostKey : '••••••••'}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1 italic">
                   Gunakan Host Key untuk claim Host

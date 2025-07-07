@@ -2,23 +2,18 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
-interface Params {
-  id: string;
-}
-
 export async function GET(
   request: Request,
-  context: { params: Params }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
-
-    if (!session?.user) {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Destructure params safely 
-    const { id: zoomMeetingId } = context.params;
+    // Correctly await params before accessing the id property
+    const { id: zoomMeetingId } = await context.params;
     
     if (!zoomMeetingId) {
       return NextResponse.json({ error: 'Missing meeting ID' }, { status: 400 });

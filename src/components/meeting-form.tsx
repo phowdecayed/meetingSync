@@ -20,7 +20,7 @@ import {
 import { meetingSchema } from "@/lib/validators/meeting";
 import { Meeting, User } from "@/lib/data";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMeetingStore } from "@/store/use-meeting-store";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
@@ -37,7 +37,7 @@ type MeetingFormProps = {
 
 export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
   const router = useRouter();
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const { addMeeting, updateMeeting } = useMeetingStore();
   const { data: session } = useSession();
@@ -67,6 +67,72 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
     resolver: zodResolver(meetingSchema),
     defaultValues,
   });
+
+  const [allMeetings, setAllMeetings] = useState<Meeting[]>([]);
+  const [overlapError, setOverlapError] = useState<string | null>(null);
+  const overlapToastShown = useRef(false);
+
+  // Fetch all meetings for overlap check (except when editing, exclude current meeting)
+  useEffect(() => {
+    async function fetchMeetings() {
+      try {
+        const res = await fetch('/api/meetings');
+        const data = await res.json();
+        setAllMeetings(isEditMode && existingMeeting ? data.filter((m: Meeting) => m.id !== existingMeeting.id) : data);
+      } catch (e) {
+        // ignore
+      }
+    }
+    fetchMeetings();
+  }, [isEditMode, existingMeeting]);
+
+  // Check for overlap whenever date, time, or duration changes
+  useEffect(() => {
+    const values = form.getValues();
+    if (!values.date || !values.time || !values.duration) {
+      setOverlapError(null);
+      if (overlapToastShown.current) {
+        overlapToastShown.current = false;
+        dismiss();
+      }
+      return;
+    }
+    const [hours, minutes] = values.time.split(':').map(Number);
+    const newStart = new Date(values.date);
+    newStart.setHours(hours, minutes, 0, 0);
+    const newEnd = new Date(newStart.getTime() + values.duration * 60 * 1000);
+    const startOfDay = new Date(newStart);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(newStart);
+    endOfDay.setHours(23, 59, 59, 999);
+    const meetingsOnDay = allMeetings.filter(m => {
+      const d = new Date(m.date);
+      return d >= startOfDay && d <= endOfDay;
+    });
+    const isOverlap = meetingsOnDay.some((m) => {
+      const existingStart = new Date(m.date);
+      const existingEnd = new Date(existingStart.getTime() + m.duration * 60 * 1000);
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+    if (isOverlap) {
+      setOverlapError('There is already a meeting scheduled during this timeslot.');
+      if (!overlapToastShown.current) {
+        toast({
+          variant: "destructive",
+          title: "Double Booking Detected",
+          description: "There is already a meeting scheduled during this timeslot.",
+          duration: 5000,
+        });
+        overlapToastShown.current = true;
+      }
+    } else {
+      setOverlapError(null);
+      if (overlapToastShown.current) {
+        dismiss();
+        overlapToastShown.current = false;
+      }
+    }
+  }, [form.watch('date'), form.watch('time'), form.watch('duration'), allMeetings]);
 
   async function onSubmit(values: z.infer<typeof meetingSchema>) {
     setIsLoading(true);
@@ -260,7 +326,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                 </CardContent>
                 <CardFooter className="flex justify-end gap-4">
                     <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
-                    <Button type="submit" disabled={isLoading}>
+                    <Button type="submit" disabled={isLoading || !!overlapError}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isEditMode ? "Save Changes" : "Create Meeting"}
                     </Button>

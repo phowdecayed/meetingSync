@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { Clock, Calendar, Link as LinkIcon, User, Copy, Key, FileText } from 'lucide-react';
+import { Clock, Calendar, Link as LinkIcon, User, Copy, Key, FileText, Eye, EyeOff, Clipboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ZoomMeetingDetail {
@@ -59,6 +59,8 @@ export function ZoomMeetingDetails({ meeting, isOpen, onClose }: ZoomMeetingDeta
   const [hostKey, setHostKey] = useState<string | null>(null);
   const [detailedMeeting, setDetailedMeeting] = useState<ZoomMeetingDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showHostKey, setShowHostKey] = useState(false);
 
   // Fetch detailed meeting info from database when opened
   useEffect(() => {
@@ -151,24 +153,50 @@ export function ZoomMeetingDetails({ meeting, isOpen, onClose }: ZoomMeetingDeta
     }
   };
 
+  const copyInvitation = () => {
+    if (!activeMeeting) return;
+    const invitation = `bpkad@jabarprov.go.id is inviting you to a scheduled Zoom meeting.\n\n` +
+      `Topic: ${activeMeeting.topic}\n` +
+      (activeMeeting.description ? `Description : ${activeMeeting.description}\n` : '') +
+      `Time: ${format(meetingDate, 'PP yyyy h:mm a')} Jakarta\n` +
+      `Join Zoom Meeting\n${activeMeeting.join_url}\n\n` +
+      `Meeting ID: ${String(activeMeeting.id).replace(/(\d{3})(\d{4})(\d{4})/, '$1 $2 $3')}\n` +
+      (activeMeeting.password ? `Passcode: ${activeMeeting.password}\n` : '');
+    navigator.clipboard.writeText(invitation).then(
+      () => {
+        toast({
+          title: "Copied!",
+          description: "Invitation copied to clipboard",
+        });
+      },
+      () => {
+        toast({
+          variant: "destructive",
+          title: "Failed to copy",
+          description: "Could not copy invitation",
+        });
+      }
+    );
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[550px]">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl">{activeMeeting.topic}</DialogTitle>
           <div className="flex items-center gap-2 mt-1.5">
             <DialogDescription>
               Zoom meeting details
             </DialogDescription>
-            {status === 'past' && (
-              <Badge variant="secondary" className="bg-gray-100 text-gray-500">Selesai</Badge>
-            )}
-            {status === 'ongoing' && (
-              <Badge variant="default" className="bg-green-600 hover:bg-green-700">Sedang Berlangsung</Badge>
-            )}
-            {status === 'upcoming' && (
-              <Badge variant="outline" className="border-blue-300 text-blue-600">Belum Mulai</Badge>
-            )}
+            <Badge variant={
+              status === 'ongoing' ? "default" : 
+              status === 'upcoming' ? "secondary" : 
+              "outline"
+            }>
+              {status === 'ongoing' ? 'In Progress' : 
+               status === 'upcoming' ? 'Upcoming' : 
+               'Ended'}
+            </Badge>
           </div>
         </DialogHeader>
         
@@ -220,15 +248,23 @@ export function ZoomMeetingDetails({ meeting, isOpen, onClose }: ZoomMeetingDeta
           <div className="flex items-start gap-3">
             <LinkIcon className="h-5 w-5 text-gray-500 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-medium text-sm flex items-center justify-between">
+              <h4 className="font-medium text-sm flex items-center">
                 <span>Meeting Link</span>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-6 px-2"
+                  className="h-6 px-2 ml-2"
                   onClick={() => copyToClipboard(activeMeeting.join_url, 'Join URL')}
                 >
                   <Copy className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 ml-2"
+                  onClick={copyInvitation}
+                >
+                  <Clipboard className="h-3.5 w-3.5 mr-1" /> Copy Invitation
                 </Button>
               </h4>
               <p className="text-sm text-blue-600 break-all hover:underline">
@@ -243,19 +279,29 @@ export function ZoomMeetingDetails({ meeting, isOpen, onClose }: ZoomMeetingDeta
             <div className="flex items-start gap-3">
               <Key className="h-5 w-5 text-gray-500 mt-0.5" />
               <div>
-                <h4 className="font-medium text-sm flex items-center justify-between">
+                <h4 className="font-medium text-sm flex items-center">
                   <span>Meeting Password</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 px-2"
-                    onClick={() => copyToClipboard(activeMeeting.password || "", 'Meeting Password')}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex items-center space-x-2 ml-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 px-2"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 px-2"
+                      onClick={() => copyToClipboard(activeMeeting.password || "", 'Meeting Password')}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </h4>
                 <p className="text-sm text-gray-500 font-mono">
-                  {activeMeeting.password}
+                  {showPassword ? activeMeeting.password : '••••••••'}
                 </p>
               </div>
             </div>
@@ -266,19 +312,29 @@ export function ZoomMeetingDetails({ meeting, isOpen, onClose }: ZoomMeetingDeta
             <div className="flex items-start gap-3">
               <User className="h-5 w-5 text-gray-500 mt-0.5" />
               <div>
-                <h4 className="font-medium text-sm flex items-center justify-between">
+                <h4 className="font-medium text-sm flex items-center">
                   <span>Host Key</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 px-2"
-                    onClick={() => copyToClipboard(hostKey, 'Host Key')}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex items-center space-x-2 ml-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 px-2"
+                      onClick={() => setShowHostKey(!showHostKey)}
+                    >
+                      {showHostKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 px-2"
+                      onClick={() => copyToClipboard(hostKey, 'Host Key')}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </h4>
-                <p className="text-sm text-gray-500">
-                  {hostKey}
+                <p className="text-sm text-gray-500 font-mono">
+                  {showHostKey ? hostKey : '••••••••'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1 italic">
                   Gunakan Host Key untuk claim Host

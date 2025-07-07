@@ -108,7 +108,7 @@ export async function createZoomMeeting(meetingData: {
 }) {
   try {
     const zoomClient = await getZoomApiClient();
-    
+
     // Use 'me' as userId to create the meeting as the authenticated user
     // This is more reliable than using accountId which might not be a user ID
     const userId = 'me';

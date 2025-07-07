@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Info, Eye, EyeOff } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { format } from 'date-fns';
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { ZoomMeetingDetails } from './zoom-meeting-details';
+import { ToastAction } from '@/components/ui/toast';
 
 // Function to determine meeting status
 function getMeetingStatus(startTime: string, duration: number): 'past' | 'ongoing' | 'upcoming' {
@@ -210,10 +211,25 @@ export function ZoomCalendar() {
 
   function handleJoinMeeting(meeting: ZoomMeeting) {
     if (meeting.password) {
-      // Show toast with password information
+      // Show toast with hidden password and reveal button
       toast({
         title: "Meeting Password",
-        description: `Password: ${meeting.password}`,
+        description: (
+          <div className="flex items-center space-x-2">
+            <span>Password: <span className="font-mono">••••••••</span></span>
+          </div>
+        ),
+        action: (
+          <ToastAction altText="Reveal password" onClick={() => {
+            toast({
+              title: "Meeting Password",
+              description: `Password: ${meeting.password}`,
+              duration: 10000,
+            });
+          }}>
+            <Eye className="h-4 w-4" />
+          </ToastAction>
+        ),
         duration: 10000, // Show for 10 seconds to give user time to read and copy
       });
     }

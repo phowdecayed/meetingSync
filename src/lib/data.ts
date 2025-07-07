@@ -91,7 +91,33 @@ export const createMeeting = async (data: Omit<Meeting, 'id'>): Promise<Meeting>
   try {
     // Ensure date is a proper Date object
     const meetingDate = data.date instanceof Date ? data.date : new Date(data.date);
-    
+    const newStart = meetingDate;
+    const newEnd = new Date(meetingDate.getTime() + data.duration * 60 * 1000);
+
+    // Find all meetings on the same day
+    const startOfDay = new Date(newStart);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(newStart);
+    endOfDay.setHours(23, 59, 59, 999);
+    const meetingsOnDay = await prisma.meeting.findMany({
+      where: {
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+    });
+
+    // Check for overlap
+    const isOverlap = meetingsOnDay.some((m) => {
+      const existingStart = new Date(m.date);
+      const existingEnd = new Date(existingStart.getTime() + m.duration * 60 * 1000);
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+    if (isOverlap) {
+      throw new Error('There is already a meeting scheduled during this timeslot.');
+    }
+
     // Create Zoom meeting first with detailed settings based on API requirements
     const zoomMeetingData = await createZoomMeeting({
       topic: data.title,
