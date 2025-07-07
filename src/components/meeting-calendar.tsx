@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -54,7 +53,7 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                     <div className="space-y-4 h-[300px] lg:h-[450px] overflow-y-auto pr-2">
                         {selectedDayMeetings.length > 0 ? (
                         selectedDayMeetings.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(meeting => {
-                          const zoomLink = `https://zoom.us/j/${meeting.zoomAccountId.replace(/\D/g, '')}12345`;
+                          const zoomLink = meeting.zoomJoinUrl || (meeting.zoomMeetingId ? `https://zoom.us/j/${meeting.zoomMeetingId}` : null);
                           return (
                             <Card key={meeting.id} className="flex flex-col">
                                 <CardHeader className="py-4">
@@ -101,9 +100,13 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                                       <LinkIcon className="h-5 w-5 mt-1 text-muted-foreground" />
                                       <div>
                                         <h4 className="font-semibold text-sm">Zoom Meeting Link</h4>
+                                        {zoomLink ? (
                                         <a href={zoomLink} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">
-                                          {zoomLink}
+                                            Join Zoom Meeting
                                         </a>
+                                        ) : (
+                                          <p className="text-sm text-muted-foreground">No Zoom link available</p>
+                                        )}
                                       </div>
                                     </div>
                                 </CardContent>

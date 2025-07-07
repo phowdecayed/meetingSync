@@ -41,6 +41,7 @@ model ZoomCredentials {
   clientId     String   // S2S OAuth App Client ID
   clientSecret String   // S2S OAuth App Client Secret
   accountId    String   // Account ID used for authentication, not to be confused with User ID for API operations
+  hostKey      String?  // Host key for claiming host in Zoom meetings
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

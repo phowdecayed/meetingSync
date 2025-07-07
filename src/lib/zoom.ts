@@ -237,6 +237,7 @@ export async function listZoomMeetings(nextPageToken?: string) {
     
     const response = await zoomClient.get<ZoomMeetingsResponse>(`/users/${userId}/meetings`, { params });
     
+    // Return meetings with all properties including password
     return {
       meetings: response.data.meetings,
       nextPageToken: response.data.next_page_token,
@@ -248,7 +249,12 @@ export async function listZoomMeetings(nextPageToken?: string) {
 }
 
 // Fungsi untuk menyimpan kredensial Zoom
-export async function saveZoomCredentials(clientId: string, clientSecret: string, accountId: string) {
+export async function saveZoomCredentials(
+  clientId: string, 
+  clientSecret: string, 
+  accountId: string, 
+  hostKey?: string
+) {
   try {
     // Hapus kredensial lama jika ada
     await prisma.zoomCredentials.deleteMany({});
@@ -259,6 +265,7 @@ export async function saveZoomCredentials(clientId: string, clientSecret: string
         clientId,
         clientSecret, // Seharusnya dienkripsi di production
         accountId,
+        hostKey,
       },
     });
     return newCredentials;

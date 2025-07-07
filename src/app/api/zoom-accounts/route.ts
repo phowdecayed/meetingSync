@@ -17,6 +17,7 @@ export async function GET() {
         id: true,
         clientId: true,
         accountId: true,
+        hostKey: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { clientId, clientSecret, accountId } = await request.json();
+    const { clientId, clientSecret, accountId, hostKey } = await request.json();
 
     // Validasi input
     if (!clientId || !clientSecret) {
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
       clientId,
       clientSecret,
       accountId,
+      hostKey
     );
 
     if (!result) {

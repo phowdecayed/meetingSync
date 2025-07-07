@@ -10,6 +10,9 @@ const getAuthSecret = () => {
   if (process.env.NEXTAUTH_SECRET) {
     return process.env.NEXTAUTH_SECRET;
   }
+  // Fallback to a consistent development secret if not in production
+  // Note: For production, always set NEXTAUTH_SECRET in environment variables
+  return 'this-is-a-development-secret-do-not-use-in-production';
 };
 
 export const authConfig = {

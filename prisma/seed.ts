@@ -45,6 +45,7 @@ async function main() {
       clientId: 'DUMMY_CLIENT_ID',
       clientSecret: 'DUMMY_CLIENT_SECRET',
       accountId: 'DUMMY_ACCOUNT_ID',
+      hostKey: '123456',
     },
   });
   

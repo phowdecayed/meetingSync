@@ -14,6 +14,7 @@ type ZoomAccount = {
   clientId: string;
   clientSecret: string;
   accountId: string;
+  hostKey?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -29,6 +30,7 @@ export function ZoomSettings() {
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [accountId, setAccountId] = useState('');
+  const [hostKey, setHostKey] = useState('');
   const [verifying, setVerifying] = useState(false);
 
 
@@ -118,6 +120,7 @@ export function ZoomSettings() {
           clientId,
           clientSecret,
           accountId,
+          hostKey,
         }),
       });
       
@@ -131,6 +134,7 @@ export function ZoomSettings() {
       setClientId('');
       setClientSecret('');
       setAccountId('');
+      setHostKey('');
       setShowForm(false);
       
       // Refresh daftar akun
@@ -191,15 +195,17 @@ export function ZoomSettings() {
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Saved Zoom Credentials</h3>
                 <div className="rounded-md border">
-                  <div className="grid grid-cols-3 p-4 font-medium border-b">
+                  <div className="grid grid-cols-4 p-4 font-medium border-b">
                     <div>Client ID</div>
                     <div>Account ID</div>
+                    <div>Host Key</div>
                     <div></div>
                   </div>
                   {accounts.map((account) => (
-                    <div key={account.id} className="grid grid-cols-3 p-4 items-center border-b last:border-0">
+                    <div key={account.id} className="grid grid-cols-4 p-4 items-center border-b last:border-0">
                       <div className="truncate">{account.clientId}</div>
                       <div className="truncate">{account.accountId || 'Not set'}</div>
+                      <div className="truncate">{account.hostKey || 'Not set'}</div>
                       <div className="flex justify-end">
                         <Button 
                           variant="destructive" 
@@ -253,6 +259,18 @@ export function ZoomSettings() {
                       placeholder="Masukkan Account ID Zoom Anda"
                       required
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="hostKey">Host Key</Label>
+                    <Input
+                      id="hostKey"
+                      value={hostKey}
+                      onChange={(e) => setHostKey(e.target.value)}
+                      placeholder="Masukkan Host Key Zoom Anda"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Host Key digunakan untuk mengklaim host saat meeting berlangsung
+                    </p>
                   </div>
 
                   <div className="flex justify-end space-x-2 pt-2">
