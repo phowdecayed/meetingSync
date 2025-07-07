@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { getUsers, updateUserRole, deleteUserById, createUser, type User } from '@/lib/data';
+import { type User } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
@@ -100,13 +99,26 @@ export default function UsersPage() {
     async function loadUsers() {
       if (currentUser?.role !== 'admin') return;
       setIsLoading(true);
-      const fetchedUsers = await getUsers();
-      const sortedUsers = fetchedUsers.sort((a, b) => a.name.localeCompare(b.name));
-      setUsers(sortedUsers);
-      setIsLoading(false);
+      try {
+        const response = await fetch('/api/users');
+        if (!response.ok) {
+          throw new Error('Failed to fetch users');
+        }
+        const fetchedUsers = await response.json();
+        const sortedUsers = fetchedUsers.sort((a: User, b: User) => a.name.localeCompare(b.name));
+        setUsers(sortedUsers);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load users. Please try again later.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
     loadUsers();
-  }, [currentUser]);
+  }, [currentUser, toast]);
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return users;
@@ -125,8 +137,25 @@ export default function UsersPage() {
     if (!userToEdit) return;
 
     try {
-      await updateUserRole(userToEdit.id, newRole);
-      setUsers(users.map(u => u.id === userToEdit.id ? { ...u, role: newRole } : u).sort((a, b) => a.name.localeCompare(b.name)));
+      const response = await fetch('/api/users', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: userToEdit.id,
+          role: newRole
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update user role');
+      }
+      
+      const updatedUser = await response.json();
+      setUsers(users.map(u => u.id === userToEdit.id ? { ...u, role: newRole } : u)
+        .sort((a, b) => a.name.localeCompare(b.name)));
+      
       toast({
         title: "Success",
         description: `User ${userToEdit.name}'s role has been updated to ${newRole}.`,
@@ -149,7 +178,14 @@ export default function UsersPage() {
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
     try {
-      await deleteUserById(userToDelete.id);
+      const response = await fetch(`/api/users?id=${userToDelete.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete user');
+      }
+      
       setUsers(users.filter(u => u.id !== userToDelete.id));
       toast({
         title: "User Deleted",
@@ -169,7 +205,20 @@ export default function UsersPage() {
   const handleAddUser = async (values: z.infer<typeof addUserSchema>) => {
     setIsCreatingUser(true);
     try {
-      const newUser = await createUser({ ...values, role: values.role as 'admin' | 'member' });
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create user');
+      }
+      
+      const newUser = await response.json();
       setUsers([...users, newUser].sort((a, b) => a.name.localeCompare(b.name)));
       toast({
         title: "User Created",

@@ -2,6 +2,15 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { verifyUserCredentials } from '@/lib/data';
 import type { NextAuthConfig } from 'next-auth';
+import crypto from 'crypto';
+
+// Membuat secret yang konsisten atau menggunakan environment variable jika tersedia
+const getAuthSecret = () => {
+  // Gunakan NEXTAUTH_SECRET dari environment variable jika tersedia
+  if (process.env.NEXTAUTH_SECRET) {
+    return process.env.NEXTAUTH_SECRET;
+  }
+};
 
 export const authConfig = {
   providers: [
@@ -45,6 +54,7 @@ export const authConfig = {
       return session;
     },
   },
+  secret: getAuthSecret(),
   trustHost: true,
 } satisfies NextAuthConfig;
 

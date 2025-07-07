@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -23,9 +22,6 @@ interface MeetingDetailsDialogProps {
 
 export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetailsDialogProps) {
   if (!meeting) return null;
-
-  // Placeholder for Zoom link logic
-  const zoomLink = `https://zoom.us/j/${meeting.zoomAccountId.replace(/\D/g, '')}12345`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -73,21 +69,40 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
               </div>
             </div>
           </div>
-          <div className="flex items-start gap-4">
-            <LinkIcon className="h-5 w-5 mt-1 text-muted-foreground" />
-            <div>
-              <h4 className="font-semibold">Zoom Meeting Link</h4>
-              <a href={zoomLink} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">
-                {zoomLink}
-              </a>
+          {meeting.zoomJoinUrl ? (
+            <div className="flex items-start gap-4">
+              <LinkIcon className="h-5 w-5 mt-1 text-muted-foreground" />
+              <div>
+                <h4 className="font-semibold">Zoom Meeting Link</h4>
+                <a href={meeting.zoomJoinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">
+                  {meeting.zoomJoinUrl}
+                </a>
+                {meeting.zoomPassword && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Password: <span className="font-mono">{meeting.zoomPassword}</span>
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-start gap-4">
+              <LinkIcon className="h-5 w-5 mt-1 text-muted-foreground" />
+              <div>
+                <h4 className="font-semibold">Zoom Meeting Link</h4>
+                <p className="text-sm text-muted-foreground">
+                  Zoom meeting link not available. Please check back later.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Close</Button>
-          <Button asChild>
-            <a href={zoomLink} target="_blank" rel="noopener noreferrer">Join Meeting</a>
-          </Button>
+          {meeting.zoomJoinUrl && (
+            <Button asChild>
+              <a href={meeting.zoomJoinUrl} target="_blank" rel="noopener noreferrer">Join Meeting</a>
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

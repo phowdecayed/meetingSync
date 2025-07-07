@@ -28,12 +28,19 @@ model Meeting {
   description  String?
   organizer    User     @relation("OrganizerMeetings", fields: [organizerId], references: [id])
   organizerId  String
-  zoomAccount  ZoomAccount @relation(fields: [zoomAccountId], references: [id])
-  zoomAccountId String
+  
+  // Zoom Meeting Information
+  zoomMeetingId String?
+  zoomJoinUrl   String?
+  zoomStartUrl  String?
+  zoomPassword  String?
 }
 
-model ZoomAccount {
-  id      String @id @default(cuid())
-  email   String @unique
-  meetings Meeting[]
+model ZoomCredentials {
+  id          String   @id @default(cuid())
+  apiKey      String
+  apiSecret   String
+  accountId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

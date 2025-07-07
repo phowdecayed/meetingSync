@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -97,12 +96,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
             const newMeeting = await addMeeting(meetingData);
             toast({ 
                 title: "Success",
-                description: "Meeting created successfully.",
-                action: (
-                    <div className="text-xs text-muted-foreground">
-                        Assigned to Zoom Account ID: {newMeeting.zoomAccountId}
-                    </div>
-                )
+                description: "Meeting created successfully."
             });
         }
         router.push('/dashboard');

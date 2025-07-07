@@ -1,4 +1,7 @@
 import bcrypt from 'bcryptjs';
+import prisma from './prisma';
+import { PrismaClient } from '@prisma/client';
+import { createZoomMeeting, updateZoomMeeting, deleteZoomMeeting } from './zoom';
 
 // --- SHARED TYPES & UTILS ---
 export type Meeting = {
@@ -9,7 +12,10 @@ export type Meeting = {
   participants: string[];
   description?: string;
   organizerId: string;
-  zoomAccountId: string;
+  zoomMeetingId?: string;
+  zoomJoinUrl?: string;
+  zoomStartUrl?: string;
+  zoomPassword?: string;
 };
 
 export type User = {
@@ -19,155 +25,257 @@ export type User = {
   role: 'admin' | 'member';
 };
 
-// Add password for mock user creation and verification
-export type FullUser = User & { password?: string };
-
-
-// --- MOCK IMPLEMENTATION ---
-
-let mockUsers: FullUser[] = [];
-let mockMeetings: Meeting[] = [];
-let mockZoomAccounts: { id: string; email: string; }[] = [];
-let mockInitialized = false;
-
-const initializeMockData = async () => {
-  if (mockInitialized) return;
-
-  const passwordHash = await bcrypt.hash('password123', 10);
-
-  mockUsers = [
-    { id: 'clx1', name: 'Admin User', email: 'admin@example.com', role: 'admin', password: passwordHash },
-    { id: 'clx2', name: 'Member User', email: 'member@example.com', role: 'member', password: passwordHash },
-    { id: 'clx3', name: 'Carol Danvers', email: 'carol@example.com', role: 'member', password: passwordHash },
-    { id: 'clx4', name: 'Peter Parker', email: 'peter@example.com', role: 'member', password: passwordHash },
-    { id: 'clx5', name: 'Tony Stark', email: 'tony@example.com', role: 'member', password: passwordHash },
-  ];
-
-  mockZoomAccounts = [
-      { id: 'za1', email: 'corp-zoom-1@example.com' },
-      { id: 'za2', email: 'corp-zoom-2@example.com' },
-      { id: 'za3', email: 'corp-zoom-3@example.com' },
-  ];
-  
-  mockMeetings = [
-    { id: 'm1', title: 'Quarterly Business Review', date: new Date(new Date().setDate(new Date().getDate() + 3)), duration: 60, participants: ['ceo@example.com', 'cto@example.com'], description: 'Review of Q3 performance and planning for Q4.', organizerId: 'clx1', zoomAccountId: 'za1' },
-    { id: 'm2', title: 'Project Phoenix - Standup', date: new Date(new Date().setDate(new Date().getDate() + 1)), duration: 15, participants: ['member@example.com', 'dev1@example.com'], organizerId: 'clx2', zoomAccountId: 'za2' },
-    { id: 'm3', title: 'Marketing Strategy Session', date: new Date(new Date().setDate(new Date().getDate() + 5)), duration: 90, participants: ['marketing-head@example.com', 'admin@example.com'], description: 'Brainstorming for next year\'s marketing campaigns.', organizerId: 'clx1', zoomAccountId: 'za1' },
-    { id: 'm4', title: 'Past Meeting: Design Sync', date: new Date(new Date().setDate(new Date().getDate() - 2)), duration: 45, participants: ['designer1@example.com', 'designer2@example.com'], organizerId: 'clx2', zoomAccountId: 'za3' },
-  ];
-  
-  mockInitialized = true;
+// Tipe dari skema Prisma
+type PrismaMeeting = {
+  id: string;
+  title: string;
+  date: Date;
+  duration: number;
+  participants: string;
+  description: string | null;
+  organizerId: string;
+  zoomMeetingId: string | null;
+  zoomJoinUrl: string | null;
+  zoomStartUrl: string | null;
+  zoomPassword: string | null;
 };
 
-const getLeastUtilizedAccount = async (): Promise<string> => {
-    await initializeMockData();
-    if (mockZoomAccounts.length === 0) return 'default-zoom-account-mock';
+type PrismaUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  passwordHash: string | null;
+};
 
-    const countsMap = new Map<string, number>();
-    mockZoomAccounts.forEach(acc => countsMap.set(acc.id, 0));
+// Add password for user creation and verification
+export type FullUser = User & { password?: string };
 
-    mockMeetings
-        .filter(m => m.date >= new Date())
-        .forEach(m => {
-            countsMap.set(m.zoomAccountId, (countsMap.get(m.zoomAccountId) || 0) + 1);
-        });
+// Helper function to format Meeting data
+const formatMeeting = (meeting: PrismaMeeting): Meeting => {
+  return {
+    ...meeting,
+    participants: meeting.participants.split(',').map((p: string) => p.trim()),
+    description: meeting.description || undefined,
+    zoomMeetingId: meeting.zoomMeetingId || undefined,
+    zoomJoinUrl: meeting.zoomJoinUrl || undefined,
+    zoomStartUrl: meeting.zoomStartUrl || undefined,
+    zoomPassword: meeting.zoomPassword || undefined,
+  };
+};
+
+// Helper function to format User data
+const formatUser = (user: PrismaUser): User => {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role as 'admin' | 'member',
+  };
+};
+
+export const getMeetings = async (): Promise<Meeting[]> => {
+  const meetings = await prisma.meeting.findMany();
+  return meetings.map(formatMeeting);
+};
+
+export const getMeetingById = async (id: string): Promise<Meeting | undefined> => {
+  const meeting = await prisma.meeting.findUnique({
+    where: { id }
+  });
+  return meeting ? formatMeeting(meeting) : undefined;
+};
+
+export const createMeeting = async (data: Omit<Meeting, 'id'>): Promise<Meeting> => {
+  try {
+    // Create Zoom meeting first
+    const zoomMeetingData = await createZoomMeeting({
+      title: data.title,
+      date: data.date,
+      duration: data.duration,
+      description: data.description
+    });
     
-    let leastUtilizedAccountId = mockZoomAccounts[0].id;
-    let minMeetings = countsMap.get(leastUtilizedAccountId) ?? Infinity;
+    // Create meeting in our database with Zoom info
+    const meeting = await prisma.meeting.create({
+      data: {
+        title: data.title,
+        date: data.date,
+        duration: data.duration,
+        participants: Array.isArray(data.participants) ? data.participants.join(', ') : data.participants,
+        description: data.description || '',
+        organizerId: data.organizerId,
+        zoomMeetingId: zoomMeetingData.zoomMeetingId,
+        zoomJoinUrl: zoomMeetingData.zoomJoinUrl,
+        zoomStartUrl: zoomMeetingData.zoomStartUrl,
+        zoomPassword: zoomMeetingData.zoomPassword,
+      }
+    });
+    
+    return formatMeeting(meeting);
+  } catch (error) {
+    console.error('Failed to create meeting with Zoom integration:', error);
+    throw new Error('Failed to create meeting with Zoom integration');
+  }
+};
 
-    for (const [accountId, count] of countsMap.entries()) {
-        if (count < minMeetings) {
-            minMeetings = count;
-            leastUtilizedAccountId = accountId;
-        }
-    }
-    return leastUtilizedAccountId;
-}
-
-export const getZoomAccounts = async(): Promise<{ id: string; email: string; }[]> => { await initializeMockData(); return [...mockZoomAccounts]; }
-export const addZoomAccount = async (email: string): Promise<{ id: string; email: string; }> => {
-    await initializeMockData();
-    if (mockZoomAccounts.find(a => a.email === email)) throw new Error("An account with this email already exists.");
-    const newAccount = { id: `za${Date.now()}`, email };
-    mockZoomAccounts.push(newAccount);
-    return newAccount;
-}
-export const removeZoomAccount = async (id:string): Promise<{ success: boolean }> => {
-    await initializeMockData();
-    mockZoomAccounts = mockZoomAccounts.filter(a => a.id !== id);
-    return { success: true };
-}
-export const getMeetings = async (): Promise<Meeting[]> => { await initializeMockData(); return [...mockMeetings]; }
-export const getMeetingById = async (id: string): Promise<Meeting | undefined> => { await initializeMockData(); return mockMeetings.find(m => m.id === id); }
-export const createMeeting = async (data: Omit<Meeting, 'id' | 'zoomAccountId'>): Promise<Meeting> => {
-    await initializeMockData();
-    const newMeeting: Meeting = {
-        ...data,
-        id: `m${Date.now()}`,
-        zoomAccountId: await getLeastUtilizedAccount(),
-    };
-    mockMeetings.push(newMeeting);
-    return newMeeting;
-}
 export const updateMeeting = async (id: string, data: Partial<Omit<Meeting, 'id'>>): Promise<Meeting> => {
-    await initializeMockData();
-    const meetingIndex = mockMeetings.findIndex(m => m.id === id);
-    if (meetingIndex === -1) throw new Error("Meeting not found");
-    mockMeetings[meetingIndex] = { ...mockMeetings[meetingIndex], ...data };
-    return mockMeetings[meetingIndex];
-}
-export const deleteMeeting = async (id: string): Promise<{ success: boolean }> => {
-    await initializeMockData();
-    mockMeetings = mockMeetings.filter(m => m.id !== id);
-    return { success: true };
-}
-export const getUsers = async (): Promise<User[]> => { await initializeMockData(); return mockUsers.map(({password, ...user}) => user); }
-export const createUser = async (data: { name: string; email: string; role: 'admin' | 'member', password?: string }): Promise<User> => {
-    await initializeMockData();
-    if (mockUsers.find(u => u.email === data.email)) throw new Error('A user with this email already exists.');
-    if (!data.password) throw new Error('Password is required.');
-    const passwordHash = await bcrypt.hash(data.password, 10);
-    const newUser: FullUser = { id: `u${Date.now()}`, ...data, password: passwordHash };
-    mockUsers.push(newUser);
-    const { password, ...userToReturn } = newUser;
-    return userToReturn;
-}
-export const updateUserRole = async(id: string, role: 'admin' | 'member'): Promise<User> => {
-    await initializeMockData();
-    const userIndex = mockUsers.findIndex(u => u.id === id);
-    if (userIndex === -1) throw new Error("User not found");
-    mockUsers[userIndex].role = role;
-    const { password, ...userToReturn } = mockUsers[userIndex];
-    return userToReturn;
-}
-export const deleteUserById = async(id: string): Promise<{ success: boolean }> => {
-    await initializeMockData();
-    mockUsers = mockUsers.filter(u => u.id !== id);
-    return { success: true };
-}
-export const getUserByEmail = async (email: string): Promise<User | null> => {
-    await initializeMockData();
-    const user = mockUsers.find(u => u.email === email);
-    if (!user) return null;
-    const { password, ...userToReturn } = user;
-    return userToReturn;
-}
-export const updateAuthUser = async(id: string, data: { name: string }): Promise<User> => {
-    await initializeMockData();
-    const userIndex = mockUsers.findIndex(u => u.id === id);
-    if (userIndex === -1) throw new Error("User not found");
-    mockUsers[userIndex].name = data.name;
-    const { password, ...userToReturn } = mockUsers[userIndex];
-    return userToReturn;
-}
-export const verifyUserCredentials = async (email: string, pass: string): Promise<User | null> => {
-    await initializeMockData();
-    const user = mockUsers.find(u => u.email === email);
-    if (!user || !user.password) return null;
-
-    const passwordsMatch = await bcrypt.compare(pass, user.password);
-    if (!passwordsMatch) return null;
+  try {
+    // Get current meeting to check if we need to update Zoom
+    const currentMeeting = await prisma.meeting.findUnique({ where: { id } });
+    if (!currentMeeting) {
+      throw new Error('Meeting not found');
+    }
     
-    const { password, ...userToReturn } = user;
-    return userToReturn;
-}
+    let zoomData = {};
+    
+    // If we have meeting title, date, duration, or description changes, update Zoom meeting
+    if (data.title || data.date || data.duration || data.description !== undefined) {
+      if (currentMeeting.zoomMeetingId) {
+        const updatedZoomMeeting = await updateZoomMeeting(
+          currentMeeting.zoomMeetingId,
+          {
+            title: data.title || currentMeeting.title,
+            date: data.date || currentMeeting.date,
+            duration: data.duration || currentMeeting.duration,
+            description: data.description !== undefined ? data.description : currentMeeting.description || '',
+          }
+        );
+        
+        zoomData = {
+          zoomMeetingId: updatedZoomMeeting.zoomMeetingId,
+          zoomJoinUrl: updatedZoomMeeting.zoomJoinUrl,
+          zoomStartUrl: updatedZoomMeeting.zoomStartUrl,
+          zoomPassword: updatedZoomMeeting.zoomPassword,
+        };
+      }
+    }
+    
+    // Update the meeting in our database
+    const meeting = await prisma.meeting.update({
+      where: { id },
+      data: {
+        ...(data.title && { title: data.title }),
+        ...(data.date && { date: data.date }),
+        ...(data.duration && { duration: data.duration }),
+        ...(data.participants && { 
+          participants: Array.isArray(data.participants) ? data.participants.join(', ') : data.participants 
+        }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.organizerId && { organizerId: data.organizerId }),
+        ...zoomData,
+      }
+    });
+    
+    return formatMeeting(meeting);
+  } catch (error) {
+    console.error('Failed to update meeting with Zoom integration:', error);
+    throw new Error('Failed to update meeting with Zoom integration');
+  }
+};
+
+export const deleteMeeting = async (id: string): Promise<{ success: boolean }> => {
+  try {
+    // Get the meeting first to delete from Zoom
+    const meeting = await prisma.meeting.findUnique({ where: { id } });
+    
+    if (meeting && meeting.zoomMeetingId) {
+      // Delete from Zoom
+      await deleteZoomMeeting(meeting.zoomMeetingId);
+    }
+    
+    // Delete from our database
+    await prisma.meeting.delete({
+      where: { id }
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting meeting:', error);
+    return { success: false };
+  }
+};
+
+export const getUsers = async (): Promise<User[]> => {
+  const users = await prisma.user.findMany();
+  return users.map(formatUser);
+};
+
+export const createUser = async (data: { name: string; email: string; role: 'admin' | 'member', password?: string }): Promise<User> => {
+  if (!data.password) throw new Error('Password is required.');
+  
+  const passwordHash = await bcrypt.hash(data.password, 10);
+  
+  try {
+    const user = await prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        passwordHash
+      }
+    });
+    
+    return formatUser(user);
+  } catch (error) {
+    throw new Error('A user with this email already exists.');
+  }
+};
+
+export const updateUserRole = async(id: string, role: 'admin' | 'member'): Promise<User> => {
+  try {
+    const user = await prisma.user.update({
+      where: { id },
+      data: { role }
+    });
+    
+    return formatUser(user);
+  } catch (error) {
+    throw new Error("User not found");
+  }
+};
+
+export const deleteUserById = async(id: string): Promise<{ success: boolean }> => {
+  try {
+    await prisma.user.delete({
+      where: { id }
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false };
+  }
+};
+
+export const getUserByEmail = async (email: string): Promise<User | null> => {
+  const user = await prisma.user.findUnique({
+    where: { email }
+  });
+  
+  return user ? formatUser(user) : null;
+};
+
+export const updateAuthUser = async(id: string, data: { name: string }): Promise<User> => {
+  try {
+    const user = await prisma.user.update({
+      where: { id },
+      data: { name: data.name }
+    });
+    
+    return formatUser(user);
+  } catch (error) {
+    throw new Error("User not found");
+  }
+};
+
+export const verifyUserCredentials = async (email: string, pass: string): Promise<User | null> => {
+  const user = await prisma.user.findUnique({
+    where: { email }
+  });
+  
+  if (!user || !user.passwordHash) return null;
+
+  const passwordsMatch = await bcrypt.compare(pass, user.passwordHash);
+  if (!passwordsMatch) return null;
+  
+  return formatUser(user);
+};

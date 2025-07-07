@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,9 +13,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { getMeetings, updateAuthUser, type Meeting } from '@/lib/data';
+import type { Meeting } from '@/lib/data';
 
 const profileSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -42,7 +42,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      form.reset({ name: user.name });
+      form.reset({ name: user.name || '' });
     }
   }, [user, form, isEditing]);
 
@@ -50,18 +50,42 @@ export default function ProfilePage() {
     async function loadMeetings() {
       if (!user) return;
       setIsMeetingsLoading(true);
-      const allMeetings = await getMeetings();
-      setMeetings(allMeetings);
-      setIsMeetingsLoading(false);
+      try {
+        const response = await fetch('/api/meetings');
+        if (!response.ok) {
+          throw new Error('Failed to load meetings');
+        }
+        const allMeetings = await response.json();
+        setMeetings(allMeetings);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load meetings. Please try again later.",
+        });
+      } finally {
+        setIsMeetingsLoading(false);
+      }
     }
     loadMeetings();
-  }, [user]);
+  }, [user, toast]);
 
   async function onSubmit(values: z.infer<typeof profileSchema>) {
     if (!user) return;
     setIsSaving(true);
     try {
-      await updateAuthUser(user.id, { name: values.name });
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: values.name }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
 
       // Trigger a session update to reflect the new name
       await updateSession({ user: { ...session?.user, name: values.name } });
@@ -91,9 +115,15 @@ export default function ProfilePage() {
   }
   
   const meetingsOrganized = meetings.filter(m => m.organizerId === user.id).length;
-  const meetingsAttended = meetings.filter(m => m.participants.includes(user.email ?? '') && m.organizerId !== user.id).length;
+  const meetingsAttended = meetings.filter(m => {
+    const userEmail = user.email || '';
+    return m.participants.includes(userEmail) && m.organizerId !== user.id;
+  }).length;
   const now = new Date();
-  const upcomingMeetingsCount = meetings.filter(m => (m.organizerId === user.id || m.participants.includes(user.email ?? '')) && new Date(m.date) >= now).length;
+  const upcomingMeetingsCount = meetings.filter(m => {
+    const userEmail = user.email || '';
+    return (m.organizerId === user.id || m.participants.includes(userEmail)) && new Date(m.date) >= now;
+  }).length;
 
 
   return (
@@ -121,8 +151,12 @@ export default function ProfilePage() {
                 <CardContent className="space-y-6">
                     <div className="flex items-center gap-6">
                     <Avatar className="h-20 w-20">
-                        <AvatarImage src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name ?? '')}`} alt={user.name ?? ''} data-ai-hint="user avatar" />
-                        <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
+                        <AvatarImage 
+                          src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name || '')}`} 
+                          alt={user.name || ''} 
+                          data-ai-hint="user avatar" 
+                        />
+                        <AvatarFallback className="text-2xl">{getInitials(user.name || '')}</AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
                         <h2 className="text-2xl font-semibold">{form.watch('name')}</h2>
@@ -146,8 +180,8 @@ export default function ProfilePage() {
                     )}
                     />
                     <div className="grid w-full items-center gap-1.5">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" value={user.email ?? ''} readOnly />
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input id="email" value={user.email || ''} readOnly />
                     </div>
                 </CardContent>
                 {isEditing && (

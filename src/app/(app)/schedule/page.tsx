@@ -1,6 +1,6 @@
 import { getMeetings, type Meeting } from '@/lib/data';
 import { auth } from '@/lib/auth';
-import { ScheduleView } from '@/components/schedule-view';
+import { MeetingsViewTabs } from '@/components/meetings-view-tabs';
 
 export default async function SchedulePage() {
   const session = await auth();
@@ -29,7 +29,7 @@ export default async function SchedulePage() {
         <p className="text-muted-foreground">Your upcoming meetings and appointments.</p>
       </div>
 
-      <ScheduleView meetings={userMeetings} />
+      <MeetingsViewTabs meetings={userMeetings} />
     </div>
   );
 }

@@ -1,39 +1,27 @@
 'use client';
-import { useState, useEffect } from 'react';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MeetingCalendar } from '@/components/meeting-calendar';
-import { MeetingsTable } from '@/components/meetings-table';
-import { type Meeting } from '@/lib/data';
+import { ScheduleView } from '@/components/schedule-view';
+import { ZoomCalendar } from '@/components/zoom-calendar';
+import { Meeting } from '@/lib/data';
 
-const LOCAL_STORAGE_KEY = 'meetings-view-mode';
+type MeetingsViewTabsProps = {
+  meetings: Meeting[];
+};
 
-export function MeetingsViewTabs({ meetings }: { meetings: Meeting[] }) {
-    const [activeTab, setActiveTab] = useState('list');
-
-    useEffect(() => {
-        const storedValue = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (storedValue === 'list' || storedValue === 'calendar') {
-            setActiveTab(storedValue);
-        }
-    }, []);
-
-    const handleTabChange = (value: string) => {
-        setActiveTab(value);
-        localStorage.setItem(LOCAL_STORAGE_KEY, value);
-    };
-
-    return (
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="mb-4">
-                <TabsTrigger value="list">List View</TabsTrigger>
-                <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-            </TabsList>
-            <TabsContent value="list">
-                <MeetingsTable initialMeetings={meetings} />
-            </TabsContent>
-            <TabsContent value="calendar">
-                <MeetingCalendar meetings={meetings} />
-            </TabsContent>
-        </Tabs>
-    );
+export function MeetingsViewTabs({ meetings }: MeetingsViewTabsProps) {
+  return (
+    <Tabs defaultValue="schedule" className="w-full">
+      <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsTrigger value="schedule">Jadwal Internal</TabsTrigger>
+        <TabsTrigger value="zoom">Jadwal Zoom</TabsTrigger>
+      </TabsList>
+      <TabsContent value="schedule" className="mt-6">
+        <ScheduleView meetings={meetings} />
+      </TabsContent>
+      <TabsContent value="zoom" className="mt-6">
+        <ZoomCalendar />
+      </TabsContent>
+    </Tabs>
+  );
 }
