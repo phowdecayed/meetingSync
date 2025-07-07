@@ -17,7 +17,7 @@ Aplikasi untuk melakukan pemesanan meeting room dan integrasi Zoom di BPKAD Jaba
 1. **Clone repository**
    ```bash
    git clone https://github.com/phowdecayed/meetingSync.git
-   cd bpkad-zoom-book
+   cd meetingSync
    ```
 
 2. **Copy file environment**
