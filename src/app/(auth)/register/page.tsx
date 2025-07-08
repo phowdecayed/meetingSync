@@ -1,11 +1,19 @@
 'use client';
 import { RegisterForm } from '@/components/auth-components';
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
   const [allowRegistration, setAllowRegistration] = useState<boolean | null>(null);
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
+    if (status === 'authenticated') {
+      router.replace('/dashboard');
+      return;
+    }
     async function fetchSettings() {
       try {
         const res = await fetch('/api/settings');
@@ -17,9 +25,9 @@ export default function RegisterPage() {
       }
     }
     fetchSettings();
-  }, []);
+  }, [status, router]);
 
-  if (allowRegistration === null) {
+  if (status === 'loading' || allowRegistration === null) {
     return (
       <div className="flex h-screen items-center justify-center">
         <span>Memuat pengaturan...</span>
