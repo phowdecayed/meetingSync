@@ -44,10 +44,10 @@ export const useMeetingStore = create<MeetingStore>((set) => ({
   
   updateMeeting: async (id, meetingData) => {
     try {
-      const response = await fetch('/api/meetings', {
+      const response = await fetch(`/api/meetings/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, ...meetingData }),
+        body: JSON.stringify(meetingData),
       });
       
       if (!response.ok) {

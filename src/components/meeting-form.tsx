@@ -50,7 +50,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       date: new Date(existingMeeting.date),
       time: format(new Date(existingMeeting.date), "HH:mm"),
       duration: existingMeeting.duration,
-      participants: existingMeeting.participants,
+      participants: Array.isArray(existingMeeting.participants) ? existingMeeting.participants : existingMeeting.participants.split(',').map(p => p.trim()),
       description: existingMeeting.description || "",
       password: existingMeeting.zoomPassword || "",
   } : {

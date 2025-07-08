@@ -186,7 +186,7 @@ export async function updateZoomMeeting(
         join_before_host: false,
         mute_upon_entry: true,
         waiting_room: true,
-        auto_recording: 'none',
+        auto_recording: 'cloud',
       }
     };
     

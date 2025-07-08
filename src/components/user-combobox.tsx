@@ -85,7 +85,6 @@ export function UserCombobox({ allUsers, selectedUsers, onChange, className }: U
                   value={user.email}
                   onSelect={(currentValue) => {
                     handleSelect(currentValue);
-                    setOpen(true);
                   }}
                 >
                   <Check

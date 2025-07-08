@@ -1,56 +1,53 @@
-// src/app/api/meetings/[id]/route.ts
-
-import { NextRequest, NextResponse } from 'next/server';
-import { deleteMeeting, getMeetingById } from '@/lib/data';
-import { z } from 'zod';
+import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { getMeetingById, updateMeeting } from '@/lib/data';
 
-const routeContextSchema = z.object({
-  params: z.object({
-    id: z.string(),
-  }),
-});
-
-/**
- * @description Menghapus meeting berdasarkan ID
- * @param req NextRequest
- * @param context RouteContext
- * @returns NextResponse
- */
-export async function DELETE(
-  req: NextRequest,
-  context: z.infer<typeof routeContextSchema>
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { params } = routeContextSchema.parse(context);
     const session = await auth();
-
-    if (!session?.user?.id) {
-      return new NextResponse('Unauthorized', { status: 401 });
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Please sign in' },
+        { status: 401 }
+      );
     }
 
     const meetingId = params.id;
+    if (!meetingId) {
+      return NextResponse.json(
+        { error: 'Meeting ID is required' },
+        { status: 400 }
+      );
+    }
 
-    // Ambil detail rapat sebelum menghapusnya untuk mendapatkan zoom_meeting_id
+    const data = await request.json();
+
+    // Verify that the user is the organizer of the meeting
     const meeting = await getMeetingById(meetingId);
     if (!meeting) {
-      return new NextResponse('Meeting not found', { status: 404 });
+      return NextResponse.json(
+        { error: 'Meeting not found' },
+        { status: 404 }
+      );
     }
 
-    // Hapus rapat dari database dan Zoom
-    const deleteResult = await deleteMeeting(meetingId);
-
-    if (!deleteResult.success) {
-      return new NextResponse('Failed to delete meeting', { status: 500 });
+    if (meeting.organizerId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You can only edit your own meetings' },
+        { status: 403 }
+      );
     }
 
-    return new NextResponse(null, { status: 204 });
+    const updatedMeeting = await updateMeeting(meetingId, data);
+    return NextResponse.json(updatedMeeting);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return new NextResponse(JSON.stringify(error.issues), { status: 422 });
-    }
-
-    console.error('Failed to delete meeting:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    console.error('Error updating meeting:', error);
+    return NextResponse.json(
+      { error: (error as Error).message || 'Failed to update meeting' },
+      { status: 500 }
+    );
   }
 }

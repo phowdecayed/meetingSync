@@ -76,50 +76,7 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT /api/meetings - Memperbarui pertemuan
-export async function PUT(request: Request) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized: Please sign in' },
-        { status: 401 }
-      );
-    }
 
-    const data = await request.json();
-    if (!data.id) {
-      return NextResponse.json(
-        { error: 'Meeting ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // Verifikasi bahwa pengguna adalah admin atau penyelenggara pertemuan
-    const meeting = await getMeetingById(data.id);
-    if (!meeting) {
-      return NextResponse.json(
-        { error: 'Meeting not found' },
-        { status: 404 }
-      );
-    }
-
-    if (session.user.role !== 'admin' && meeting.organizerId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized: You can only edit your own meetings' },
-        { status: 403 }
-      );
-    }
-
-    const updatedMeeting = await updateMeeting(data.id, data);
-    return NextResponse.json(updatedMeeting);
-  } catch (error) {
-    return NextResponse.json(
-      { error: (error as Error).message || 'Failed to update meeting' },
-      { status: 500 }
-    );
-  }
-}
 
 // DELETE /api/meetings - Menghapus pertemuan
 export async function DELETE(request: Request) {

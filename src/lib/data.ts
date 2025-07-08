@@ -167,46 +167,40 @@ export const createMeeting = async (data: Omit<Meeting, 'id'>): Promise<Meeting>
 
 export const updateMeeting = async (id: string, data: Partial<Omit<Meeting, 'id'>>): Promise<Meeting> => {
   try {
-    // Get current meeting to check if we need to update Zoom
     const currentMeeting = await prisma.meeting.findUnique({ where: { id } });
     if (!currentMeeting) {
       throw new Error('Meeting not found');
     }
-    
+
     let zoomData = {};
-    
-    // If we have meeting title, date, duration, or description changes, update Zoom meeting
-    if (data.title || data.date || data.duration || data.description !== undefined || data.password !== undefined) {
-      if (currentMeeting.zoomMeetingId) {
-        // Ensure date is a proper Date object if provided
-        const meetingDate = data.date ? (data.date instanceof Date ? data.date : new Date(data.date)) : currentMeeting.date;
-        
-        const updatedZoomMeeting = await updateZoomMeeting(
-          currentMeeting.zoomMeetingId,
-          {
-            title: data.title || currentMeeting.title,
-            date: meetingDate,
-            duration: data.duration || currentMeeting.duration,
-            description: data.description !== undefined ? data.description : currentMeeting.description || '',
-            password: data.password !== undefined ? data.password : currentMeeting.zoomPassword || '',
-          }
-        );
-        
-        zoomData = {
-          zoomMeetingId: updatedZoomMeeting.zoomMeetingId,
-          zoomJoinUrl: updatedZoomMeeting.zoomJoinUrl,
-          zoomStartUrl: updatedZoomMeeting.zoomStartUrl,
-          zoomPassword: updatedZoomMeeting.zoomPassword,
-        };
-      }
+
+    if (currentMeeting.zoomMeetingId) {
+      const meetingDate = data.date ? (data.date instanceof Date ? data.date : new Date(data.date)) : currentMeeting.date;
+
+      const updatedZoomMeeting = await updateZoomMeeting(
+        currentMeeting.zoomMeetingId,
+        {
+          title: data.title || currentMeeting.title,
+          date: meetingDate,
+          duration: data.duration || currentMeeting.duration,
+          description: data.description !== undefined ? data.description : currentMeeting.description || '',
+          password: data.password !== undefined ? data.password : currentMeeting.zoomPassword || '',
+        }
+      );
+
+      zoomData = {
+        zoomMeetingId: updatedZoomMeeting.zoomMeetingId,
+        zoomJoinUrl: updatedZoomMeeting.zoomJoinUrl,
+        zoomStartUrl: updatedZoomMeeting.zoomStartUrl,
+        zoomPassword: updatedZoomMeeting.zoomPassword,
+      };
     }
-    
-    // Update the meeting in our database
+
     const meeting = await prisma.meeting.update({
       where: { id },
       data: {
         ...(data.title && { title: data.title }),
-        ...(data.date && { date: data.date instanceof Date ? data.date : new Date(data.date) }),
+        ...(data.date && { date: data.date instanceof Date ? data.date : new Date(data.date as string) }),
         ...(data.duration && { duration: data.duration }),
         ...(data.participants && { 
           participants: Array.isArray(data.participants) ? data.participants.join(', ') : data.participants 
@@ -217,7 +211,7 @@ export const updateMeeting = async (id: string, data: Partial<Omit<Meeting, 'id'
         ...zoomData,
       }
     });
-    
+
     return formatMeeting(meeting);
   } catch (error) {
     console.error('Failed to update meeting with Zoom integration:', error);

@@ -156,6 +156,7 @@ export function ZoomMeetingDetails({ meeting, isOpen, onClose }: ZoomMeetingDeta
   const copyInvitation = () => {
     if (!activeMeeting) return;
     const invitation = `bpkad@jabarprov.go.id is inviting you to a scheduled Zoom meeting.\n\n` +
+      `Penanggung Jawab:\n${activeMeeting.organizer?.name} (${activeMeeting.organizer?.email})\n\n` +
       `Topic: ${activeMeeting.topic}\n` +
       (activeMeeting.description ? `Description : ${activeMeeting.description}\n` : '') +
       `Time: ${format(meetingDate, 'PP yyyy h:mm a')} Jakarta\n` +

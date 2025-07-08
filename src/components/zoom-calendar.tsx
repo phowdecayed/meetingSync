@@ -4,7 +4,14 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Info, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Info, Eye, EyeOff, Trash2, MoreHorizontal, Pencil } from 'lucide-react';
+import { useRouter } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from './ui/badge';
 import { format, isSameDay } from 'date-fns';
 import {
@@ -63,6 +70,7 @@ export function ZoomCalendar() {
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -434,22 +442,35 @@ export function ZoomCalendar() {
                           </div>
                         </div>
                         <div className="flex gap-2 mt-2 sm:mt-0">
-                           <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => confirmDeleteMeeting(meeting)}
-                            disabled={status === 'ongoing' || status === 'past'}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openMeetingDetails(meeting)}
-                          >
-                            <Info className="h-4 w-4 mr-2" />
-                            Details
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openMeetingDetails(meeting)}>
+                                <Info className="mr-2 h-4 w-4" />
+                                <span>Details</span>
+                              </DropdownMenuItem>
+                              {/* <DropdownMenuItem 
+                                onClick={() => router.push(`/meetings/${(meeting as any).dbId}/edit`)}
+                                disabled={status === 'ongoing' || status === 'past' || !(meeting as any).dbId}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                <span>Edit</span>
+                              </DropdownMenuItem> */}
+                              <DropdownMenuItem 
+                                onClick={() => confirmDeleteMeeting(meeting)}
+                                disabled={status === 'ongoing' || status === 'past'}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Delete</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           
                           {status === 'past' ? (
                             <Button 

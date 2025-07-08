@@ -6,9 +6,9 @@ type EditMeetingPageProps = {
     params: { id: string }
 }
 
-export default async function EditMeetingPage({ params }: EditMeetingPageProps) {
+export default async function EditMeetingPage({ params: { id } }: EditMeetingPageProps) {
     const [meeting, allUsers] = await Promise.all([
-        getMeetingById(params.id),
+        getMeetingById(id),
         getUsers()
     ]);
 
