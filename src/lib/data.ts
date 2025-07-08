@@ -121,7 +121,7 @@ export const createMeeting = async (data: Omit<Meeting, 'id'>): Promise<Meeting>
     // Create Zoom meeting first with detailed settings based on API requirements
     const zoomMeetingData = await createZoomMeeting({
       topic: data.title,
-      start_time: meetingDate.toISOString(),
+      start_time: data.date as unknown as string, // Pass the string directly
       duration: data.duration,
       agenda: data.description,
       password: data.password || "rahasia", // Use provided password or default
@@ -244,6 +244,15 @@ export const deleteMeeting = async (id: string): Promise<{ success: boolean }> =
   } catch (error) {
     console.error('Error deleting meeting:', error);
     return { success: false };
+  }
+};
+
+export const deleteDbMeeting = async (id: string): Promise<void> => {
+  try {
+    await prisma.meeting.delete({ where: { id } });
+  } catch (error) {
+    console.error(`Failed to delete meeting ${id} from database:`, error);
+    throw new Error('Database deletion failed.');
   }
 };
 

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Info, Eye, EyeOff } from 'lucide-react';
+import { Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Info, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { format, isSameDay } from 'date-fns';
 import {
@@ -21,9 +21,19 @@ import { ZoomMeetingDetails } from './zoom-meeting-details';
 import { ToastAction } from '@/components/ui/toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { Calendar } from './ui/calendar';
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 // Function to determine meeting status
 function getMeetingStatus(startTime: string, duration: number): 'past' | 'ongoing' | 'upcoming' {
+
   const now = new Date();
   const meetingStart = new Date(startTime);
   const meetingEnd = new Date(meetingStart.getTime() + duration * 60 * 1000); // duration is in minutes
@@ -67,6 +77,12 @@ export function ZoomCalendar() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'list' | 'calendar'>('list');
   const [calendarSelectedDay, setCalendarSelectedDay] = useState<Date | undefined>(new Date());
+
+  // Delete confirmation state
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [meetingToDelete, setMeetingToDelete] = useState<ZoomMeeting | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
 
   useEffect(() => {
     fetchZoomMeetings();
@@ -239,6 +255,47 @@ export function ZoomCalendar() {
     }
   }
 
+  function confirmDeleteMeeting(meeting: ZoomMeeting) {
+    setMeetingToDelete(meeting);
+    setIsDeleteAlertOpen(true);
+  }
+
+  async function handleDeleteMeeting() {
+    if (!meetingToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/zoom-meetings/${meetingToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete meeting');
+      }
+
+      toast({ 
+        title: "Success", 
+        description: `Meeting "${meetingToDelete.topic}" has been deleted.` 
+      });
+
+      // Refresh the list
+      setMeetings(prev => prev.filter(m => m.id !== meetingToDelete.id));
+
+    } catch (error: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "Error", 
+        description: error.message || "An unknown error occurred." 
+      });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteAlertOpen(false);
+      setMeetingToDelete(null);
+    }
+  }
+
+
   // For calendar view
   const meetingsByDay = meetings.reduce((acc, meeting) => {
     const day = format(new Date(meeting.start_time), 'yyyy-MM-dd');
@@ -377,6 +434,14 @@ export function ZoomCalendar() {
                           </div>
                         </div>
                         <div className="flex gap-2 mt-2 sm:mt-0">
+                           <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => confirmDeleteMeeting(meeting)}
+                            disabled={status === 'ongoing' || status === 'past'}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -492,6 +557,15 @@ export function ZoomCalendar() {
                             <div className="flex gap-2 mt-2">
                               <Button
                                 size="sm"
+                                variant="destructive"
+                                onClick={() => confirmDeleteMeeting(meeting)}
+                                disabled={status === 'ongoing' || status === 'past'}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </Button>
+                              <Button
+                                size="sm"
                                 variant="outline"
                                 onClick={() => openMeetingDetails(meeting)}
                               >
@@ -517,7 +591,26 @@ export function ZoomCalendar() {
           isOpen={isDetailsModalOpen}
           onClose={() => setIsDetailsModalOpen(false)}
         />
+         {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the meeting
+                <strong>{meetingToDelete?.topic}</strong> and remove it from Zoom.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setMeetingToDelete(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteMeeting} disabled={isDeleting}>
+                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} 
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
-} 
+}

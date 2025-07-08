@@ -129,7 +129,7 @@ export async function createZoomMeeting(meetingData: {
         join_before_host: false,
         mute_upon_entry: true,
         waiting_room: true,
-        auto_recording: 'none',
+        auto_recording: 'cloud',
         approval_type: 2,
         registration_type: 1,
         audio: 'both',
@@ -138,6 +138,7 @@ export async function createZoomMeeting(meetingData: {
         contact_name: "BPKAD Jabar",
         contact_email: "bpkad@jabarprov.go.id",
         email_notification: true,
+        // Remove duplicate auto_recording property since it's already defined above
         ...meetingData.settings,
       },
     };
@@ -206,17 +207,31 @@ export async function updateZoomMeeting(
   }
 }
 
-// Fungsi untuk menghapus meeting di Zoom
-export async function deleteZoomMeeting(zoomMeetingId: string) {
-  try {
-    const zoomClient = await getZoomApiClient();
-    await zoomClient.delete(`/meetings/${zoomMeetingId}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Failed to delete Zoom meeting:', error);
-    return { success: false };
+/**
+ * @description Menghapus meeting di Zoom
+ * @param meetingId ID meeting Zoom
+ */
+export async function deleteZoomMeeting(meetingId: string) {
+  const accessToken = await getS2SAccessToken();
+  const response = await fetch(`https://api.zoom.us/v2/meetings/${meetingId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok && response.status !== 204) {
+    const errorBody = await response.text();
+    console.error(
+      'Failed to delete Zoom meeting:',
+      response.status,
+      response.statusText,
+      errorBody
+    );
+    throw new Error('Failed to delete Zoom meeting');
   }
 }
+
 
 // Fungsi untuk mendapatkan semua meeting di Zoom
 export async function listZoomMeetings(nextPageToken?: string) {
