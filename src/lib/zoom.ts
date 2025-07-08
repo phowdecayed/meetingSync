@@ -83,7 +83,7 @@ export async function getS2SAccessToken() {
 }
 
 // Fungsi untuk mendapatkan instance axios dengan headers yang diperlukan
-async function getZoomApiClient() {
+export async function getZoomApiClient() {
   const accessToken = await getS2SAccessToken();
   
   return axios.create({
@@ -324,15 +324,23 @@ export async function getZoomMeeting(zoomMeetingId: string) {
 // Function to get meeting UUID from numeric meeting ID
 export async function getZoomMeetingUUID(meetingId: string | number): Promise<string> {
   try {
+    console.log('getZoomMeetingUUID called with meetingId:', meetingId);
     const zoomClient = await getZoomApiClient();
-    // Fetch meeting instances to get the UUIDs
-    const response = await zoomClient.get(`/past_meetings/${meetingId}/instances`);
-    const meetings = response.data.meetings;
-    if (!meetings || !Array.isArray(meetings) || meetings.length === 0) {
-      throw new Error('Could not find any meeting instances');
+    
+    // Approach 3: Try the instances endpoint (original approach)
+    console.log('Using Zoom Headers:', JSON.stringify(zoomClient.defaults.headers.common, null, 2));
+    console.log('Trying to get UUID from instances...');
+    const instancesResponse = await zoomClient.get(`/past_meetings/${meetingId}/instances`);
+    const meetings = instancesResponse.data.meetings;
+    
+    console.log('Instances response:', JSON.stringify(instancesResponse.data, null, 2));
+    
+    if (meetings && Array.isArray(meetings) && meetings.length > 0) {
+      console.log('Found UUID from instances:', meetings[0].uuid);
+      return meetings[0].uuid;
     }
-    // Return the uuid of the first instance
-    return meetings[0].uuid;
+    
+    throw new Error('Could not find any meeting instances or UUID');
   } catch (error: any) {
     console.error('Failed to get Zoom meeting UUID:', error.response?.data || error);
     throw new Error('Failed to get Zoom meeting UUID');
@@ -340,7 +348,7 @@ export async function getZoomMeetingUUID(meetingId: string | number): Promise<st
 }
 
 // Fungsi untuk double-encode UUID sesuai aturan Zoom
-function encodeMeetingUUID(uuid: string) {
+export function encodeMeetingUUID(uuid: string) {
   if (uuid.startsWith('/') || uuid.includes('//')) {
     return encodeURIComponent(encodeURIComponent(uuid));
   }
@@ -369,6 +377,7 @@ export interface ZoomMeetingSummary {
 // Fungsi untuk mengambil meeting summary dari Zoom API
 export async function getZoomMeetingSummary(meetingIdentifier: string): Promise<ZoomMeetingSummary> {
   try {
+    console.log('getZoomMeetingSummary called with identifier:', meetingIdentifier);
     const zoomClient = await getZoomApiClient();
     
     // Check if the identifier is a numeric ID or UUID
@@ -376,10 +385,17 @@ export async function getZoomMeetingSummary(meetingIdentifier: string): Promise<
     
     // If it looks like a numeric ID (no special characters), get the UUID first
     if (/^\d+$/.test(meetingIdentifier)) {
+      console.log('Identifier is numeric, getting UUID from meeting ID');
       meetingUUID = await getZoomMeetingUUID(meetingIdentifier);
+      console.log('Got UUID from meeting ID:', meetingUUID);
+    } else {
+      console.log('Identifier appears to be a UUID, using directly');
     }
     
     const encodedUUID = encodeMeetingUUID(meetingUUID);
+    console.log('Encoded UUID:', encodedUUID);
+    console.log('Making API call to:', `/meetings/${encodedUUID}/meeting_summary`);
+    
     const response = await zoomClient.get<ZoomMeetingSummary>(`/meetings/${encodedUUID}/meeting_summary`);
     return response.data;
   } catch (error: any) {

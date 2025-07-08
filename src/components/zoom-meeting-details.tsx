@@ -109,24 +109,60 @@ export function ZoomMeetingDetails({ meeting, isOpen, onClose }: ZoomMeetingDeta
         .finally(() => {
           setLoading(false);
         });
-      // Fetch meeting summary jika status sudah selesai
+      
+      // Reset meeting summary
       setMeetingSummary(null);
       setLoadingSummary(false);
-      fetch(`/api/zoom-meetings/${meeting.id}/meeting_summary`)
-        .then(res => {
-          if (!res.ok) throw new Error('Gagal mengambil ringkasan meeting');
-          return res.json();
-        })
-        .then(data => {
-          setMeetingSummary({
-            summary_title: data.summary_title,
-            summary_content: data.summary_content,
-            summary_created_time: data.summary_created_time,
-            summary_last_modified_time: data.summary_last_modified_time,
-            summary_last_modified_user_email: data.summary_last_modified_user_email,
+      
+      // For past meetings, get meeting UUID from instances first
+      const status = getMeetingStatus(meeting.start_time, meeting.duration);
+      if (status === 'past') {
+        setLoadingSummary(true);
+        
+        // Step 1: First fetch meeting instances to get the UUID
+        fetch(`/api/zoom-meetings/${meeting.id}/instances`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Failed to fetch meeting instances');
+            }
+            return response.json();
+          })
+          .then(data => {
+            // If we have instances, use the first instance's UUID to get the summary
+            if (data.meetings && data.meetings.length > 0) {
+              const meetingUUID = data.meetings[0].uuid;
+              return fetch(`/api/zoom-meetings/${meeting.id}/meeting_summary?uuid=${meetingUUID}`);
+            } else {
+              // If no instances, fall back to regular meeting summary endpoint
+              return fetch(`/api/zoom-meetings/${meeting.id}/meeting_summary`);
+            }
+          })
+          .then(res => {
+            if (!res) {
+              throw new Error('No response received from meeting summary request');
+            }
+            if (!res.ok) {
+              throw new Error('Gagal mengambil ringkasan meeting');
+            }
+            return res.json();
+          })
+          .then(data => {
+            setMeetingSummary({
+              summary_title: data.summary_title,
+              summary_content: data.summary_content,
+              summary_created_time: data.summary_created_time,
+              summary_last_modified_time: data.summary_last_modified_time,
+              summary_last_modified_user_email: data.summary_last_modified_user_email,
+            });
+          })
+          .catch((err) => {
+            console.error('Error fetching meeting summary:', err);
+            setMeetingSummary(null);
+          })
+          .finally(() => {
+            setLoadingSummary(false);
           });
-        })
-        .catch(() => setMeetingSummary(null));
+      }
     } else {
       setDetailedMeeting(null);
       setMeetingSummary(null);
@@ -234,7 +270,7 @@ export function ZoomMeetingDetails({ meeting, isOpen, onClose }: ZoomMeetingDeta
         <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'detail' | 'summary')} className="w-full">
           <TabsList className="justify-start">
             <TabsTrigger value="detail">Detail</TabsTrigger>
-            <TabsTrigger value="summary" disabled={status !== 'past'}>Ringkasan</TabsTrigger>
+            <TabsTrigger value="summary" disabled>Ringkasan</TabsTrigger>
           </TabsList>
           <TabsContent value="detail">
             <div className="space-y-4 py-2">
