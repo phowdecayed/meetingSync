@@ -50,7 +50,11 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       date: new Date(existingMeeting.date),
       time: format(new Date(existingMeeting.date), "HH:mm"),
       duration: existingMeeting.duration,
-      participants: Array.isArray(existingMeeting.participants) ? existingMeeting.participants : existingMeeting.participants.split(',').map(p => p.trim()),
+      participants: Array.isArray(existingMeeting.participants)
+        ? existingMeeting.participants
+        : typeof existingMeeting.participants === 'string'
+        ? (existingMeeting.participants as string).split(',').map((p: string) => p.trim())
+        : [],
       description: existingMeeting.description || "",
       password: existingMeeting.zoomPassword || "",
   } : {
@@ -154,11 +158,11 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
     const day = localDate.getDate().toString().padStart(2, '0');
     const time = values.time;
 
-    const combinedDateTimeString = `${year}-${month}-${day}T${time}:00`;
+    const combinedDateTime = new Date(`${year}-${month}-${day}T${time}:00`);
 
     const meetingData = {
         title: values.title,
-        date: combinedDateTimeString, // Send as string
+        date: combinedDateTime, // Send as Date object
         duration: values.duration,
         participants: values.participants,
         description: values.description,
