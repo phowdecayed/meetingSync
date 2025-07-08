@@ -132,7 +132,7 @@ export const createMeeting = async (data: Omit<Meeting, 'id'>): Promise<Meeting>
         join_before_host: false,
         mute_upon_entry: true,
         waiting_room: true,
-        auto_recording: 'none',
+        auto_recording: 'cloud',
         approval_type: 2,
         registration_type: 1,
         audio: 'both',
