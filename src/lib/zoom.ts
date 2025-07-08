@@ -131,15 +131,9 @@ export async function createZoomMeeting(meetingData: {
         waiting_room: false,
         auto_recording: 'cloud',
         approval_type: 2,
-        registration_type: 1,
         audio: 'both',
-        close_registration: false,
-        alternative_hosts_email_notification: true,
-        contact_name: "BPKAD Jabar",
-        contact_email: "bpkad@jabarprov.go.id",
-        email_notification: true,
-        // Remove duplicate auto_recording property since it's already defined above
-        ...meetingData.settings,
+        auto_start_meeting_summary: true,
+        auto_start_ai_companion_questions: true,
       },
     };
 
@@ -187,6 +181,10 @@ export async function updateZoomMeeting(
         mute_upon_entry: true,
         waiting_room: false,
         auto_recording: 'cloud',
+        approval_type: 2,
+        audio: 'both',
+        auto_start_meeting_summary: true,
+        auto_start_ai_companion_questions: true,
       }
     };
     
@@ -327,14 +325,14 @@ export async function getZoomMeeting(zoomMeetingId: string) {
 export async function getZoomMeetingUUID(meetingId: string | number): Promise<string> {
   try {
     const zoomClient = await getZoomApiClient();
-    // Fetch meeting details to get the UUID
-    const response = await zoomClient.get(`/meetings/${meetingId}`);
-    
-    if (!response.data.uuid) {
-      throw new Error('Could not find meeting UUID');
+    // Fetch meeting instances to get the UUIDs
+    const response = await zoomClient.get(`/past_meetings/${meetingId}/instances`);
+    const meetings = response.data.meetings;
+    if (!meetings || !Array.isArray(meetings) || meetings.length === 0) {
+      throw new Error('Could not find any meeting instances');
     }
-    
-    return response.data.uuid;
+    // Return the uuid of the first instance
+    return meetings[0].uuid;
   } catch (error: any) {
     console.error('Failed to get Zoom meeting UUID:', error.response?.data || error);
     throw new Error('Failed to get Zoom meeting UUID');
