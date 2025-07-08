@@ -48,3 +48,4 @@ firestore-debug.log
 
 # prisma
 prisma/dev.db
+dev.db
