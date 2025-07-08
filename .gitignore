@@ -39,6 +39,7 @@ next-env.d.ts
 
 .genkit/*
 .env*
+pg.env
 
 # firebase
 firebase-debug.log

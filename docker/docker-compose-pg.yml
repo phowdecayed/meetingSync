@@ -1,0 +1,52 @@
+services:
+  # 1. Database Service (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: bpkad-zoom-app-db
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - pg.env
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Migration Service
+  migrate:
+    build:
+      # CONTEXT FIX: Standardize the build context.
+      # Assuming you run 'docker compose' from the project root.
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: bpkad-zoom-app-migrate
+    env_file:
+      - pg.env
+    command: sh -c 'npx prisma migrate deploy && npx prisma db seed'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 3. Application Service
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: bpkad-zoom-app-app
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    env_file:
+      - pg.env
+    depends_on:
+      # DEPENDS_ON FIX: Use the long-form syntax to ensure the 'migrate'
+      # service finishes successfully before the 'app' starts.
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  postgres_data:
