@@ -6,13 +6,19 @@ import crypto from 'crypto';
 
 // Membuat secret yang konsisten atau menggunakan environment variable jika tersedia
 const getAuthSecret = () => {
-  // Gunakan NEXTAUTH_SECRET dari environment variable jika tersedia
-  if (process.env.NEXTAUTH_SECRET) {
-    return process.env.NEXTAUTH_SECRET;
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    console.error('FATAL: NEXTAUTH_SECRET environment variable is not set.');
+    // Di lingkungan pengembangan, kita bisa menggunakan nilai default,
+    // tetapi di produksi, kita harus menghentikan proses.
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('NEXTAUTH_SECRET is not set in production environment.');
+    } else {
+      // Menggunakan nilai default hanya untuk pengembangan
+      return 'this-is-a-development-secret-do-not-use-in-production';
+    }
   }
-  // Fallback to a consistent development secret if not in production
-  // Note: For production, always set NEXTAUTH_SECRET in environment variables
-  return 'this-is-a-development-secret-do-not-use-in-production';
+  return secret;
 };
 
 export const authConfig = {
