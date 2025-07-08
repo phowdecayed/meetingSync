@@ -112,7 +112,7 @@ export function ZoomMeetingDetails({ meeting, isOpen, onClose }: ZoomMeetingDeta
       // Fetch meeting summary jika status sudah selesai
       setMeetingSummary(null);
       setLoadingSummary(false);
-      fetch(`/api/meetings/${meeting.id}/meeting_summary`)
+      fetch(`/api/zoom-meetings/${meeting.id}/meeting_summary`)
         .then(res => {
           if (!res.ok) throw new Error('Gagal mengambil ringkasan meeting');
           return res.json();
