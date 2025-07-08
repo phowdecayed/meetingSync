@@ -10,7 +10,7 @@ services:
     env_file:
       - .env
     volumes:
-      - sqlite_data:/app/data
+      - ./data:/app/data
     depends_on:
       - migrate
 
@@ -23,7 +23,4 @@ services:
     env_file:
       - .env
     volumes:
-      - sqlite_data:/app/data
-
-volumes:
-  sqlite_data:
+      - ./data:/app/data
