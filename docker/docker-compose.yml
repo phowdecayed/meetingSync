@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  app:
+    build: ..
+    container_name: bpkad-zoom-book-app
+    ports:
+      - '3000:3000'
+    volumes:
+      - ../prisma/dev.db:/app/prisma/dev.db
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - migrate
+  migrate:
+    build: ..
+    container_name: bpkad-zoom-book-migrate
+    command: sh -c 'npx prisma migrate deploy && npx prisma db seed && exit 0'
+    volumes:
+      - ../prisma/dev.db:/app/prisma/dev.db
+    environment:
+      - NODE_ENV=production 
