@@ -151,14 +151,8 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
     const [hours, minutes] = values.time.split(':').map(Number);
     const localDate = new Date(values.date);
 
-    // We need to construct a timezone-naive string for the backend.
-    // The backend will combine this with the 'Asia/Jakarta' timezone.
-    const year = localDate.getFullYear();
-    const month = (localDate.getMonth() + 1).toString().padStart(2, '0');
-    const day = localDate.getDate().toString().padStart(2, '0');
-    const time = values.time;
-
-    const combinedDateTime = new Date(`${year}-${month}-${day}T${time}:00`);
+    // Gunakan waktu lokal Asia/Jakarta tanpa konversi UTC
+    const combinedDateTime = new Date(`${localDate.getFullYear()}-${(localDate.getMonth() + 1).toString().padStart(2, '0')}-${localDate.getDate().toString().padStart(2, '0')}T${values.time}:00`);
 
     const meetingData = {
         title: values.title,

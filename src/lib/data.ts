@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import prisma from './prisma';
 import { PrismaClient } from '@prisma/client';
 import { createZoomMeeting, updateZoomMeeting, deleteZoomMeeting } from './zoom';
+import { format } from 'date-fns';
 
 // --- SHARED TYPES & UTILS ---
 export type Meeting = {
@@ -119,13 +120,16 @@ export const createMeeting = async (data: Omit<Meeting, 'id'>): Promise<Meeting>
     }
 
     // Create Zoom meeting first with detailed settings based on API requirements
+    // Format start_time sebagai string lokal Asia/Jakarta
+    const startTimeJakarta = format(meetingDate, "yyyy-MM-dd'T'HH:mm:ss");
     const zoomMeetingData = await createZoomMeeting({
       topic: data.title,
-      start_time: data.date as unknown as string, // Pass the string directly
+      start_time: startTimeJakarta, // Kirim string lokal
       duration: data.duration,
       agenda: data.description,
       password: data.password || "rahasia", // Use provided password or default
       type: 2, // Scheduled meeting (2 = scheduled)
+      timezone: 'Asia/Jakarta',
       settings: {
         host_video: true,
         participant_video: true,
