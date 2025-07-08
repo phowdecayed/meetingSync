@@ -322,3 +322,19 @@ export async function getZoomMeeting(zoomMeetingId: string) {
     throw new Error('Failed to get Zoom meeting');
   }
 }
+
+// Fungsi untuk double-encode UUID sesuai aturan Zoom
+function encodeMeetingUUID(uuid: string) {
+  if (uuid.startsWith('/') || uuid.includes('//')) {
+    return encodeURIComponent(encodeURIComponent(uuid));
+  }
+  return encodeURIComponent(uuid);
+}
+
+// Fungsi untuk mengambil meeting summary dari Zoom API
+export async function getZoomMeetingSummary(meetingUUID: string) {
+  const zoomClient = await getZoomApiClient();
+  const encodedUUID = encodeMeetingUUID(meetingUUID);
+  const response = await zoomClient.get(`/meetings/${encodedUUID}/meeting_summary`);
+  return response.data;
+}

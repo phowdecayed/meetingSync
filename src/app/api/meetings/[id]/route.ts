@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getMeetingById, updateMeeting } from '@/lib/data';
+import { getZoomMeetingSummary } from '@/lib/zoom';
 
 export async function PATCH(
   request: Request,
@@ -49,5 +50,22 @@ export async function PATCH(
       { error: (error as Error).message || 'Failed to update meeting' },
       { status: 500 }
     );
+  }
+}
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  if (!request.url.endsWith('/meeting_summary')) {
+    return new Response(null, { status: 404 });
+  }
+  try {
+    const meetingId = params.id;
+    if (!meetingId) {
+      return NextResponse.json({ error: 'Meeting ID is required' }, { status: 400 });
+    }
+    const summary = await getZoomMeetingSummary(meetingId);
+    return NextResponse.json(summary);
+  } catch (error) {
+    console.error('Error fetching meeting summary:', error);
+    return NextResponse.json({ error: (error as Error).message || 'Failed to fetch meeting summary' }, { status: 500 });
   }
 }
