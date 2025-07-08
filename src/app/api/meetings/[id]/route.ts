@@ -57,12 +57,34 @@ export async function GET(request: Request, { params }: { params: { id: string }
   if (!request.url.endsWith('/meeting_summary')) {
     return new Response(null, { status: 404 });
   }
+  
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Please sign in' },
+        { status: 401 }
+      );
+    }
+    
     const meetingId = params.id;
     if (!meetingId) {
       return NextResponse.json({ error: 'Meeting ID is required' }, { status: 400 });
     }
-    const summary = await getZoomMeetingSummary(meetingId);
+    
+    // First get our meeting to get the Zoom meeting ID
+    const meeting = await getMeetingById(meetingId);
+    if (!meeting) {
+      return NextResponse.json({ error: 'Meeting not found' }, { status: 404 });
+    }
+    
+    // Check if meeting has a Zoom meeting ID
+    if (!meeting.zoomMeetingId) {
+      return NextResponse.json({ error: 'No Zoom meeting associated with this meeting' }, { status: 404 });
+    }
+    
+    // Get the meeting summary from Zoom API
+    const summary = await getZoomMeetingSummary(meeting.zoomMeetingId);
     return NextResponse.json(summary);
   } catch (error) {
     console.error('Error fetching meeting summary:', error);

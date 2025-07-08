@@ -331,10 +331,34 @@ function encodeMeetingUUID(uuid: string) {
   return encodeURIComponent(uuid);
 }
 
+// Interface for Zoom meeting summary response
+export interface ZoomMeetingSummary {
+  meeting_host_id: string;
+  meeting_host_email: string;
+  meeting_uuid: string;
+  meeting_id: number;
+  meeting_topic: string;
+  meeting_start_time: string;
+  meeting_end_time: string;
+  summary_start_time: string;
+  summary_end_time: string;
+  summary_created_time: string;
+  summary_last_modified_time: string;
+  summary_last_modified_user_id: string;
+  summary_last_modified_user_email: string;
+  summary_title: string;
+  summary_content: string;
+}
+
 // Fungsi untuk mengambil meeting summary dari Zoom API
-export async function getZoomMeetingSummary(meetingUUID: string) {
-  const zoomClient = await getZoomApiClient();
-  const encodedUUID = encodeMeetingUUID(meetingUUID);
-  const response = await zoomClient.get(`/meetings/${encodedUUID}/meeting_summary`);
-  return response.data;
+export async function getZoomMeetingSummary(meetingUUID: string): Promise<ZoomMeetingSummary> {
+  try {
+    const zoomClient = await getZoomApiClient();
+    const encodedUUID = encodeMeetingUUID(meetingUUID);
+    const response = await zoomClient.get<ZoomMeetingSummary>(`/meetings/${encodedUUID}/meeting_summary`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Failed to get Zoom meeting summary:', error.response?.data || error);
+    throw new Error('Failed to get Zoom meeting summary');
+  }
 }
