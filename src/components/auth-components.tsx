@@ -15,7 +15,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -38,6 +38,7 @@ export function LoginForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [allowRegistration, setAllowRegistration] = useState(true);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     async function fetchSettings() {
@@ -77,7 +78,13 @@ export function LoginForm() {
       });
       setIsLoading(false);
     } else {
-      router.push('/dashboard');
+      // Redirect aman hanya ke path internal
+      const from = searchParams && searchParams.get('from');
+      if (from && from.startsWith('/')) {
+        router.replace(from);
+      } else {
+        router.replace('/dashboard');
+      }
       router.refresh(); // Refresh to ensure session is fully loaded
     }
   }
