@@ -1,21 +1,44 @@
 version: '3.8'
 services:
   app:
-    build: ..
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: bpkad-zoom-book-app
+    restart: always
     ports:
       - '3000:3000'
-    volumes:
-      - ../prisma/dev.db:/app/prisma/dev.db
     environment:
       - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
     depends_on:
       - migrate
+      - postgres
   migrate:
-    build: ..
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: bpkad-zoom-book-migrate
     command: sh -c 'npx prisma migrate deploy && npx prisma db seed && exit 0'
-    volumes:
-      - ../prisma/dev.db:/app/prisma/dev.db
     environment:
-      - NODE_ENV=production 
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:15-alpine
+    container_name: bpkad-zoom-book-postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-bpkad_zoom_book}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data: 
