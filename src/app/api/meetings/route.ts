@@ -7,6 +7,7 @@ import {
   updateMeeting, 
   deleteMeeting 
 } from '@/lib/data';
+import prisma from '@/lib/prisma'; // Impor prisma
 
 // GET /api/meetings - Mengambil semua pertemuan
 export async function GET(request: Request) {
@@ -48,23 +49,41 @@ export async function POST(request: Request) {
   try {
     const session = await auth();
 
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized: User not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    // Verifikasi bahwa pengguna ada di database
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized: User not found' },
+        { status: 401 }
+      );
     }
 
     const data = await request.json();
-    
+
     if (!data.title || !data.date || data.duration === undefined) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
+
+    // Make sure organizerId is set to the current user's ID
+    const meetingData = {
+      ...data,
+      organizerId: user.id, // Gunakan user.id yang sudah terverifikasi
+    };
     
-    // Make sure organizerId is set to current user
-    data.organizerId = session.user.id;
-    
-    const meeting = await createMeeting(data);
+    const meeting = await createMeeting(meetingData);
     
     return NextResponse.json(meeting);
   } catch (error: any) {
@@ -110,4 +129,4 @@ export async function DELETE(request: Request) {
       { status: 500 }
     );
   }
-} 
+}
