@@ -8,6 +8,9 @@ services:
       - postgres_data:/var/lib/postgresql/data
     env_file:
       - pg.env
+    environment:
+      - TZ=Asia/Jakarta
+      - PGTZ=Asia/Jakarta
     ports:
       - '5432:5432'
     healthcheck:
@@ -26,6 +29,8 @@ services:
     container_name: bpkad-zoom-app-migrate
     env_file:
       - pg.env
+    environment:
+      - TZ=Asia/Jakarta
     command: sh -c 'npx prisma migrate deploy && npx prisma db seed'
     depends_on:
       db:
@@ -42,6 +47,8 @@ services:
       - '3000:3000'
     env_file:
       - pg.env
+    environment:
+      - TZ=Asia/Jakarta
     depends_on:
       # DEPENDS_ON FIX: Use the long-form syntax to ensure the 'migrate'
       # service finishes successfully before the 'app' starts.
