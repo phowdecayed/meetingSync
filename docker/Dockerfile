@@ -32,6 +32,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules ./node_modules
 
+RUN chown -R node:node /app
+
 # It's a good practice to run containers as a non-root user
 USER node
 
