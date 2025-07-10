@@ -48,7 +48,7 @@ export function LoginForm() {
         const data = await res.json();
         setAllowRegistration(data.allowRegistration);
       } catch (err) {
-        setAllowRegistration(true); // fallback: tetap tampilkan jika gagal
+        setAllowRegistration(false); // fallback: tetap tampilkan jika gagal
       }
     }
     fetchSettings();
