@@ -1,8 +1,14 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ZoomCalendar } from '@/components/zoom-calendar';
-import { Meeting } from '@/lib/data';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ZoomCalendar } from "@/components/zoom-calendar";
+import { Meeting } from "@/lib/data";
 
 type MeetingsViewTabsProps = {
   meetings: Meeting[];
@@ -15,11 +21,12 @@ export function MeetingsViewTabs({ meetings }: MeetingsViewTabsProps) {
         <CardHeader>
           <CardTitle>Zoom Meeting Calendar</CardTitle>
           <CardDescription>
-            Currently showing only Zoom meetings. Internal scheduling is temporarily disabled.
+            Currently showing only Zoom meetings. Internal scheduling is
+            temporarily disabled.
           </CardDescription>
         </CardHeader>
       </Card>
-        <ZoomCalendar />
+      <ZoomCalendar />
     </div>
   );
 }

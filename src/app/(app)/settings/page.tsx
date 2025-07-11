@@ -1,16 +1,29 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Loader2 } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { ZoomSettings } from '@/components/zoom-settings';
+import { Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { ZoomSettings } from "@/components/zoom-settings";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export default function SettingsPage() {
@@ -22,22 +35,22 @@ export default function SettingsPage() {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [saving, setSaving] = useState(false);
   const [allowRegistration, setAllowRegistration] = useState(true);
-  const [defaultRole, setDefaultRole] = useState<'member' | 'admin'>('member');
+  const [defaultRole, setDefaultRole] = useState<"member" | "admin">("member");
 
   useEffect(() => {
     async function fetchSettings() {
       setLoadingSettings(true);
       try {
-        const res = await fetch('/api/settings');
-        if (!res.ok) throw new Error('Gagal mengambil data pengaturan');
+        const res = await fetch("/api/settings");
+        if (!res.ok) throw new Error("Gagal mengambil data pengaturan");
         const data = await res.json();
         setAllowRegistration(data.allowRegistration);
         setDefaultRole(data.defaultRole);
       } catch (err) {
         toast({
-          variant: 'destructive',
-          title: 'Gagal memuat pengaturan',
-          description: 'Terjadi kesalahan saat mengambil data pengaturan.',
+          variant: "destructive",
+          title: "Gagal memuat pengaturan",
+          description: "Terjadi kesalahan saat mengambil data pengaturan.",
         });
       } finally {
         setLoadingSettings(false);
@@ -49,28 +62,28 @@ export default function SettingsPage() {
   async function handleSave() {
     setSaving(true);
     try {
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ allowRegistration, defaultRole }),
       });
-      if (!res.ok) throw new Error('Gagal menyimpan pengaturan');
+      if (!res.ok) throw new Error("Gagal menyimpan pengaturan");
       toast({
-        title: 'Berhasil',
-        description: 'Pengaturan berhasil disimpan.',
+        title: "Berhasil",
+        description: "Pengaturan berhasil disimpan.",
       });
     } catch (err) {
       toast({
-        variant: 'destructive',
-        title: 'Gagal menyimpan',
-        description: 'Terjadi kesalahan saat menyimpan pengaturan.',
+        variant: "destructive",
+        title: "Gagal menyimpan",
+        description: "Terjadi kesalahan saat menyimpan pengaturan.",
       });
     } finally {
       setSaving(false);
     }
   }
 
-  if (status === 'loading' || !user) {
+  if (status === "loading" || !user) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -78,12 +91,14 @@ export default function SettingsPage() {
     );
   }
 
-  if (user.role !== 'admin') {
+  if (user.role !== "admin") {
     return (
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-headline font-bold">Access Denied</h1>
-          <p className="text-muted-foreground">You do not have permission to view this page.</p>
+          <p className="text-muted-foreground">
+            You do not have permission to view this page.
+          </p>
         </div>
       </div>
     );
@@ -92,8 +107,12 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-headline font-bold">Pengaturan Aplikasi</h1>
-        <p className="text-muted-foreground">Kelola pengaturan aplikasi secara global. (Hanya Admin)</p>
+        <h1 className="text-3xl font-headline font-bold">
+          Pengaturan Aplikasi
+        </h1>
+        <p className="text-muted-foreground">
+          Kelola pengaturan aplikasi secara global. (Hanya Admin)
+        </p>
       </div>
 
       <Tabs defaultValue="umum" className="w-full">
@@ -105,7 +124,9 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Umum</CardTitle>
-              <CardDescription>Kelola pengaturan umum aplikasi.</CardDescription>
+              <CardDescription>
+                Kelola pengaturan umum aplikasi.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {loadingSettings ? (
@@ -115,7 +136,10 @@ export default function SettingsPage() {
               ) : (
                 <>
                   <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
-                    <Label htmlFor="allow-registration" className="flex flex-col space-y-1">
+                    <Label
+                      htmlFor="allow-registration"
+                      className="flex flex-col space-y-1"
+                    >
                       <span>Izinkan Registrasi Pengguna Baru</span>
                       <span className="font-normal leading-snug text-muted-foreground">
                         Aktifkan atau nonaktifkan halaman registrasi publik.
@@ -125,15 +149,19 @@ export default function SettingsPage() {
                       id="allow-registration"
                       checked={allowRegistration}
                       onCheckedChange={setAllowRegistration}
-                      disabled={saving || user?.role !== 'admin'}
+                      disabled={saving || user?.role !== "admin"}
                     />
                   </div>
                   <div className="space-y-2 max-w-sm">
-                    <Label htmlFor="default-role">Peran Default untuk Pengguna Baru</Label>
+                    <Label htmlFor="default-role">
+                      Peran Default untuk Pengguna Baru
+                    </Label>
                     <Select
                       value={defaultRole}
-                      onValueChange={v => setDefaultRole(v as 'member' | 'admin')}
-                      disabled={saving || user?.role !== 'admin'}
+                      onValueChange={(v) =>
+                        setDefaultRole(v as "member" | "admin")
+                      }
+                      disabled={saving || user?.role !== "admin"}
                     >
                       <SelectTrigger id="default-role" className="w-[180px]">
                         <SelectValue placeholder="Pilih peran" />
@@ -144,10 +172,13 @@ export default function SettingsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {user?.role === 'admin' && (
+                  {user?.role === "admin" && (
                     <div className="pt-2">
                       <Button onClick={handleSave} disabled={saving}>
-                        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Simpan Pengaturan
+                        {saving && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Simpan Pengaturan
                       </Button>
                     </div>
                   )}
@@ -160,7 +191,10 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Integrasi Zoom</CardTitle>
-              <CardDescription>Hubungkan akun Zoom Anda untuk mengaktifkan konferensi video pada rapat.</CardDescription>
+              <CardDescription>
+                Hubungkan akun Zoom Anda untuk mengaktifkan konferensi video
+                pada rapat.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ZoomSettings />

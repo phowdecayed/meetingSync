@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Dialog,
@@ -7,15 +7,25 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import type { Meeting } from '@/lib/data';
-import { format } from 'date-fns';
-import { Calendar, Clock, Users, Link as LinkIcon, Info, User, Copy, Eye, EyeOff } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import type { Meeting } from "@/lib/data";
+import { format } from "date-fns";
+import {
+  Calendar,
+  Clock,
+  Users,
+  Link as LinkIcon,
+  Info,
+  User,
+  Copy,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 
 interface MeetingDetailsDialogProps {
   meeting: Meeting | null;
@@ -23,43 +33,49 @@ interface MeetingDetailsDialogProps {
   onClose: () => void;
 }
 
-export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetailsDialogProps) {
+export function MeetingDetailsDialog({
+  meeting,
+  isOpen,
+  onClose,
+}: MeetingDetailsDialogProps) {
   const { toast } = useToast();
   const { data: session } = useSession();
   const [hostKey, setHostKey] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showHostKey, setShowHostKey] = useState(false);
-  
+
   // Determine if the current user is the organizer
   const isOrganizer = meeting && session?.user?.id === meeting.organizerId;
-  
+
   useEffect(() => {
     // Fetch host key only if user is the organizer
     if (isOpen && isOrganizer) {
-      fetch('/api/zoom-settings/host-key')
-        .then(response => response.json())
-        .then(data => {
+      fetch("/api/zoom-settings/host-key")
+        .then((response) => response.json())
+        .then((data) => {
           if (data.hostKey) {
             setHostKey(data.hostKey);
           }
         })
-        .catch(error => {
-          console.error('Error fetching host key:', error);
+        .catch((error) => {
+          console.error("Error fetching host key:", error);
           setHostKey(null);
         });
     } else {
       setHostKey(null);
     }
   }, [isOpen, isOrganizer]);
-  
+
   if (!meeting) return null;
 
   // Determine if the meeting is in the past
   const now = new Date();
   const meetingDate = new Date(meeting.date);
-  const meetingEndTime = new Date(meetingDate.getTime() + meeting.duration * 60 * 1000);
+  const meetingEndTime = new Date(
+    meetingDate.getTime() + meeting.duration * 60 * 1000,
+  );
   const isPastMeeting = now > meetingEndTime;
-  
+
   const handleJoinMeeting = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (meeting.zoomPassword) {
       // Show toast with password information
@@ -70,7 +86,7 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
       });
     }
   };
-  
+
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text).then(
       () => {
@@ -85,7 +101,7 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
           title: "Failed to copy",
           description: "Could not copy to clipboard",
         });
-      }
+      },
     );
   };
 
@@ -99,7 +115,9 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
               Details for your scheduled meeting.
             </DialogDescription>
             {isPastMeeting && (
-              <Badge variant="secondary" className="bg-gray-100 text-gray-500">Selesai</Badge>
+              <Badge variant="secondary" className="bg-gray-100 text-gray-500">
+                Selesai
+              </Badge>
             )}
           </div>
         </DialogHeader>
@@ -108,23 +126,29 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
             <Calendar className="h-5 w-5 mt-1 text-muted-foreground" />
             <div>
               <h4 className="font-semibold">Date & Time</h4>
-              <p className="text-muted-foreground">{format(new Date(meeting.date), 'PPPP p')}</p>
+              <p className="text-muted-foreground">
+                {format(new Date(meeting.date), "PPPP p")}
+              </p>
             </div>
           </div>
           <div className="flex items-start gap-4">
             <Clock className="h-5 w-5 mt-1 text-muted-foreground" />
             <div>
               <h4 className="font-semibold">Duration</h4>
-              <p className="text-muted-foreground">{meeting.duration} minutes</p>
+              <p className="text-muted-foreground">
+                {meeting.duration} minutes
+              </p>
             </div>
           </div>
           {meeting.description && (
-             <div className="flex items-start gap-4">
-                <Info className="h-5 w-5 mt-1 text-muted-foreground" />
-                <div>
-                    <h4 className="font-semibold">Description</h4>
-                    <p className="text-muted-foreground whitespace-pre-wrap">{meeting.description}</p>
-                </div>
+            <div className="flex items-start gap-4">
+              <Info className="h-5 w-5 mt-1 text-muted-foreground" />
+              <div>
+                <h4 className="font-semibold">Description</h4>
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {meeting.description}
+                </p>
+              </div>
             </div>
           )}
           <div className="flex items-start gap-4">
@@ -133,9 +157,15 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
               <h4 className="font-semibold">Participants</h4>
               <div className="flex flex-wrap gap-2 mt-2">
                 {meeting.participants.length > 0 ? (
-                  meeting.participants.map((p) => <Badge key={p} variant="secondary">{p}</Badge>)
+                  meeting.participants.map((p) => (
+                    <Badge key={p} variant="secondary">
+                      {p}
+                    </Badge>
+                  ))
                 ) : (
-                  <p className="text-sm text-muted-foreground">No participants other than the organizer.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No participants other than the organizer.
+                  </p>
                 )}
               </div>
             </div>
@@ -145,22 +175,31 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
               <LinkIcon className="h-5 w-5 mt-1 text-muted-foreground" />
               <div>
                 <h4 className="font-semibold">Zoom Meeting Link</h4>
-                <a href={meeting.zoomJoinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">
+                <a
+                  href={meeting.zoomJoinUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline break-all"
+                >
                   {meeting.zoomJoinUrl}
                 </a>
                 {meeting.zoomPassword && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Password: 
+                    Password:
                     <span className="font-mono ml-1">
-                      {showPassword ? meeting.zoomPassword : '••••••••'}
+                      {showPassword ? meeting.zoomPassword : "••••••••"}
                     </span>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-6 px-2 ml-1"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      {showPassword ? (
+                        <EyeOff className="h-3.5 w-3.5" />
+                      ) : (
+                        <Eye className="h-3.5 w-3.5" />
+                      )}
                     </Button>
                   </p>
                 )}
@@ -177,7 +216,7 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
               </div>
             </div>
           )}
-          
+
           {/* Only show host key to the organizer */}
           {isOrganizer && hostKey && (
             <div className="flex items-start gap-4">
@@ -186,26 +225,30 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
                 <h4 className="font-semibold flex items-center justify-between">
                   <span>Host Key</span>
                   <div className="flex items-center space-x-1">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-6 px-2"
                       onClick={() => setShowHostKey(!showHostKey)}
                     >
-                      {showHostKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      {showHostKey ? (
+                        <EyeOff className="h-3.5 w-3.5" />
+                      ) : (
+                        <Eye className="h-3.5 w-3.5" />
+                      )}
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-6 px-2"
-                      onClick={() => copyToClipboard(hostKey, 'Host Key')}
+                      onClick={() => copyToClipboard(hostKey, "Host Key")}
                     >
                       <Copy className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </h4>
                 <p className="text-sm text-muted-foreground font-mono">
-                  {showHostKey ? hostKey : '••••••••'}
+                  {showHostKey ? hostKey : "••••••••"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1 italic">
                   Gunakan Host Key untuk claim Host
@@ -215,10 +258,12 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Close</Button>
-          {meeting.zoomJoinUrl && (
-            isPastMeeting ? (
-              <Button 
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+          {meeting.zoomJoinUrl &&
+            (isPastMeeting ? (
+              <Button
                 variant="outline"
                 disabled
                 className="opacity-60 cursor-not-allowed"
@@ -228,17 +273,16 @@ export function MeetingDetailsDialog({ meeting, isOpen, onClose }: MeetingDetail
               </Button>
             ) : (
               <Button asChild>
-                <a 
-                  href={meeting.zoomJoinUrl} 
-                  target="_blank" 
+                <a
+                  href={meeting.zoomJoinUrl}
+                  target="_blank"
                   rel="noopener noreferrer"
                   onClick={handleJoinMeeting}
                 >
                   Join Meeting
                 </a>
               </Button>
-            )
-          )}
+            ))}
         </DialogFooter>
       </DialogContent>
     </Dialog>

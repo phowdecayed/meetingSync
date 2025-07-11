@@ -22,17 +22,21 @@ export function DashboardHeader() {
   const router = useRouter();
 
   const handleLogout = () => {
-    signOut({ callbackUrl: '/login' });
+    signOut({ callbackUrl: "/login" });
   };
 
   const getInitials = (name: string = "") => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
   };
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
       <SidebarTrigger />
-      
+
       <div className="flex w-full items-center justify-end gap-4">
         <Link href="/meetings/new" passHref>
           <Button>
@@ -44,7 +48,15 @@ export function DashboardHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={user?.name ? `https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name)}` : undefined} alt={user?.name ?? ''} data-ai-hint="user avatar" />
+                <AvatarImage
+                  src={
+                    user?.name
+                      ? `https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name)}`
+                      : undefined
+                  }
+                  alt={user?.name ?? ""}
+                  data-ai-hint="user avatar"
+                />
                 <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
               </Avatar>
             </Button>
@@ -65,7 +77,7 @@ export function DashboardHeader() {
                 <span>Profile</span>
               </DropdownMenuItem>
             </Link>
-            {user?.role === 'admin' && (
+            {user?.role === "admin" && (
               <Link href="/settings" passHref>
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />

@@ -1,6 +1,5 @@
-import prisma from './prisma';
-import axios from 'axios';
-
+import prisma from "./prisma";
+import axios from "axios";
 
 // Jenis data untuk response dari Zoom API
 interface ZoomMeeting {
@@ -24,73 +23,85 @@ interface ZoomMeetingsResponse {
 // Fungsi untuk mendapatkan credentials Zoom
 async function getZoomCredentials() {
   const creds = await prisma.zoomCredentials.findFirst({
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: "desc" },
   });
-  
+
   if (!creds) {
-    throw new Error('Zoom credentials not found. Please set up Zoom integration first.');
+    throw new Error(
+      "Zoom credentials not found. Please set up Zoom integration first.",
+    );
   }
-  
+
   return creds;
 }
 
 // Fungsi untuk memverifikasi kredensial S2S
-export async function verifyS2SCredentials(clientId: string, clientSecret: string, accountId: string): Promise<any> {
+export async function verifyS2SCredentials(
+  clientId: string,
+  clientSecret: string,
+  accountId: string,
+): Promise<any> {
   try {
     const response = await axios.post(
-      'https://zoom.us/oauth/token',
+      "https://zoom.us/oauth/token",
       new URLSearchParams({
-        grant_type: 'account_credentials',
+        grant_type: "account_credentials",
         account_id: accountId,
       }).toString(),
       {
         headers: {
-          'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+          "Content-Type": "application/x-www-form-urlencoded",
         },
-      }
+      },
     );
     return response.data;
   } catch (error: any) {
-    console.error('Error verifying S2S credentials:', error.response ? error.response.data : error.message);
-    throw new Error('Could not verify Zoom S2S credentials.');
+    console.error(
+      "Error verifying S2S credentials:",
+      error.response ? error.response.data : error.message,
+    );
+    throw new Error("Could not verify Zoom S2S credentials.");
   }
 }
 
 // Fungsi untuk mendapatkan S2S access token (menggunakan kredensial dari DB)
 export async function getS2SAccessToken() {
   const creds = await getZoomCredentials();
-  
+
   try {
     const response = await axios.post(
-      'https://zoom.us/oauth/token',
+      "https://zoom.us/oauth/token",
       new URLSearchParams({
-        grant_type: 'account_credentials',
+        grant_type: "account_credentials",
         account_id: creds.accountId,
       }),
       {
         headers: {
-          'Authorization': `Basic ${Buffer.from(`${creds.clientId}:${creds.clientSecret}`).toString('base64')}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${Buffer.from(`${creds.clientId}:${creds.clientSecret}`).toString("base64")}`,
+          "Content-Type": "application/x-www-form-urlencoded",
         },
-      }
+      },
     );
     return response.data.access_token;
   } catch (error: any) {
-    console.error('Error getting S2S access token:', error.response ? error.response.data : error.message);
-    throw new Error('Could not fetch Zoom S2S access token.');
+    console.error(
+      "Error getting S2S access token:",
+      error.response ? error.response.data : error.message,
+    );
+    throw new Error("Could not fetch Zoom S2S access token.");
   }
 }
 
 // Fungsi untuk mendapatkan instance axios dengan headers yang diperlukan
 export async function getZoomApiClient() {
   const accessToken = await getS2SAccessToken();
-  
+
   return axios.create({
-    baseURL: 'https://api.zoom.us/v2',
+    baseURL: "https://api.zoom.us/v2",
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 }
@@ -111,7 +122,7 @@ export async function createZoomMeeting(meetingData: {
 
     // Use 'me' as userId to create the meeting as the authenticated user
     // This is more reliable than using accountId which might not be a user ID
-    const userId = 'me';
+    const userId = "me";
 
     // Format payload based on the Zoom API requirements
     const payload = {
@@ -119,8 +130,8 @@ export async function createZoomMeeting(meetingData: {
       type: meetingData.type || 2, // Scheduled meeting (2 = scheduled)
       start_time: meetingData.start_time,
       duration: meetingData.duration,
-      timezone: meetingData.timezone || 'Asia/Jakarta',
-      agenda: meetingData.agenda || '',
+      timezone: meetingData.timezone || "Asia/Jakarta",
+      agenda: meetingData.agenda || "",
       password: meetingData.password,
       pre_schedule: false,
       settings: {
@@ -129,16 +140,19 @@ export async function createZoomMeeting(meetingData: {
         join_before_host: true,
         mute_upon_entry: true,
         waiting_room: false,
-        auto_recording: 'cloud',
+        auto_recording: "cloud",
         approval_type: 2,
-        audio: 'both',
+        audio: "both",
         auto_start_meeting_summary: true,
         auto_start_ai_companion_questions: true,
       },
     };
 
-    const response = await zoomClient.post(`/users/${userId}/meetings`, payload);
-    
+    const response = await zoomClient.post(
+      `/users/${userId}/meetings`,
+      payload,
+    );
+
     return {
       zoomMeetingId: response.data.id.toString(),
       zoomJoinUrl: response.data.join_url,
@@ -146,8 +160,11 @@ export async function createZoomMeeting(meetingData: {
       zoomPassword: response.data.password,
     };
   } catch (error: any) {
-    console.error('Failed to create Zoom meeting:', error.response?.data || error);
-    throw new Error('Failed to create Zoom meeting');
+    console.error(
+      "Failed to create Zoom meeting:",
+      error.response?.data || error,
+    );
+    throw new Error("Failed to create Zoom meeting");
   }
 }
 
@@ -160,19 +177,19 @@ export async function updateZoomMeeting(
     duration: number;
     description?: string;
     password?: string;
-  }
+  },
 ) {
   try {
     const zoomClient = await getZoomApiClient();
-    
+
     // Format update payload based on Zoom API requirements
     const updatePayload = {
       topic: meetingData.title,
       type: 2, // Scheduled meeting
       start_time: meetingData.date.toISOString(),
       duration: meetingData.duration,
-      timezone: 'Asia/Jakarta',
-      agenda: meetingData.description || '',
+      timezone: "Asia/Jakarta",
+      agenda: meetingData.description || "",
       password: meetingData.password,
       settings: {
         host_video: true,
@@ -180,19 +197,19 @@ export async function updateZoomMeeting(
         join_before_host: true,
         mute_upon_entry: true,
         waiting_room: false,
-        auto_recording: 'cloud',
+        auto_recording: "cloud",
         approval_type: 2,
-        audio: 'both',
+        audio: "both",
         auto_start_meeting_summary: true,
         auto_start_ai_companion_questions: true,
-      }
+      },
     };
-    
+
     await zoomClient.patch(`/meetings/${zoomMeetingId}`, updatePayload);
-    
+
     // Dapatkan info meeting terbaru setelah diupdate
     const updatedMeeting = await zoomClient.get(`/meetings/${zoomMeetingId}`);
-    
+
     return {
       zoomMeetingId: updatedMeeting.data.id.toString(),
       zoomJoinUrl: updatedMeeting.data.join_url,
@@ -200,8 +217,11 @@ export async function updateZoomMeeting(
       zoomPassword: updatedMeeting.data.password,
     };
   } catch (error: any) {
-    console.error('Failed to update Zoom meeting:', error.response?.data || error);
-    throw new Error('Failed to update Zoom meeting');
+    console.error(
+      "Failed to update Zoom meeting:",
+      error.response?.data || error,
+    );
+    throw new Error("Failed to update Zoom meeting");
   }
 }
 
@@ -212,7 +232,7 @@ export async function updateZoomMeeting(
 export async function deleteZoomMeeting(meetingId: string) {
   const accessToken = await getS2SAccessToken();
   const response = await fetch(`https://api.zoom.us/v2/meetings/${meetingId}`, {
-    method: 'DELETE',
+    method: "DELETE",
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -221,52 +241,54 @@ export async function deleteZoomMeeting(meetingId: string) {
   if (!response.ok && response.status !== 204) {
     const errorBody = await response.text();
     console.error(
-      'Failed to delete Zoom meeting:',
+      "Failed to delete Zoom meeting:",
       response.status,
       response.statusText,
-      errorBody
+      errorBody,
     );
-    throw new Error('Failed to delete Zoom meeting');
+    throw new Error("Failed to delete Zoom meeting");
   }
 }
-
 
 // Fungsi untuk mendapatkan semua meeting di Zoom
 export async function listZoomMeetings(nextPageToken?: string) {
   try {
     const zoomClient = await getZoomApiClient();
-    
+
     // Use 'me' as userId to list meetings for the authenticated user
-    const userId = 'me';
-    
+    const userId = "me";
+
     const params: any = {
       page_size: 300,
-      type: 'scheduled',
+      type: "scheduled",
     };
-    
+
     if (nextPageToken) {
       params.next_page_token = nextPageToken;
     }
-    
-    const response = await zoomClient.get<ZoomMeetingsResponse>(`/users/${userId}/meetings`, { params });
-    
+
+    const response = await zoomClient.get<ZoomMeetingsResponse>(
+      `/users/${userId}/meetings`,
+      { params },
+    );
+
     // Return meetings with all properties including password
     return {
       meetings: response.data.meetings,
       nextPageToken: response.data.next_page_token,
     };
   } catch (error) {
-    console.error('Failed to list Zoom meetings:', error);
-    throw new Error('Failed to list Zoom meetings');
+    console.error("Failed to list Zoom meetings:", error);
+    throw new Error("Failed to list Zoom meetings");
   }
 }
 
 // Fungsi untuk menyimpan kredensial Zoom
 export async function saveZoomCredentials(
-  clientId: string, 
-  clientSecret: string, 
-  accountId: string, 
-  hostKey?: string
+  clientId: string,
+  clientSecret: string,
+  accountId: string,
+  hostKey?: string,
 ) {
   try {
     // Hapus kredensial lama jika ada
@@ -283,11 +305,10 @@ export async function saveZoomCredentials(
     });
     return newCredentials;
   } catch (error) {
-    console.error('Error saving Zoom credentials:', error);
-    throw new Error('Could not save Zoom credentials.');
+    console.error("Error saving Zoom credentials:", error);
+    throw new Error("Could not save Zoom credentials.");
   }
 }
-
 
 // Jenis data untuk response dari Zoom API
 interface ZoomMeeting {
@@ -313,43 +334,56 @@ export async function getZoomMeeting(zoomMeetingId: string) {
   try {
     const zoomClient = await getZoomApiClient();
     const response = await zoomClient.get(`/meetings/${zoomMeetingId}`);
-    
+
     return response.data;
   } catch (error) {
-    console.error('Failed to get Zoom meeting:', error);
-    throw new Error('Failed to get Zoom meeting');
+    console.error("Failed to get Zoom meeting:", error);
+    throw new Error("Failed to get Zoom meeting");
   }
 }
 
 // Function to get meeting UUID from numeric meeting ID
-export async function getZoomMeetingUUID(meetingId: string | number): Promise<string> {
+export async function getZoomMeetingUUID(
+  meetingId: string | number,
+): Promise<string> {
   try {
-    console.log('getZoomMeetingUUID called with meetingId:', meetingId);
+    console.log("getZoomMeetingUUID called with meetingId:", meetingId);
     const zoomClient = await getZoomApiClient();
-    
+
     // Approach 3: Try the instances endpoint (original approach)
-    console.log('Using Zoom Headers:', JSON.stringify(zoomClient.defaults.headers.common, null, 2));
-    console.log('Trying to get UUID from instances...');
-    const instancesResponse = await zoomClient.get(`/past_meetings/${meetingId}/instances`);
+    console.log(
+      "Using Zoom Headers:",
+      JSON.stringify(zoomClient.defaults.headers.common, null, 2),
+    );
+    console.log("Trying to get UUID from instances...");
+    const instancesResponse = await zoomClient.get(
+      `/past_meetings/${meetingId}/instances`,
+    );
     const meetings = instancesResponse.data.meetings;
-    
-    console.log('Instances response:', JSON.stringify(instancesResponse.data, null, 2));
-    
+
+    console.log(
+      "Instances response:",
+      JSON.stringify(instancesResponse.data, null, 2),
+    );
+
     if (meetings && Array.isArray(meetings) && meetings.length > 0) {
-      console.log('Found UUID from instances:', meetings[0].uuid);
+      console.log("Found UUID from instances:", meetings[0].uuid);
       return meetings[0].uuid;
     }
-    
-    throw new Error('Could not find any meeting instances or UUID');
+
+    throw new Error("Could not find any meeting instances or UUID");
   } catch (error: any) {
-    console.error('Failed to get Zoom meeting UUID:', error.response?.data || error);
-    throw new Error('Failed to get Zoom meeting UUID');
+    console.error(
+      "Failed to get Zoom meeting UUID:",
+      error.response?.data || error,
+    );
+    throw new Error("Failed to get Zoom meeting UUID");
   }
 }
 
 // Fungsi untuk double-encode UUID sesuai aturan Zoom
 export function encodeMeetingUUID(uuid: string) {
-  if (uuid.startsWith('/') || uuid.includes('//')) {
+  if (uuid.startsWith("/") || uuid.includes("//")) {
     return encodeURIComponent(encodeURIComponent(uuid));
   }
   return encodeURIComponent(uuid);
@@ -375,31 +409,44 @@ export interface ZoomMeetingSummary {
 }
 
 // Fungsi untuk mengambil meeting summary dari Zoom API
-export async function getZoomMeetingSummary(meetingIdentifier: string): Promise<ZoomMeetingSummary> {
+export async function getZoomMeetingSummary(
+  meetingIdentifier: string,
+): Promise<ZoomMeetingSummary> {
   try {
-    console.log('getZoomMeetingSummary called with identifier:', meetingIdentifier);
+    console.log(
+      "getZoomMeetingSummary called with identifier:",
+      meetingIdentifier,
+    );
     const zoomClient = await getZoomApiClient();
-    
+
     // Check if the identifier is a numeric ID or UUID
     let meetingUUID = meetingIdentifier;
-    
+
     // If it looks like a numeric ID (no special characters), get the UUID first
     if (/^\d+$/.test(meetingIdentifier)) {
-      console.log('Identifier is numeric, getting UUID from meeting ID');
+      console.log("Identifier is numeric, getting UUID from meeting ID");
       meetingUUID = await getZoomMeetingUUID(meetingIdentifier);
-      console.log('Got UUID from meeting ID:', meetingUUID);
+      console.log("Got UUID from meeting ID:", meetingUUID);
     } else {
-      console.log('Identifier appears to be a UUID, using directly');
+      console.log("Identifier appears to be a UUID, using directly");
     }
-    
+
     const encodedUUID = encodeMeetingUUID(meetingUUID);
-    console.log('Encoded UUID:', encodedUUID);
-    console.log('Making API call to:', `/meetings/${encodedUUID}/meeting_summary`);
-    
-    const response = await zoomClient.get<ZoomMeetingSummary>(`/meetings/${encodedUUID}/meeting_summary`);
+    console.log("Encoded UUID:", encodedUUID);
+    console.log(
+      "Making API call to:",
+      `/meetings/${encodedUUID}/meeting_summary`,
+    );
+
+    const response = await zoomClient.get<ZoomMeetingSummary>(
+      `/meetings/${encodedUUID}/meeting_summary`,
+    );
     return response.data;
   } catch (error: any) {
-    console.error('Failed to get Zoom meeting summary:', error.response?.data || error);
-    throw new Error('Failed to get Zoom meeting summary');
+    console.error(
+      "Failed to get Zoom meeting summary:",
+      error.response?.data || error,
+    );
+    throw new Error("Failed to get Zoom meeting summary");
   }
 }

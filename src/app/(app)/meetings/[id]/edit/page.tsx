@@ -3,20 +3,20 @@ import { getMeetingById, getUsers } from "@/lib/data";
 import { notFound } from "next/navigation";
 
 type EditMeetingPageProps = {
-    params: { id: string }
-}
+  params: { id: string };
+};
 
-export default async function EditMeetingPage({ params: { id } }: EditMeetingPageProps) {
-    const [meeting, allUsers] = await Promise.all([
-        getMeetingById(id),
-        getUsers()
-    ]);
+export default async function EditMeetingPage({
+  params: { id },
+}: EditMeetingPageProps) {
+  const [meeting, allUsers] = await Promise.all([
+    getMeetingById(id),
+    getUsers(),
+  ]);
 
-    if (!meeting) {
-        notFound();
-    }
+  if (!meeting) {
+    notFound();
+  }
 
-    return (
-        <MeetingForm existingMeeting={meeting} allUsers={allUsers} />
-    )
+  return <MeetingForm existingMeeting={meeting} allUsers={allUsers} />;
 }

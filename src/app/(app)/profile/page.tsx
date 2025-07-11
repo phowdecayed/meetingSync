@@ -1,37 +1,68 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Loader2, UserCheck, Users, Calendar, Edit, Search } from "lucide-react";
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useToast } from '@/hooks/use-toast';
-import type { Meeting } from '@/lib/data';
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Loader2,
+  UserCheck,
+  Users,
+  Calendar,
+  Edit,
+  Search,
+} from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useToast } from "@/hooks/use-toast";
+import type { Meeting } from "@/lib/data";
 
 const profileSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
 });
 
-const passwordSchema = z.object({
-  currentPassword: z.string().min(1, { message: "Current password is required." }),
-  newPassword: z.string().min(8, { message: "New password must be at least 8 characters." }),
-  confirmPassword: z.string(),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "New passwords don't match.",
-  path: ["confirmPassword"],
-});
+const passwordSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .min(1, { message: "Current password is required." }),
+    newPassword: z
+      .string()
+      .min(8, { message: "New password must be at least 8 characters." }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New passwords don't match.",
+    path: ["confirmPassword"],
+  });
 
 function getInitials(name: string = ""): string {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
 }
 
 export default function ProfilePage() {
@@ -43,13 +74,13 @@ export default function ProfilePage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [isMeetingsLoading, setIsMeetingsLoading] = useState(true);
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("profile");
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     values: {
-      name: user?.name || '',
+      name: user?.name || "",
     },
   });
 
@@ -64,7 +95,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      form.reset({ name: user.name || '' });
+      form.reset({ name: user.name || "" });
     }
   }, [user, form, isEditing]);
 
@@ -73,9 +104,9 @@ export default function ProfilePage() {
       if (!user) return;
       setIsMeetingsLoading(true);
       try {
-        const response = await fetch('/api/meetings');
+        const response = await fetch("/api/meetings");
         if (!response.ok) {
-          throw new Error('Failed to load meetings');
+          throw new Error("Failed to load meetings");
         }
         const allMeetings = await response.json();
         setMeetings(allMeetings);
@@ -96,17 +127,17 @@ export default function ProfilePage() {
     if (!user) return;
     setIsSaving(true);
     try {
-      const response = await fetch('/api/profile', {
-        method: 'PUT',
+      const response = await fetch("/api/profile", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ name: values.name }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update profile');
+        throw new Error(errorData.error || "Failed to update profile");
       }
 
       // Trigger a session update to reflect the new name
@@ -131,15 +162,15 @@ export default function ProfilePage() {
   async function onPasswordSubmit(values: z.infer<typeof passwordSchema>) {
     setIsChangingPassword(true);
     try {
-      const response = await fetch('/api/profile/change-password', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/profile/change-password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to change password');
+        throw new Error(errorData.error || "Failed to change password");
       }
 
       toast({
@@ -158,31 +189,37 @@ export default function ProfilePage() {
     }
   }
 
-  if (status === 'loading' || !user) {
+  if (status === "loading" || !user) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-  
-  const meetingsOrganized = meetings.filter(m => m.organizerId === user.id).length;
-  const meetingsAttended = meetings.filter(m => {
-    const userEmail = user.email || '';
+
+  const meetingsOrganized = meetings.filter(
+    (m) => m.organizerId === user.id,
+  ).length;
+  const meetingsAttended = meetings.filter((m) => {
+    const userEmail = user.email || "";
     return m.participants.includes(userEmail) && m.organizerId !== user.id;
   }).length;
   const now = new Date();
-  const upcomingMeetingsCount = meetings.filter(m => {
-    const userEmail = user.email || '';
-    return (m.organizerId === user.id || m.participants.includes(userEmail)) && new Date(m.date) >= now;
+  const upcomingMeetingsCount = meetings.filter((m) => {
+    const userEmail = user.email || "";
+    return (
+      (m.organizerId === user.id || m.participants.includes(userEmail)) &&
+      new Date(m.date) >= now
+    );
   }).length;
-
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-headline font-bold">My Profile</h1>
-        <p className="text-muted-foreground">View and manage your personal information and statistics.</p>
+        <p className="text-muted-foreground">
+          View and manage your personal information and statistics.
+        </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -191,17 +228,27 @@ export default function ProfilePage() {
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="profile" className="space-y-4">
           <Card>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <CardHeader className="flex flex-row items-start justify-between">
                   <div>
-                    <CardTitle className="text-2xl">Personal Information</CardTitle>
-                    <CardDescription>Update your name and view your details.</CardDescription>
+                    <CardTitle className="text-2xl">
+                      Personal Information
+                    </CardTitle>
+                    <CardDescription>
+                      Update your name and view your details.
+                    </CardDescription>
                   </div>
-                  <Button type="button" variant="ghost" size="icon" onClick={() => setIsEditing(!isEditing)} disabled={isSaving}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsEditing(!isEditing)}
+                    disabled={isSaving}
+                  >
                     <Edit className="h-5 w-5" />
                     <span className="sr-only">Edit Profile</span>
                   </Button>
@@ -209,16 +256,24 @@ export default function ProfilePage() {
                 <CardContent className="space-y-6">
                   <div className="flex items-center gap-6">
                     <Avatar className="h-20 w-20">
-                      <AvatarImage 
-                        src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name || '')}`} 
-                        alt={user.name || ''} 
-                        data-ai-hint="user avatar" 
+                      <AvatarImage
+                        src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name || "")}`}
+                        alt={user.name || ""}
+                        data-ai-hint="user avatar"
                       />
-                      <AvatarFallback className="text-2xl">{getInitials(user.name || '')}</AvatarFallback>
+                      <AvatarFallback className="text-2xl">
+                        {getInitials(user.name || "")}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
-                      <h2 className="text-2xl font-semibold">{form.watch('name')}</h2>
-                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                      <h2 className="text-2xl font-semibold">
+                        {form.watch("name")}
+                      </h2>
+                      <Badge
+                        variant={
+                          user.role === "admin" ? "default" : "secondary"
+                        }
+                      >
                         {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                       </Badge>
                     </div>
@@ -239,14 +294,25 @@ export default function ProfilePage() {
                   />
                   <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" value={user.email || ''} readOnly />
+                    <Input id="email" value={user.email || ""} readOnly />
                   </div>
                 </CardContent>
                 {isEditing && (
                   <CardFooter className="justify-end gap-4">
-                    <Button type="button" variant="outline" onClick={() => { setIsEditing(false); form.reset({ name: user.name ?? '' }); }}>Cancel</Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditing(false);
+                        form.reset({ name: user.name ?? "" });
+                      }}
+                    >
+                      Cancel
+                    </Button>
                     <Button type="submit" disabled={isSaving}>
-                      {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {isSaving && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
                       Save Changes
                     </Button>
                   </CardFooter>
@@ -255,14 +321,16 @@ export default function ProfilePage() {
             </Form>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="security" className="space-y-4">
           <Card>
             <Form {...passwordForm}>
               <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
                 <CardHeader>
                   <CardTitle className="text-2xl">Change Password</CardTitle>
-                  <CardDescription>Update your account's password.</CardDescription>
+                  <CardDescription>
+                    Update your account's password.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -307,7 +375,9 @@ export default function ProfilePage() {
                 </CardContent>
                 <CardFooter className="justify-end">
                   <Button type="submit" disabled={isChangingPassword}>
-                    {isChangingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isChangingPassword && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
                     Change Password
                   </Button>
                 </CardFooter>
@@ -315,7 +385,7 @@ export default function ProfilePage() {
             </Form>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="statistics" className="space-y-4">
           <Card className="bg-gradient-to-br from-primary/5 to-transparent">
             <CardHeader>
@@ -334,21 +404,27 @@ export default function ProfilePage() {
                       <UserCheck className="h-7 w-7 text-primary" />
                       <span className="font-medium">Meetings Organized</span>
                     </div>
-                    <span className="text-2xl font-bold text-primary">{meetingsOrganized}</span>
+                    <span className="text-2xl font-bold text-primary">
+                      {meetingsOrganized}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between rounded-lg border bg-background/50 p-4 transition-all hover:bg-muted/50">
                     <div className="flex items-center gap-4">
                       <Users className="h-7 w-7 text-primary" />
                       <span className="font-medium">Meetings Attended</span>
                     </div>
-                    <span className="text-2xl font-bold text-primary">{meetingsAttended}</span>
+                    <span className="text-2xl font-bold text-primary">
+                      {meetingsAttended}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between rounded-lg border bg-background/50 p-4 transition-all hover:bg-muted/50">
                     <div className="flex items-center gap-4">
                       <Calendar className="h-7 w-7 text-primary" />
                       <span className="font-medium">Upcoming Meetings</span>
                     </div>
-                    <span className="text-2xl font-bold text-primary">{upcomingMeetingsCount}</span>
+                    <span className="text-2xl font-bold text-primary">
+                      {upcomingMeetingsCount}
+                    </span>
                   </div>
                 </div>
               )}

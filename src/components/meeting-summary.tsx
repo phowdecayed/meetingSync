@@ -1,5 +1,12 @@
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import React from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 interface MeetingSummaryProps {
@@ -11,7 +18,11 @@ interface MeetingSummaryProps {
   onClose: () => void;
 }
 
-export const MeetingSummary: React.FC<MeetingSummaryProps> = ({ summary, isOpen, onClose }) => {
+export const MeetingSummary: React.FC<MeetingSummaryProps> = ({
+  summary,
+  isOpen,
+  onClose,
+}) => {
   if (!isOpen || !summary) {
     return null;
   }
@@ -23,7 +34,9 @@ export const MeetingSummary: React.FC<MeetingSummaryProps> = ({ summary, isOpen,
           <DialogTitle>{summary.summary_title}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <pre className="whitespace-pre-wrap text-sm">{summary.summary_content}</pre>
+          <pre className="whitespace-pre-wrap text-sm">
+            {summary.summary_content}
+          </pre>
         </div>
         <DialogFooter>
           <Button onClick={onClose}>Close</Button>

@@ -28,7 +28,12 @@ interface UserComboboxProps {
   className?: string;
 }
 
-export function UserCombobox({ allUsers, selectedUsers, onChange, className }: UserComboboxProps) {
+export function UserCombobox({
+  allUsers,
+  selectedUsers,
+  onChange,
+  className,
+}: UserComboboxProps) {
   const [open, setOpen] = React.useState(false);
 
   const handleSelect = (email: string) => {
@@ -38,7 +43,9 @@ export function UserCombobox({ allUsers, selectedUsers, onChange, className }: U
     onChange(newSelection);
   };
 
-  const selectedUserObjects = allUsers.filter(u => selectedUsers.includes(u.email));
+  const selectedUserObjects = allUsers.filter((u) =>
+    selectedUsers.includes(u.email),
+  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -67,7 +74,9 @@ export function UserCombobox({ allUsers, selectedUsers, onChange, className }: U
                 </Badge>
               ))
             ) : (
-              <span className="text-muted-foreground">Select participants...</span>
+              <span className="text-muted-foreground">
+                Select participants...
+              </span>
             )}
           </div>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -90,12 +99,16 @@ export function UserCombobox({ allUsers, selectedUsers, onChange, className }: U
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selectedUsers.includes(user.email) ? "opacity-100" : "opacity-0"
+                      selectedUsers.includes(user.email)
+                        ? "opacity-100"
+                        : "opacity-0",
                     )}
                   />
                   <div>
                     <p>{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {user.email}
+                    </p>
                   </div>
                 </CommandItem>
               ))}

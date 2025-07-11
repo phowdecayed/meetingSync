@@ -1,17 +1,22 @@
-import { NextResponse } from 'next/server';
-import { getUsers, createUser, updateUserRole, deleteUserById } from '@/lib/data';
-import { auth } from '@/lib/auth';
+import { NextResponse } from "next/server";
+import {
+  getUsers,
+  createUser,
+  updateUserRole,
+  deleteUserById,
+} from "@/lib/data";
+import { auth } from "@/lib/auth";
 
 // GET /api/users - Mengambil semua pengguna
 export async function GET() {
   try {
     const session = await auth();
-    
+
     // Hanya admin yang bisa mengambil data pengguna
-    if (session?.user?.role !== 'admin') {
+    if (session?.user?.role !== "admin") {
       return NextResponse.json(
-        { error: 'Unauthorized: Only admins can access user data' },
-        { status: 403 }
+        { error: "Unauthorized: Only admins can access user data" },
+        { status: 403 },
       );
     }
 
@@ -19,8 +24,8 @@ export async function GET() {
     return NextResponse.json(users);
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to fetch users' },
-      { status: 500 }
+      { error: "Failed to fetch users" },
+      { status: 500 },
     );
   }
 }
@@ -31,10 +36,10 @@ export async function POST(request: Request) {
     const session = await auth();
 
     // Hanya admin yang bisa membuat pengguna baru
-    if (session?.user?.role !== 'admin') {
+    if (session?.user?.role !== "admin") {
       return NextResponse.json(
-        { error: 'Unauthorized: Only admins can create users' },
-        { status: 403 }
+        { error: "Unauthorized: Only admins can create users" },
+        { status: 403 },
       );
     }
 
@@ -43,8 +48,8 @@ export async function POST(request: Request) {
     return NextResponse.json(user);
   } catch (error) {
     return NextResponse.json(
-      { error: (error as Error).message || 'Failed to create user' },
-      { status: 500 }
+      { error: (error as Error).message || "Failed to create user" },
+      { status: 500 },
     );
   }
 }
@@ -55,20 +60,20 @@ export async function PUT(request: Request) {
     const session = await auth();
 
     // Hanya admin yang bisa memperbarui peran
-    if (session?.user?.role !== 'admin') {
+    if (session?.user?.role !== "admin") {
       return NextResponse.json(
-        { error: 'Unauthorized: Only admins can update user roles' },
-        { status: 403 }
+        { error: "Unauthorized: Only admins can update user roles" },
+        { status: 403 },
       );
     }
 
     const data = await request.json();
     const { id, role } = data;
-    
+
     if (!id || !role) {
       return NextResponse.json(
-        { error: 'User ID and role are required' },
-        { status: 400 }
+        { error: "User ID and role are required" },
+        { status: 400 },
       );
     }
 
@@ -76,8 +81,8 @@ export async function PUT(request: Request) {
     return NextResponse.json(user);
   } catch (error) {
     return NextResponse.json(
-      { error: (error as Error).message || 'Failed to update user role' },
-      { status: 500 }
+      { error: (error as Error).message || "Failed to update user role" },
+      { status: 500 },
     );
   }
 }
@@ -88,20 +93,20 @@ export async function DELETE(request: Request) {
     const session = await auth();
 
     // Hanya admin yang bisa menghapus pengguna
-    if (session?.user?.role !== 'admin') {
+    if (session?.user?.role !== "admin") {
       return NextResponse.json(
-        { error: 'Unauthorized: Only admins can delete users' },
-        { status: 403 }
+        { error: "Unauthorized: Only admins can delete users" },
+        { status: 403 },
       );
     }
 
     const url = new URL(request.url);
-    const idToDelete = url.searchParams.get('id');
+    const idToDelete = url.searchParams.get("id");
 
     if (!idToDelete) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
+        { error: "User ID is required" },
+        { status: 400 },
       );
     }
 
@@ -109,8 +114,8 @@ export async function DELETE(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(
-      { error: (error as Error).message || 'Failed to delete user' },
-      { status: 500 }
+      { error: (error as Error).message || "Failed to delete user" },
+      { status: 500 },
     );
   }
-} 
+}
