@@ -7,5 +7,8 @@ export const meetingSchema = z.object({
   duration: z.coerce.number().min(5, { message: "Duration must be at least 5 minutes." }),
   participants: z.array(z.string().email({ message: "Each participant must be a valid email." })).default([]),
   description: z.string().optional(),
-  password: z.string().min(1, { message: "Password is required for Zoom meetings." }).max(10, { message: "Password must be maximum 10 characters" }).optional(),
+  password: z.string()
+    .min(1, { message: "Password is required for Zoom meetings." })
+    .max(10, { message: "Password cannot be longer than 10 characters." })
+    .optional(),
 });

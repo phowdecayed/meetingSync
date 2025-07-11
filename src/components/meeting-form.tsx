@@ -56,7 +56,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
         ? (existingMeeting.participants as string).split(',').map((p: string) => p.trim())
         : [],
       description: existingMeeting.description || "",
-      password: existingMeeting.zoomPassword || "",
+      password: existingMeeting.zoomPassword || "BPKADJabar",
   } : {
       title: "",
       date: new Date(),
@@ -64,7 +64,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       duration: 30,
       participants: [],
       description: "",
-      password: "",
+      password: "BPKADJabar",
   };
 
   const form = useForm<z.infer<typeof meetingSchema>>({
