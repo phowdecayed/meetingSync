@@ -7,23 +7,22 @@ export async function GET() {
   try {
     // Menemukan pengaturan pertama, atau membuat default jika tidak ada.
     let settings = await prisma.settings.findFirst();
-    
+
     if (!settings) {
       // Jika tidak ada pengaturan di DB, buat satu dengan nilai default.
       // Ini memastikan aplikasi selalu memiliki record pengaturan.
       settings = await prisma.settings.create({
         data: {
           allowRegistration: true, // Default value
-          defaultRole: 'member',   // Default value
+          defaultRole: "member", // Default value
         },
       });
     }
-    
+
     // Hanya mengembalikan field yang relevan dan aman untuk publik
     return NextResponse.json({
       allowRegistration: settings.allowRegistration,
     });
-    
   } catch (error) {
     console.error("Error fetching settings:", error);
     return NextResponse.json(
@@ -46,8 +45,11 @@ export async function PUT(request: Request) {
     const { allowRegistration, defaultRole } = body;
 
     // Validasi input
-    if (typeof allowRegistration !== 'boolean' || (defaultRole && typeof defaultRole !== 'string')) {
-        return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+    if (
+      typeof allowRegistration !== "boolean" ||
+      (defaultRole && typeof defaultRole !== "string")
+    ) {
+      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
     const settings = await prisma.settings.findFirst();
