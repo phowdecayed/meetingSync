@@ -151,14 +151,6 @@ export function ZoomMeetingDetails({ meeting, isOpen, onClose }: ZoomMeetingDeta
   };
 
   const copyToClipboard = (text: string, label: string) => {
-    if (!navigator.clipboard) {
-      toast({
-        variant: "destructive",
-        title: "Browser Not Supported",
-        description: "Clipboard operations are not supported in this browser.",
-      });
-      return;
-    }
     navigator.clipboard.writeText(text).then(
       () => toast({ title: "Copied!", description: `${label} copied to clipboard.` }),
       () => toast({ variant: "destructive", title: "Failed to copy", description: `Could not copy ${label}.` })
