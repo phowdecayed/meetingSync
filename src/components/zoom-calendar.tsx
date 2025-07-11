@@ -28,6 +28,7 @@ import { ZoomMeetingDetails } from './zoom-meeting-details';
 import { ToastAction } from '@/components/ui/toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { Calendar } from './ui/calendar';
+import { useSession } from 'next-auth/react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,9 +63,11 @@ type ZoomMeeting = {
   join_url: string;
   password?: string;
   description?: string;
+  isOwner: boolean;
 };
 
 export function ZoomCalendar() {
+  const { data: session } = useSession();
   const [meetings, setMeetings] = useState<ZoomMeeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
@@ -211,30 +214,8 @@ export function ZoomCalendar() {
   };
 
   function openMeetingDetails(meeting: ZoomMeeting) {
-    // First set the basic meeting info we have from the Zoom API
     setSelectedMeeting(meeting);
     setIsDetailsModalOpen(true);
-    
-    // Then try to fetch detailed information from our database
-    fetch(`/api/zoom-meetings/${meeting.id}`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch meeting details');
-        }
-        return response.json();
-      })
-      .then(data => {
-        // Update with database information (which includes password, description, organizer)
-        setSelectedMeeting({
-          ...meeting,
-          password: data.password || meeting.password,
-          description: data.description,
-        });
-      })
-      .catch(error => {
-        console.error('Error fetching meeting details:', error);
-        // Keep using the basic meeting data if fetch fails
-      });
   }
 
   function handleJoinMeeting(meeting: ZoomMeeting) {
@@ -414,6 +395,7 @@ export function ZoomCalendar() {
               <div className="space-y-4">
                 {paginatedMeetings.map((meeting) => {
                   const status = getMeetingStatus(meeting.start_time, meeting.duration);
+                  const canDelete = (meeting.isOwner || session?.user?.role === 'admin') && status !== 'ongoing' && status !== 'past';
                   return (
                     <div key={meeting.id} className="rounded-lg border p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -463,7 +445,7 @@ export function ZoomCalendar() {
                               </DropdownMenuItem> */}
                               <DropdownMenuItem 
                                 onClick={() => confirmDeleteMeeting(meeting)}
-                                disabled={status === 'ongoing' || status === 'past'}
+                                disabled={!canDelete}
                                 className="text-red-600"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -538,6 +520,7 @@ export function ZoomCalendar() {
                   {selectedDayMeetings.length > 0 ? (
                     selectedDayMeetings.sort((a,b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()).map(meeting => {
                       const status = getMeetingStatus(meeting.start_time, meeting.duration);
+                      const canDelete = (meeting.isOwner || session?.user?.role === 'admin') && status !== 'ongoing' && status !== 'past';
                       return (
                         <Card key={meeting.id} className="flex flex-col">
                           <CardHeader className="py-4">
@@ -580,7 +563,7 @@ export function ZoomCalendar() {
                                 size="sm"
                                 variant="destructive"
                                 onClick={() => confirmDeleteMeeting(meeting)}
-                                disabled={status === 'ongoing' || status === 'past'}
+                                disabled={!canDelete}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
@@ -606,7 +589,6 @@ export function ZoomCalendar() {
             </div>
           </TabsContent>
         </Tabs>
-        {/* Meeting Details Modal */}
         <ZoomMeetingDetails
           meeting={selectedMeeting}
           isOpen={isDetailsModalOpen}
