@@ -212,36 +212,61 @@ const Sidebar = React.forwardRef<
       )
     }
 
+    const isCollapsed = state === "collapsed"
+
+    const spacerStyle: React.CSSProperties = {}
+    const fixedStyle: React.CSSProperties = {}
+
+    // Set default widths
+    spacerStyle.width = "var(--sidebar-width)"
+    fixedStyle.width = "var(--sidebar-width)"
+
+    if (collapsible === "icon" && isCollapsed) {
+      if (variant === "floating" || variant === "inset") {
+        spacerStyle.width = "calc(var(--sidebar-width-icon) + 1rem)" // theme('spacing.4') = 1rem
+        fixedStyle.width = "calc(var(--sidebar-width-icon) + 1rem + 2px)"
+      } else {
+        spacerStyle.width = "var(--sidebar-width-icon)"
+        fixedStyle.width = "var(--sidebar-width-icon)"
+      }
+    } else if (collapsible === "offcanvas") {
+      spacerStyle.width = 0
+      if (isCollapsed) {
+        if (side === "left") {
+          fixedStyle.left = "calc(var(--sidebar-width) * -1)"
+        } else {
+          fixedStyle.right = "calc(var(--sidebar-width) * -1)"
+        }
+      }
+    }
+
     return (
       <div
         ref={ref}
-        className="group peer hidden md:block text-sidebar-foreground"
+        className="group hidden text-sidebar-foreground md:block"
         data-state={state}
-        data-collapsible={state === "collapsed" ? collapsible : ""}
+        data-collapsible={isCollapsed ? collapsible : ""}
         data-variant={variant}
         data-side={side}
       >
         {/* This is what handles the sidebar gap on desktop */}
         <div
+          style={spacerStyle}
           className={cn(
-            "duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
-            "group-data-[collapsible=offcanvas]:w-0",
-            "group-data-[side=right]:rotate-180",
-            variant === "floating" || variant === "inset"
-              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
+            "duration-200 relative h-svh bg-transparent transition-[width] ease-linear",
+            side === "right" && "rotate-180"
           )}
         />
         <div
+          style={fixedStyle}
           className={cn(
-            "duration-200 fixed inset-y-0 z-20 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
-            side === "left"
-              ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-              : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-            // Adjust the padding for floating and inset variants.
+            "duration-200 fixed inset-y-0 z-20 hidden h-svh transition-[left,right,width] ease-linear md:flex",
+            side === "left" ? "left-0" : "right-0",
             variant === "floating" || variant === "inset"
-              ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+              ? "p-2"
+              : side === "left"
+              ? "border-r"
+              : "border-l",
             className
           )}
           {...props}
