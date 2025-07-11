@@ -20,21 +20,21 @@ services:
       retries: 5
 
   # 2. Migration Service
-  # migrate:
-  #   build:
-  #     # CONTEXT FIX: Standardize the build context.
-  #     # Assuming you run 'docker compose' from the project root.
-  #     context: ..
-  #     dockerfile: docker/Dockerfile
-  #   container_name: bpkad-zoom-app-migrate
-  #   env_file:
-  #     - pg.env
-  #   environment:
-  #     - TZ=Asia/Jakarta
-  #   command: sh -c 'npx prisma migrate deploy && npx prisma db seed'
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
+  migrate:
+    build:
+      # CONTEXT FIX: Standardize the build context.
+      # Assuming you run 'docker compose' from the project root.
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: bpkad-zoom-app-migrate
+    env_file:
+      - pg.env
+    environment:
+      - TZ=Asia/Jakarta
+    command: sh -c 'npx prisma migrate deploy && npx prisma db seed'
+    depends_on:
+      db:
+        condition: service_healthy
 
   # 3. Application Service
   app:
