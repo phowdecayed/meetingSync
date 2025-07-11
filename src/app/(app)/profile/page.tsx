@@ -20,6 +20,15 @@ const profileSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
 });
 
+const passwordSchema = z.object({
+  currentPassword: z.string().min(1, { message: "Current password is required." }),
+  newPassword: z.string().min(8, { message: "New password must be at least 8 characters." }),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "New passwords don't match.",
+  path: ["confirmPassword"],
+});
+
 function getInitials(name: string = ""): string {
   return name.split(' ').map(n => n[0]).join('').toUpperCase();
 }
@@ -29,6 +38,7 @@ export default function ProfilePage() {
   const user = session?.user;
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [isMeetingsLoading, setIsMeetingsLoading] = useState(true);
   const { toast } = useToast();
@@ -37,6 +47,15 @@ export default function ProfilePage() {
     resolver: zodResolver(profileSchema),
     values: {
       name: user?.name || '',
+    },
+  });
+
+  const passwordForm = useForm<z.infer<typeof passwordSchema>>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
     },
   });
 
@@ -103,6 +122,36 @@ export default function ProfilePage() {
       });
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function onPasswordSubmit(values: z.infer<typeof passwordSchema>) {
+    setIsChangingPassword(true);
+    try {
+      const response = await fetch('/api/profile/change-password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to change password');
+      }
+
+      toast({
+        title: "Password Changed",
+        description: "Your password has been successfully updated.",
+      });
+      passwordForm.reset();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Change Password Failed",
+        description: (error as Error).message || "Something went wrong.",
+      });
+    } finally {
+      setIsChangingPassword(false);
     }
   }
 
@@ -196,6 +245,65 @@ export default function ProfilePage() {
                 </form>
             </Form>
             </Card>
+
+            <Card>
+              <Form {...passwordForm}>
+                <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
+                  <CardHeader>
+                    <CardTitle className="text-2xl">Change Password</CardTitle>
+                    <CardDescription>Update your account's password.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={passwordForm.control}
+                      name="currentPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Current Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={passwordForm.control}
+                      name="newPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>New Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={passwordForm.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirm New Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                  <CardFooter className="justify-end">
+                    <Button type="submit" disabled={isChangingPassword}>
+                      {isChangingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Change Password
+                    </Button>
+                  </CardFooter>
+                </form>
+              </Form>
+            </Card>
+
         </div>
 
         <div className="lg:col-span-1">
