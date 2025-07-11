@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Edit, UserCheck, Users, Calendar } from 'lucide-react';
+import { Loader2, UserCheck, Users, Calendar, Edit, Search } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -42,6 +42,7 @@ export default function ProfilePage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [isMeetingsLoading, setIsMeetingsLoading] = useState(true);
   const { toast } = useToast();
+    const [searchTerm, setSearchTerm] = useState('');
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -182,8 +183,8 @@ export default function ProfilePage() {
         <p className="text-muted-foreground">View and manage your personal information and statistics.</p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="space-y-8 lg:col-span-2">
+      <div className="grid gap-8 md:grid-cols-5"> 
+        <div className="space-y-8 md:col-span-3">
             <Card>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -306,41 +307,41 @@ export default function ProfilePage() {
 
         </div>
 
-        <div className="lg:col-span-1">
-            <Card>
+        <div className="md:col-span-2">
+            <Card className="bg-gradient-to-br from-primary/5 to-transparent">
                 <CardHeader>
                     <CardTitle className="text-2xl">My Statistics</CardTitle>
-                    <CardDescription>Your meeting activity at a glance.</CardDescription>
+                    <CardDescription>Your meeting activity.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent>
                     {isMeetingsLoading ? (
                         <div className="flex justify-center items-center h-48">
                             <Loader2 className="h-6 w-6 animate-spin text-primary" />
                         </div>
                     ) : (
-                        <>
-                            <div className="flex items-center justify-between rounded-lg border p-4">
-                                <div className="flex items-center gap-3">
-                                    <UserCheck className="h-6 w-6 text-primary" />
+                        <div className="grid grid-cols-1 gap-4">
+                            <div className="flex items-center justify-between rounded-lg border bg-background/50 p-4 transition-all hover:bg-muted/50">
+                                <div className="flex items-center gap-4">
+                                    <UserCheck className="h-7 w-7 text-primary" />
                                     <span className="font-medium">Meetings Organized</span>
                                 </div>
-                                <span className="text-xl font-bold">{meetingsOrganized}</span>
+                                <span className="text-2xl font-bold text-primary">{meetingsOrganized}</span>
                             </div>
-                            <div className="flex items-center justify-between rounded-lg border p-4">
-                                <div className="flex items-center gap-3">
-                                <Users className="h-6 w-6 text-primary" />
+                            <div className="flex items-center justify-between rounded-lg border bg-background/50 p-4 transition-all hover:bg-muted/50">
+                                <div className="flex items-center gap-4">
+                                <Users className="h-7 w-7 text-primary" />
                                     <span className="font-medium">Meetings Attended</span>
                                 </div>
-                                <span className="text-xl font-bold">{meetingsAttended}</span>
+                                <span className="text-2xl font-bold text-primary">{meetingsAttended}</span>
                             </div>
-                            <div className="flex items-center justify-between rounded-lg border p-4">
-                                <div className="flex items-center gap-3">
-                                    <Calendar className="h-6 w-6 text-primary" />
+                            <div className="flex items-center justify-between rounded-lg border bg-background/50 p-4 transition-all hover:bg-muted/50">
+                                <div className="flex items-center gap-4">
+                                    <Calendar className="h-7 w-7 text-primary" />
                                     <span className="font-medium">Upcoming Meetings</span>
                                 </div>
-                                <span className="text-xl font-bold">{upcomingMeetingsCount}</span>
+                                <span className="text-2xl font-bold text-primary">{upcomingMeetingsCount}</span>
                             </div>
-                        </>
+                        </div>
                     )}
                 </CardContent>
             </Card>
