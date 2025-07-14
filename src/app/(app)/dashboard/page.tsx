@@ -25,11 +25,6 @@ export default async function DashboardPage() {
   const session = await auth();
   const user = session?.user;
 
-  const [allMeetings, allUsers] = await Promise.all([
-    getMeetings(),
-    getUsers(),
-  ]);
-
   if (!user) {
     // This case should be handled by middleware, but it's good practice
     // to have a fallback.
@@ -40,12 +35,10 @@ export default async function DashboardPage() {
     );
   }
 
-  const userMeetings = allMeetings.filter((m) => {
-    if (user.role === "admin") return true;
-    return (
-      m.organizerId === user.id || m.participants.includes(user.email ?? "")
-    );
-  });
+  const [userMeetings, allUsers] = await Promise.all([
+    getMeetings(user),
+    getUsers(),
+  ]);
 
   const now = new Date();
 

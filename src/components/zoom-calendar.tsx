@@ -90,7 +90,7 @@ export function ZoomCalendar() {
 
   // State for List View
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("upcoming");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -98,14 +98,18 @@ export function ZoomCalendar() {
     setLoading(true);
     try {
       const response = await fetch("/api/zoom-meetings");
-      if (!response.ok) throw new Error("Failed to fetch Zoom meetings");
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch Zoom meetings");
+      }
       setMeetings(data.meetings);
-    } catch {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to fetch Zoom meetings",
+        description: errorMessage,
       });
     } finally {
       setLoading(false);

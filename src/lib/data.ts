@@ -79,8 +79,39 @@ const formatUser = (user: PrismaUser): User => {
   };
 };
 
-export const getMeetings = async (): Promise<Meeting[]> => {
-  const meetings = await prisma.meeting.findMany();
+export const getMeetings = async (user?: {
+  id: string;
+  email?: string | null;
+  role: string;
+}): Promise<Meeting[]> => {
+  if (!user) {
+    return [];
+  }
+
+  if (user.role === "admin") {
+    const meetings = await prisma.meeting.findMany({
+      orderBy: {
+        date: "asc",
+      },
+    });
+    return meetings.map(formatMeeting);
+  }
+
+  const meetings = await prisma.meeting.findMany({
+    where: {
+      OR: [
+        { organizerId: user.id },
+        {
+          participants: {
+            contains: user.email ?? "unlikely-string-to-avoid-error",
+          },
+        },
+      ],
+    },
+    orderBy: {
+      date: "asc",
+    },
+  });
   return meetings.map(formatMeeting);
 };
 

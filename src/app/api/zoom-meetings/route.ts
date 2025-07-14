@@ -1,43 +1,63 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { listZoomMeetings } from "@/lib/zoom";
-import prisma from "@/lib/prisma";
+import { getMeetings } from "@/lib/data";
 
-export async function GET(request: Request) {
+// This type is a simplified version of what the ZoomCalendar component expects.
+type CalendarMeeting = {
+  id: number; // Zoom Meeting ID
+  topic: string;
+  start_time: string;
+  duration: number;
+  join_url: string;
+  password?: string;
+  description?: string;
+  isOwner: boolean;
+};
+
+export async function GET() {
   try {
     const session = await auth();
+    const user = session?.user;
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const url = new URL(request.url);
-    const nextPageToken = url.searchParams.get("next_page_token") || undefined;
+    // getMeetings fetches from the local DB and correctly filters by organizer and participant.
+    const localMeetings = await getMeetings(user);
 
-    const [zoomResult, dbMeetings] = await Promise.all([
-      listZoomMeetings(nextPageToken),
-      prisma.meeting.findMany({
-        select: { id: true, zoomMeetingId: true },
-      }),
-    ]);
+    // Transform the database `Meeting` type into the `CalendarMeeting` type
+    // that the frontend component expects.
+    const calendarMeetings: CalendarMeeting[] = localMeetings
+      .map((m) => {
+        // If there's no zoomMeetingId, we can't display it on the Zoom calendar.
+        if (!m.zoomMeetingId || !m.zoomJoinUrl) {
+          return null;
+        }
 
-    const dbMeetingMap = new Map(
-      dbMeetings.map((m) => [m.zoomMeetingId, m.id]),
-    );
-
-    const correlatedMeetings = zoomResult.meetings.map((zm) => ({
-      ...zm,
-      dbId: dbMeetingMap.get(zm.id.toString()),
-    }));
+        return {
+          id: parseInt(m.zoomMeetingId, 10),
+          topic: m.title,
+          start_time: m.date.toISOString(),
+          duration: m.duration,
+          join_url: m.zoomJoinUrl,
+          password: m.zoomPassword,
+          description: m.description,
+          isOwner: m.organizerId === user.id,
+        };
+      })
+      .filter((m): m is CalendarMeeting => m !== null); // Filter out any nulls
 
     return NextResponse.json({
-      meetings: correlatedMeetings,
-      nextPageToken: zoomResult.nextPageToken,
+      meetings: calendarMeetings,
+      nextPageToken: undefined, // Pagination is not handled in this simplified API.
     });
   } catch (error) {
-    console.error("Error fetching and correlating Zoom meetings:", error);
+    console.error("Error fetching meetings for calendar:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
     return NextResponse.json(
-      { error: "Failed to fetch meetings" },
+      { error: `Failed to fetch meetings: ${errorMessage}` },
       { status: 500 },
     );
   }
