@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getMeetings } from "@/lib/data";
+import { listZoomMeetings } from "@/lib/zoom";
 
 // This type is a simplified version of what the ZoomCalendar component expects.
 type CalendarMeeting = {
@@ -23,37 +24,50 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // getMeetings fetches from the local DB and correctly filters by organizer and participant.
-    const localMeetings = await getMeetings(user);
+    // 1. Fetch all meetings for the current user from our local database.
+    // This tells us which meetings the user should see.
+    const userMeetingsFromDb = await getMeetings(user);
+    const userMeetingIds = new Set(
+      userMeetingsFromDb.map((m) => m.zoomMeetingId).filter(Boolean),
+    );
 
-    // Transform the database `Meeting` type into the `CalendarMeeting` type
-    // that the frontend component expects.
-    const calendarMeetings: CalendarMeeting[] = localMeetings
-      .map((m) => {
-        // If there's no zoomMeetingId, we can't display it on the Zoom calendar.
-        if (!m.zoomMeetingId || !m.zoomJoinUrl) {
-          return null;
-        }
+    // 2. Fetch all meetings from the Zoom API.
+    // This gives us the latest, real-time information.
+    const zoomApiResult = await listZoomMeetings();
+
+    // 3. Filter the real-time Zoom meetings to include only those relevant to our user.
+    const relevantZoomMeetings = zoomApiResult.meetings.filter((zm) =>
+      userMeetingIds.has(zm.id.toString()),
+    );
+
+    // 4. Correlate and transform the data for the frontend.
+    const calendarMeetings: CalendarMeeting[] = relevantZoomMeetings.map(
+      (zm) => {
+        // Find the corresponding meeting from our DB to check ownership.
+        const dbMeeting = userMeetingsFromDb.find(
+          (m) => m.zoomMeetingId === zm.id.toString(),
+        );
 
         return {
-          id: parseInt(m.zoomMeetingId, 10),
-          topic: m.title,
-          start_time: m.date.toISOString(),
-          duration: m.duration,
-          join_url: m.zoomJoinUrl,
-          password: m.zoomPassword,
-          description: m.description,
-          isOwner: m.organizerId === user.id,
+          id: zm.id,
+          topic: zm.topic,
+          start_time: zm.start_time,
+          duration: zm.duration,
+          join_url: zm.join_url,
+          password: zm.password,
+          description: zm.agenda,
+          // isOwner is true if the logged-in user is the organizer.
+          isOwner: dbMeeting ? dbMeeting.organizerId === user.id : false,
         };
-      })
-      .filter((m): m is CalendarMeeting => m !== null); // Filter out any nulls
+      },
+    );
 
     return NextResponse.json({
       meetings: calendarMeetings,
-      nextPageToken: undefined, // Pagination is not handled in this simplified API.
+      nextPageToken: zoomApiResult.nextPageToken,
     });
   } catch (error) {
-    console.error("Error fetching meetings for calendar:", error);
+    console.error("Error fetching and correlating meetings:", error);
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred";
     return NextResponse.json(
