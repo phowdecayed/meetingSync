@@ -287,20 +287,13 @@ export async function deleteZoomMeeting(meetingId: string) {
 }
 
 // Fungsi untuk mendapatkan semua meeting di Zoom
-export async function listZoomMeetings(
-  userId: string,
-  nextPageToken?: string,
-) {
+export async function listZoomMeetings(nextPageToken?: string) {
   try {
     const zoomClient = await getZoomApiClient();
-    const user = await prisma.user.findUnique({ where: { id: userId } });
 
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    // Use 'me' for the admin/S2S app owner, or the user's email for others.
-    const zoomUserId = user.role === "admin" ? "me" : user.email;
+    // Use 'me' as userId to list meetings for the S2S app's owner,
+    // which is where all meetings are created.
+    const userId = "me";
 
     const params: ListZoomMeetingsParams = {
       page_size: 300,
@@ -312,7 +305,7 @@ export async function listZoomMeetings(
     }
 
     const response = await zoomClient.get<ZoomMeetingsResponse>(
-      `/users/${zoomUserId}/meetings`,
+      `/users/${userId}/meetings`,
       { params },
     );
 
@@ -321,12 +314,10 @@ export async function listZoomMeetings(
       nextPageToken: response.data.next_page_token,
     };
   } catch (error) {
+    // It's possible the account has no meetings, which is not an error.
     if (axios.isAxiosError(error) && error.response?.status === 404) {
-      // This is expected if the user is not found on Zoom or has no meetings.
-      // Return an empty list instead of throwing an error.
       return { meetings: [], nextPageToken: undefined };
     }
-    // For other errors, log and re-throw.
     console.error("Failed to list Zoom meetings:", error);
     throw new Error("Failed to list Zoom meetings");
   }
