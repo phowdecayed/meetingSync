@@ -8,9 +8,7 @@ import {
 } from "@/components/ui/card";
 import { ZoomCalendar } from "@/components/zoom-calendar";
 
-type MeetingsViewTabsProps = object;
-
-export function MeetingsViewTabs({}: MeetingsViewTabsProps) {
+export function MeetingsViewTabs() {
   return (
     <div>
       <Card className="mb-6">

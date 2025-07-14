@@ -4,10 +4,13 @@ import prisma from "@/lib/prisma";
 import { deleteZoomMeeting } from "@/lib/zoom";
 import axios from "axios";
 
-export async function GET(
-  request: Request,
-  context: { params: { id: string } },
-) {
+type RouteContext = {
+  params: {
+    id: string;
+  };
+};
+
+export async function GET(request: Request, context: RouteContext) {
   try {
     const session = await auth();
     if (!session) {
@@ -62,10 +65,7 @@ export async function GET(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  context: { params: { id: string } },
-) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
     const session = await auth();
     if (!session?.user) {

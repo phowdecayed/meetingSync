@@ -4,9 +4,10 @@ export const meetingSchema = z.object({
   title: z
     .string()
     .min(3, { message: "Title must be at least 3 characters long." }),
-  date: z.date({ required_error: "A date is required." }),
+  date: z.date().min(new Date(), { message: "A date is required." }),
   time: z
-    .string({ required_error: "A time is required." })
+    .string()
+    .min(1, { message: "A time is required." })
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)"),
   duration: z.coerce
     .number()
