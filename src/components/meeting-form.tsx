@@ -217,7 +217,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
           description: "Meeting created successfully.",
         });
       }
-      router.push("/dashboard");
+      router.push("/schedule");
       router.refresh();
     } catch {
       toast({
