@@ -13,6 +13,7 @@ import {
 import { Home, Settings, Users, Video, Calendar, User } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { ThemeToggle } from "./theme-toggle";
+import { Separator } from "@radix-ui/react-separator";
 
 const allMenuItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -41,7 +42,7 @@ export function SidebarNav() {
   return (
     <>
       <SidebarHeader>
-        <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
+        <div className="flex items-center justify-center gap-2 group-data-[collapsible=icon]:justify-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -58,14 +59,15 @@ export function SidebarNav() {
             <circle cx="12" cy="13" r="3"></circle>
           </svg>
           <div className="group-data-[collapsible=icon]:hidden">
-            <h2 className="font-headline text-2xl font-semibold">
+            <h2 className="font-headline text-2xl font-semibold text-center">
               MeetingSync
             </h2>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu className="gap-2">
+        <Separator className="my-2" />
+        <SidebarMenu className="gap-2 px-4">
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href} passHref>
@@ -75,6 +77,7 @@ export function SidebarNav() {
                       ? pathname === item.href
                       : (pathname?.startsWith(item.href) ?? false)
                   }
+                  className="text-center flex flex-row items-center"
                   tooltip={{ children: item.label, side: "right" }}
                 >
                   <item.icon />
@@ -90,7 +93,7 @@ export function SidebarNav() {
       <SidebarFooter className="items-center">
         <ThemeToggle />
         <p className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-          v0.1.0
+          v0.1.1
         </p>
         <div className="flex items-center justify-center gap-2">
           <p className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
