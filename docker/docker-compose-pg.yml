@@ -19,24 +19,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # 2. Migration Service
-  migrate:
-    build:
-      # CONTEXT FIX: Standardize the build context.
-      # Assuming you run 'docker compose' from the project root.
-      context: ..
-      dockerfile: docker/Dockerfile
-    container_name: bpkad-zoom-app-migrate
-    env_file:
-      - pg.env
-    environment:
-      - TZ=Asia/Jakarta
-    command: sh -c 'npx prisma migrate deploy && npx prisma db seed'
-    depends_on:
-      db:
-        condition: service_healthy
-
-  # 3. Application Service
+  # 2. Application Service
   app:
     build:
       context: ..
@@ -50,10 +33,8 @@ services:
     environment:
       - TZ=Asia/Jakarta
     depends_on:
-      # DEPENDS_ON FIX: Use the long-form syntax to ensure the 'migrate'
-      # service finishes successfully before the 'app' starts.
-      migrate:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:

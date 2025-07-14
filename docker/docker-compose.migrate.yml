@@ -1,0 +1,14 @@
+services:
+  migrate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: bpkad-zoom-app-migrate
+    env_file:
+      - pg.env
+    environment:
+      - TZ=Asia/Jakarta
+    command: sh -c 'npx prisma migrate deploy && npx prisma db seed'
+    depends_on:
+      db:
+        condition: service_healthy
