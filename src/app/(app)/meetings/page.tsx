@@ -28,7 +28,7 @@ export default async function AllMeetingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-headline font-bold">My Meetings</h1>
+        <h1 className="font-headline text-3xl font-bold">My Meetings</h1>
         <p className="text-muted-foreground">
           Browse and manage all of your past and upcoming meetings.
         </p>

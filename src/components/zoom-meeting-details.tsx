@@ -1,6 +1,4 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import {
   Dialog,
@@ -14,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import {
-  Clock,
   Calendar,
   Link as LinkIcon,
   User,
@@ -81,7 +78,6 @@ export function ZoomMeetingDetails({
   const [hostKey, setHostKey] = useState<string | null>(null);
   const [detailedMeeting, setDetailedMeeting] =
     useState<ZoomMeetingDetail | null>(null);
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showHostKey, setShowHostKey] = useState(false);
   const [meetingSummary, setMeetingSummary] = useState<null | {
@@ -94,11 +90,22 @@ export function ZoomMeetingDetails({
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [activeTab, setActiveTab] = useState<"detail" | "summary">("detail");
 
+  const fetchHostKey = useCallback(() => {
+    fetch("/api/zoom-settings/host-key")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.hostKey) setHostKey(data.hostKey);
+      })
+      .catch((error) => {
+        console.error("Error fetching host key:", error);
+        setHostKey(null);
+      });
+  }, []);
+
   // Fetch detailed meeting info from database when opened
   useEffect(() => {
     // Only run if the dialog is open and we have a meeting to display
     if (isOpen && meeting) {
-      setLoading(true);
       setActiveTab("detail");
 
       // Fetch full meeting details from our API
@@ -126,9 +133,6 @@ export function ZoomMeetingDetails({
           console.error("Error fetching meeting details:", error);
           // Fallback to the basic meeting data if the detailed fetch fails
           setDetailedMeeting(meeting);
-        })
-        .finally(() => {
-          setLoading(false);
         });
 
       // Reset and fetch meeting summary for past meetings
@@ -161,21 +165,8 @@ export function ZoomMeetingDetails({
       setMeetingSummary(null);
       setHostKey(null);
     }
-  }, [isOpen, meeting?.id, session?.user?.role]); // Depend on meeting.id to prevent re-renders
-
-  const fetchHostKey = () => {
-    fetch("/api/zoom-settings/host-key")
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.hostKey) setHostKey(data.hostKey);
-      })
-      .catch((error) => {
-        console.error("Error fetching host key:", error);
-        setHostKey(null);
-      });
-  };
-
-  const copyToClipboard = (text: string, label: string) => {
+  }, [isOpen, meeting, session?.user?.role, fetchHostKey]); // Depend on meeting.id to prevent re-renders
+  const copyToClipboard = (text: string, label: string): void => {
     navigator.clipboard.writeText(text).then(
       () =>
         toast({
@@ -221,7 +212,7 @@ export function ZoomMeetingDetails({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl">{activeMeeting.topic}</DialogTitle>
-          <div className="flex items-center gap-2 mt-1.5">
+          <div className="mt-1.5 flex items-center gap-2">
             <DialogDescription>Zoom meeting details</DialogDescription>
             <Badge
               variant={
@@ -239,7 +230,7 @@ export function ZoomMeetingDetails({
 
         <Tabs
           value={activeTab}
-          onValueChange={(v) => setActiveTab(v as any)}
+          onValueChange={(v) => setActiveTab(v as "detail" | "summary")}
           className="w-full"
         >
           <TabsList>
@@ -251,9 +242,9 @@ export function ZoomMeetingDetails({
           <TabsContent value="detail" className="space-y-4 py-2">
             {/* Organizer, Date, Duration, etc. */}
             <div className="flex items-start gap-3">
-              <User className="h-5 w-5 text-gray-500 mt-0.5" />
+              <User className="mt-0.5 h-5 w-5 text-gray-500" />
               <div>
-                <h4 className="font-medium text-sm">Organizer</h4>
+                <h4 className="text-sm font-medium">Organizer</h4>
                 <p className="text-sm text-gray-500">
                   {detailedMeeting?.organizer?.name || "Loading..."} (
                   {detailedMeeting?.organizer?.email || "..."})
@@ -263,7 +254,7 @@ export function ZoomMeetingDetails({
             <div className="flex items-center gap-3">
               <Calendar className="h-5 w-5 text-gray-500" />
               <div>
-                <h4 className="font-medium text-sm">Date and Time</h4>
+                <h4 className="text-sm font-medium">Date and Time</h4>
                 <p className="text-sm text-gray-500">
                   {format(meetingDate, "EEEE, MMMM d, yyyy")} at{" "}
                   {format(meetingDate, "h:mm a")}
@@ -272,24 +263,24 @@ export function ZoomMeetingDetails({
             </div>
             {activeMeeting.description && (
               <div className="flex items-start gap-3">
-                <FileText className="h-5 w-5 text-gray-500 mt-0.5" />
+                <FileText className="mt-0.5 h-5 w-5 text-gray-500" />
                 <div>
-                  <h4 className="font-medium text-sm">Description</h4>
-                  <p className="text-sm text-gray-500 whitespace-pre-wrap">
+                  <h4 className="text-sm font-medium">Description</h4>
+                  <p className="text-sm whitespace-pre-wrap text-gray-500">
                     {activeMeeting.description}
                   </p>
                 </div>
               </div>
             )}
             <div className="flex items-start gap-3">
-              <LinkIcon className="h-5 w-5 text-gray-500 mt-0.5" />
+              <LinkIcon className="mt-0.5 h-5 w-5 text-gray-500" />
               <div className="flex-1">
-                <h4 className="font-medium text-sm flex items-center">
+                <h4 className="flex items-center text-sm font-medium">
                   <span>Meeting Link</span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 px-2 ml-2"
+                    className="ml-2 h-6 px-2"
                     onClick={() =>
                       copyToClipboard(activeMeeting.join_url, "Join URL")
                     }
@@ -299,17 +290,17 @@ export function ZoomMeetingDetails({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-6 px-2 ml-2"
+                    className="ml-2 h-6 px-2"
                     onClick={copyInvitation}
                   >
-                    <Clipboard className="h-3.5 w-3.5 mr-1" /> Copy Invitation
+                    <Clipboard className="mr-1 h-3.5 w-3.5" /> Copy Invitation
                   </Button>
                 </h4>
                 <a
                   href={activeMeeting.join_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-blue-600 break-all hover:underline"
+                  className="text-sm break-all text-blue-600 hover:underline"
                 >
                   {activeMeeting.join_url}
                 </a>
@@ -317,14 +308,14 @@ export function ZoomMeetingDetails({
             </div>
             {activeMeeting.password && (
               <div className="flex items-start gap-3">
-                <Key className="h-5 w-5 text-gray-500 mt-0.5" />
+                <Key className="mt-0.5 h-5 w-5 text-gray-500" />
                 <div>
-                  <h4 className="font-medium text-sm flex items-center">
+                  <h4 className="flex items-center text-sm font-medium">
                     <span>Meeting Password</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 ml-2"
+                      className="ml-2 h-6 px-2"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -347,7 +338,7 @@ export function ZoomMeetingDetails({
                       <Copy className="h-3.5 w-3.5" />
                     </Button>
                   </h4>
-                  <p className="text-sm text-gray-500 font-mono">
+                  <p className="font-mono text-sm text-gray-500">
                     {showPassword ? activeMeeting.password : "••••••••"}
                   </p>
                 </div>
@@ -357,14 +348,14 @@ export function ZoomMeetingDetails({
               session?.user?.role === "admin") &&
               hostKey && (
                 <div className="flex items-start gap-3">
-                  <User className="h-5 w-5 text-gray-500 mt-0.5" />
+                  <User className="mt-0.5 h-5 w-5 text-gray-500" />
                   <div>
-                    <h4 className="font-medium text-sm flex items-center">
+                    <h4 className="flex items-center text-sm font-medium">
                       <span>Host Key</span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 px-2 ml-2"
+                        className="ml-2 h-6 px-2"
                         onClick={() => setShowHostKey(!showHostKey)}
                       >
                         {showHostKey ? (
@@ -382,10 +373,10 @@ export function ZoomMeetingDetails({
                         <Copy className="h-3.5 w-3.5" />
                       </Button>
                     </h4>
-                    <p className="text-sm text-gray-500 font-mono">
+                    <p className="font-mono text-sm text-gray-500">
                       {showHostKey ? hostKey : "••••••"}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1 italic">
+                    <p className="mt-1 text-xs text-gray-500 italic">
                       Use this key to claim host controls in the meeting.
                     </p>
                   </div>
@@ -398,7 +389,7 @@ export function ZoomMeetingDetails({
             ) : meetingSummary ? (
               <>
                 <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-base">
+                  <h4 className="text-base font-semibold">
                     {meetingSummary.summary_title}
                   </h4>
                   <Button
@@ -411,7 +402,7 @@ export function ZoomMeetingDetails({
                       )
                     }
                   >
-                    <Clipboard className="h-4 w-4 mr-1" /> Copy
+                    <Clipboard className="mr-1 h-4 w-4" /> Copy
                   </Button>
                 </div>
                 <div className="text-xs text-gray-400">

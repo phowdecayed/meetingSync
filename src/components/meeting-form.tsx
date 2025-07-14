@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { Resolver, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -84,7 +84,9 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
         };
 
   const form = useForm<z.infer<typeof meetingSchema>>({
-    resolver: zodResolver(meetingSchema),
+    resolver: zodResolver(meetingSchema) as Resolver<
+      z.infer<typeof meetingSchema>
+    >,
     defaultValues,
   });
 
@@ -103,17 +105,20 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
             ? data.filter((m: Meeting) => m.id !== existingMeeting.id)
             : data,
         );
-      } catch (e) {
+      } catch {
         // ignore
       }
     }
     fetchMeetings();
   }, [isEditMode, existingMeeting]);
 
+  const watchedDate = form.watch("date");
+  const watchedTime = form.watch("time");
+  const watchedDuration = form.watch("duration");
+
   // Check for overlap whenever date, time, or duration changes
   useEffect(() => {
-    const values = form.getValues();
-    if (!values.date || !values.time || !values.duration) {
+    if (!watchedDate || !watchedTime || !watchedDuration) {
       setOverlapError(null);
       if (overlapToastShown.current) {
         overlapToastShown.current = false;
@@ -121,10 +126,10 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       }
       return;
     }
-    const [hours, minutes] = values.time.split(":").map(Number);
-    const newStart = new Date(values.date);
+    const [hours, minutes] = watchedTime.split(":").map(Number);
+    const newStart = new Date(watchedDate);
     newStart.setHours(hours, minutes, 0, 0);
-    const newEnd = new Date(newStart.getTime() + values.duration * 60 * 1000);
+    const newEnd = new Date(newStart.getTime() + watchedDuration * 60 * 1000);
     const startOfDay = new Date(newStart);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(newStart);
@@ -159,17 +164,14 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       }
     } else {
       setOverlapError(null);
-      if (overlapToastShown.current) {
-        dismiss();
-        overlapToastShown.current = false;
-      }
+      // We don't want to automatically dismiss the toast.
+      // The user should be able to see the error and act on it.
+      // if (overlapToastShown.current) {
+      //   dismiss();
+      //   overlapToastShown.current = false;
+      // }
     }
-  }, [
-    form.watch("date"),
-    form.watch("time"),
-    form.watch("duration"),
-    allMeetings,
-  ]);
+  }, [watchedDate, watchedTime, watchedDuration, allMeetings, dismiss, toast]);
 
   async function onSubmit(values: z.infer<typeof meetingSchema>) {
     setIsLoading(true);
@@ -184,7 +186,6 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       return;
     }
 
-    const [hours, minutes] = values.time.split(":").map(Number);
     const localDate = new Date(values.date);
 
     // Gunakan waktu lokal Asia/Jakarta tanpa konversi UTC
@@ -210,7 +211,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
           description: "Meeting updated successfully.",
         });
       } else {
-        const newMeeting = await addMeeting(meetingData);
+        await addMeeting(meetingData);
         toast({
           title: "Success",
           description: "Meeting created successfully.",
@@ -218,7 +219,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       }
       router.push("/dashboard");
       router.refresh();
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
@@ -232,7 +233,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Card className="max-w-3xl mx-auto">
+        <Card className="mx-auto max-w-3xl">
           <CardHeader>
             <CardTitle>
               {isEditMode ? "Edit Meeting" : "Create New Meeting"}
@@ -257,7 +258,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+            <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-3">
               <FormField
                 control={form.control}
                 name="date"
@@ -329,7 +330,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                 )}
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="password"

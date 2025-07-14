@@ -35,16 +35,17 @@ export async function GET(
     const response = await zoomClient.get(
       `/past_meetings/${meetingId}/instances`,
     );
-
     return NextResponse.json(response.data);
-  } catch (error: any) {
-    console.error(
-      "Error fetching meeting instances:",
-      error.response?.data || error,
-    );
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
+    console.error("Failed to fetch meeting instances:", errorMessage);
     return NextResponse.json(
-      { error: "Failed to fetch meeting instances" },
-      { status: error.response?.status || 500 },
+      {
+        error: "Failed to fetch meeting instances",
+        details: errorMessage,
+      },
+      { status: 500 },
     );
   }
 }

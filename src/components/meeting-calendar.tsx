@@ -6,7 +6,6 @@ import { type Meeting } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Clock,
-  User,
   Link as LinkIcon,
   Info,
   Users,
@@ -47,22 +46,22 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
     <>
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            <div className="lg:col-span-1 flex justify-center">
+          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
+            <div className="flex justify-center lg:col-span-1">
               <Calendar
                 mode="single"
                 selected={selectedDay}
                 onSelect={setSelectedDay}
                 modifiers={{ hasMeeting: daysWithMeetings }}
                 modifiersClassNames={{ hasMeeting: "rdp-day_has-meeting" }}
-                className="border rounded-lg p-2"
+                className="rounded-lg border p-2"
               />
             </div>
             <div className="lg:col-span-2">
-              <h3 className="text-lg font-semibold mb-4">
+              <h3 className="mb-4 text-lg font-semibold">
                 Meetings on {selectedDay ? format(selectedDay, "PPP") : "..."}
               </h3>
-              <div className="space-y-4 h-[300px] lg:h-[450px] overflow-y-auto pr-2">
+              <div className="h-[300px] space-y-4 overflow-y-auto pr-2 lg:h-[450px]">
                 {selectedDayMeetings.length > 0 ? (
                   selectedDayMeetings
                     .sort(
@@ -84,47 +83,47 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                           </CardHeader>
                           <CardContent className="space-y-4 pt-0">
                             <div className="flex items-start gap-4">
-                              <CalendarIcon className="h-5 w-5 mt-1 text-muted-foreground" />
+                              <CalendarIcon className="text-muted-foreground mt-1 h-5 w-5" />
                               <div>
-                                <h4 className="font-semibold text-sm">
+                                <h4 className="text-sm font-semibold">
                                   Date & Time
                                 </h4>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-muted-foreground text-sm">
                                   {format(new Date(meeting.date), "PPPP p")}
                                 </p>
                               </div>
                             </div>
                             <div className="flex items-start gap-4">
-                              <Clock className="h-5 w-5 mt-1 text-muted-foreground" />
+                              <Clock className="text-muted-foreground mt-1 h-5 w-5" />
                               <div>
-                                <h4 className="font-semibold text-sm">
+                                <h4 className="text-sm font-semibold">
                                   Duration
                                 </h4>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-muted-foreground text-sm">
                                   {meeting.duration} minutes
                                 </p>
                               </div>
                             </div>
                             {meeting.description && (
                               <div className="flex items-start gap-4">
-                                <Info className="h-5 w-5 mt-1 text-muted-foreground" />
+                                <Info className="text-muted-foreground mt-1 h-5 w-5" />
                                 <div>
-                                  <h4 className="font-semibold text-sm">
+                                  <h4 className="text-sm font-semibold">
                                     Description
                                   </h4>
-                                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                  <p className="text-muted-foreground text-sm whitespace-pre-wrap">
                                     {meeting.description}
                                   </p>
                                 </div>
                               </div>
                             )}
                             <div className="flex items-start gap-4">
-                              <Users className="h-5 w-5 mt-1 text-muted-foreground" />
+                              <Users className="text-muted-foreground mt-1 h-5 w-5" />
                               <div>
-                                <h4 className="font-semibold text-sm">
+                                <h4 className="text-sm font-semibold">
                                   Participants
                                 </h4>
-                                <div className="flex flex-wrap gap-2 mt-2">
+                                <div className="mt-2 flex flex-wrap gap-2">
                                   {meeting.participants.length > 0 ? (
                                     meeting.participants.map((p) => (
                                       <Badge key={p} variant="secondary">
@@ -132,7 +131,7 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                                       </Badge>
                                     ))
                                   ) : (
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-muted-foreground text-sm">
                                       No participants other than the organizer.
                                     </p>
                                   )}
@@ -140,9 +139,9 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                               </div>
                             </div>
                             <div className="flex items-start gap-4">
-                              <LinkIcon className="h-5 w-5 mt-1 text-muted-foreground" />
+                              <LinkIcon className="text-muted-foreground mt-1 h-5 w-5" />
                               <div>
-                                <h4 className="font-semibold text-sm">
+                                <h4 className="text-sm font-semibold">
                                   Zoom Meeting Link
                                 </h4>
                                 {zoomLink ? (
@@ -150,12 +149,12 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                                     href={zoomLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-sm text-primary hover:underline break-all"
+                                    className="text-primary text-sm break-all hover:underline"
                                   >
                                     Join Zoom Meeting
                                   </a>
                                 ) : (
-                                  <p className="text-sm text-muted-foreground">
+                                  <p className="text-muted-foreground text-sm">
                                     No Zoom link available
                                   </p>
                                 )}
@@ -166,7 +165,7 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                       );
                     })
                 ) : (
-                  <div className="flex items-center justify-center h-full">
+                  <div className="flex h-full items-center justify-center">
                     <p className="text-muted-foreground pt-4">
                       No meetings scheduled for this day.
                     </p>

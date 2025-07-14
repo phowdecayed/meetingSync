@@ -53,13 +53,13 @@ export function SidebarNav() {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-8 w-8 text-primary"
+            className="text-primary h-8 w-8"
           >
             <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
             <circle cx="12" cy="13" r="3"></circle>
           </svg>
           <div className="group-data-[collapsible=icon]:hidden">
-            <h2 className="font-headline text-2xl font-semibold text-center">
+            <h2 className="font-headline text-center text-2xl font-semibold">
               MeetingSync
             </h2>
           </div>
@@ -77,7 +77,7 @@ export function SidebarNav() {
                       ? pathname === item.href
                       : (pathname?.startsWith(item.href) ?? false)
                   }
-                  className="text-center flex flex-row items-center"
+                  className="flex flex-row items-center text-center"
                   tooltip={{ children: item.label, side: "right" }}
                 >
                   <item.icon />
@@ -92,11 +92,11 @@ export function SidebarNav() {
       </SidebarContent>
       <SidebarFooter className="items-center">
         <ThemeToggle />
-        <p className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+        <p className="text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
           v0.1.1
         </p>
         <div className="flex items-center justify-center gap-2">
-          <p className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+          <p className="text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
             &copy; 2025 Pranata Komputer BPKAD.
           </p>
         </div>

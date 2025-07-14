@@ -76,7 +76,7 @@ export function MeetingDetailsDialog({
   );
   const isPastMeeting = now > meetingEndTime;
 
-  const handleJoinMeeting = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleJoinMeeting = () => {
     if (meeting.zoomPassword) {
       // Show toast with password information
       toast({
@@ -110,7 +110,7 @@ export function MeetingDetailsDialog({
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle className="text-2xl">{meeting.title}</DialogTitle>
-          <div className="flex items-center gap-2 mt-1.5">
+          <div className="mt-1.5 flex items-center gap-2">
             <DialogDescription>
               Details for your scheduled meeting.
             </DialogDescription>
@@ -123,7 +123,7 @@ export function MeetingDetailsDialog({
         </DialogHeader>
         <div className="grid gap-6 py-4">
           <div className="flex items-start gap-4">
-            <Calendar className="h-5 w-5 mt-1 text-muted-foreground" />
+            <Calendar className="text-muted-foreground mt-1 h-5 w-5" />
             <div>
               <h4 className="font-semibold">Date & Time</h4>
               <p className="text-muted-foreground">
@@ -132,7 +132,7 @@ export function MeetingDetailsDialog({
             </div>
           </div>
           <div className="flex items-start gap-4">
-            <Clock className="h-5 w-5 mt-1 text-muted-foreground" />
+            <Clock className="text-muted-foreground mt-1 h-5 w-5" />
             <div>
               <h4 className="font-semibold">Duration</h4>
               <p className="text-muted-foreground">
@@ -142,7 +142,7 @@ export function MeetingDetailsDialog({
           </div>
           {meeting.description && (
             <div className="flex items-start gap-4">
-              <Info className="h-5 w-5 mt-1 text-muted-foreground" />
+              <Info className="text-muted-foreground mt-1 h-5 w-5" />
               <div>
                 <h4 className="font-semibold">Description</h4>
                 <p className="text-muted-foreground whitespace-pre-wrap">
@@ -152,10 +152,10 @@ export function MeetingDetailsDialog({
             </div>
           )}
           <div className="flex items-start gap-4">
-            <Users className="h-5 w-5 mt-1 text-muted-foreground" />
+            <Users className="text-muted-foreground mt-1 h-5 w-5" />
             <div>
               <h4 className="font-semibold">Participants</h4>
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 {meeting.participants.length > 0 ? (
                   meeting.participants.map((p) => (
                     <Badge key={p} variant="secondary">
@@ -163,7 +163,7 @@ export function MeetingDetailsDialog({
                     </Badge>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     No participants other than the organizer.
                   </p>
                 )}
@@ -172,27 +172,27 @@ export function MeetingDetailsDialog({
           </div>
           {meeting.zoomJoinUrl ? (
             <div className="flex items-start gap-4">
-              <LinkIcon className="h-5 w-5 mt-1 text-muted-foreground" />
+              <LinkIcon className="text-muted-foreground mt-1 h-5 w-5" />
               <div>
                 <h4 className="font-semibold">Zoom Meeting Link</h4>
                 <a
                   href={meeting.zoomJoinUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline break-all"
+                  className="text-primary text-sm break-all hover:underline"
                 >
                   {meeting.zoomJoinUrl}
                 </a>
                 {meeting.zoomPassword && (
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-muted-foreground mt-1 text-sm">
                     Password:
-                    <span className="font-mono ml-1">
+                    <span className="ml-1 font-mono">
                       {showPassword ? meeting.zoomPassword : "••••••••"}
                     </span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 ml-1"
+                      className="ml-1 h-6 px-2"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -207,10 +207,10 @@ export function MeetingDetailsDialog({
             </div>
           ) : (
             <div className="flex items-start gap-4">
-              <LinkIcon className="h-5 w-5 mt-1 text-muted-foreground" />
+              <LinkIcon className="text-muted-foreground mt-1 h-5 w-5" />
               <div>
                 <h4 className="font-semibold">Zoom Meeting Link</h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Zoom meeting link not available. Please check back later.
                 </p>
               </div>
@@ -220,9 +220,9 @@ export function MeetingDetailsDialog({
           {/* Only show host key to the organizer */}
           {isOrganizer && hostKey && (
             <div className="flex items-start gap-4">
-              <User className="h-5 w-5 mt-1 text-muted-foreground" />
+              <User className="text-muted-foreground mt-1 h-5 w-5" />
               <div>
-                <h4 className="font-semibold flex items-center justify-between">
+                <h4 className="flex items-center justify-between font-semibold">
                   <span>Host Key</span>
                   <div className="flex items-center space-x-1">
                     <Button
@@ -247,10 +247,10 @@ export function MeetingDetailsDialog({
                     </Button>
                   </div>
                 </h4>
-                <p className="text-sm text-muted-foreground font-mono">
+                <p className="text-muted-foreground font-mono text-sm">
                   {showHostKey ? hostKey : "••••••••"}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1 italic">
+                <p className="text-muted-foreground mt-1 text-xs italic">
                   Gunakan Host Key untuk claim Host
                 </p>
               </div>
@@ -266,7 +266,7 @@ export function MeetingDetailsDialog({
               <Button
                 variant="outline"
                 disabled
-                className="opacity-60 cursor-not-allowed"
+                className="cursor-not-allowed opacity-60"
                 title="Meeting has ended"
               >
                 Meeting Ended

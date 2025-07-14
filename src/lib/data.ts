@@ -1,6 +1,5 @@
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
-import { PrismaClient } from "@prisma/client";
 import {
   createZoomMeeting,
   updateZoomMeeting,
@@ -153,11 +152,7 @@ export const createMeeting = async (
         waiting_room: true,
         auto_recording: "cloud",
         approval_type: 2,
-        registration_type: 1,
         audio: "both",
-        contact_name: "BPKAD Zoom Book Admin",
-        contact_email: "bpkad@jabarprov.go.id",
-        email_notification: true,
       },
     });
 
@@ -321,7 +316,7 @@ export const createUser = async (data: {
     });
 
     return formatUser(user);
-  } catch (error) {
+  } catch {
     throw new Error("A user with this email already exists.");
   }
 };
@@ -337,7 +332,7 @@ export const updateUserRole = async (
     });
 
     return formatUser(user);
-  } catch (error) {
+  } catch {
     throw new Error("User not found");
   }
 };
@@ -350,7 +345,7 @@ export const deleteUserById = async (
       where: { id },
     });
     return { success: true };
-  } catch (error) {
+  } catch {
     return { success: false };
   }
 };
@@ -374,7 +369,7 @@ export const updateAuthUser = async (
     });
 
     return formatUser(user);
-  } catch (error) {
+  } catch {
     throw new Error("User not found");
   }
 };

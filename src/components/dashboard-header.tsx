@@ -14,12 +14,10 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { LogOut, PlusCircle, Settings, User } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export function DashboardHeader() {
   const { data: session } = useSession();
   const user = session?.user;
-  const router = useRouter();
 
   const handleLogout = () => {
     signOut({ callbackUrl: "/login" });
@@ -34,7 +32,7 @@ export function DashboardHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+    <header className="bg-background sticky top-0 z-10 flex h-16 items-center gap-4 border-b px-4 md:px-6">
       <SidebarTrigger />
 
       <div className="flex w-full items-center justify-end gap-4">
@@ -57,15 +55,15 @@ export function DashboardHeader() {
                   alt={user?.name ?? ""}
                   data-ai-hint="user avatar"
                 />
-                <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
+                <AvatarFallback>{getInitials(user?.name ?? "")}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.name}</p>
-                <p className="text-xs leading-none text-muted-foreground">
+                <p className="text-sm leading-none font-medium">{user?.name}</p>
+                <p className="text-muted-foreground text-xs leading-none">
                   {user?.email}
                 </p>
               </div>

@@ -9,7 +9,7 @@ import { useEffect } from "react";
 // The middleware in `middleware.ts` handles the actual redirection logic
 // based on authentication state.
 export default function HomePage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export default function HomePage() {
 
   return (
     <div className="flex h-screen w-full items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <Loader2 className="text-primary h-8 w-8 animate-spin" />
     </div>
   );
 }

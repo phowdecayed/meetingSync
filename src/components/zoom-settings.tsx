@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -40,11 +40,7 @@ export function ZoomSettings() {
   const [hostKey, setHostKey] = useState("");
   const [verifying, setVerifying] = useState(false);
 
-  useEffect(() => {
-    fetchZoomAccounts();
-  }, []);
-
-  async function fetchZoomAccounts() {
+  const fetchZoomAccounts = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch("/api/zoom-accounts");
@@ -55,7 +51,7 @@ export function ZoomSettings() {
 
       const data = await response.json();
       setAccounts(data);
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
@@ -64,7 +60,11 @@ export function ZoomSettings() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchZoomAccounts();
+  }, [fetchZoomAccounts]);
 
   // Fungsi untuk menangani verifikasi kredensial
   async function handleVerify() {
@@ -95,11 +95,14 @@ export function ZoomSettings() {
       } else {
         throw new Error(result.message || "Gagal memverifikasi kredensial.");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error Verifikasi",
-        description: error.message,
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to verify credentials",
       });
     } finally {
       setVerifying(false);
@@ -151,7 +154,7 @@ export function ZoomSettings() {
 
       // Refresh daftar akun
       fetchZoomAccounts();
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
@@ -181,7 +184,7 @@ export function ZoomSettings() {
 
       // Refresh accounts list
       fetchZoomAccounts();
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
@@ -201,7 +204,7 @@ export function ZoomSettings() {
       <CardContent>
         {loading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
           </div>
         ) : (
           <>
@@ -209,7 +212,7 @@ export function ZoomSettings() {
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Saved Zoom Credentials</h3>
                 <div className="rounded-md border">
-                  <div className="grid grid-cols-4 p-4 font-medium border-b">
+                  <div className="grid grid-cols-4 border-b p-4 font-medium">
                     <div>Client ID</div>
                     <div>Account ID</div>
                     <div>Host Key</div>
@@ -218,7 +221,7 @@ export function ZoomSettings() {
                   {accounts.map((account) => (
                     <div
                       key={account.id}
-                      className="grid grid-cols-4 p-4 items-center border-b last:border-0"
+                      className="grid grid-cols-4 items-center border-b p-4 last:border-0"
                     >
                       <div className="truncate">{account.clientId}</div>
                       <div className="truncate">
@@ -241,7 +244,7 @@ export function ZoomSettings() {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-muted-foreground py-8 text-center">
                 No Zoom credentials found. Add your first one below.
               </div>
             )}
@@ -291,7 +294,7 @@ export function ZoomSettings() {
                       onChange={(e) => setHostKey(e.target.value)}
                       placeholder="Masukkan Host Key Zoom Anda"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-muted-foreground mt-1 text-xs">
                       Host Key digunakan untuk mengklaim host saat meeting
                       berlangsung
                     </p>
@@ -329,7 +332,7 @@ export function ZoomSettings() {
             ) : (
               <div className="mt-4 text-center">
                 <Button onClick={() => setShowForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="mr-2 h-4 w-4" />
                   Add Zoom Credentials
                 </Button>
               </div>
@@ -339,7 +342,7 @@ export function ZoomSettings() {
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button variant="outline" onClick={fetchZoomAccounts}>
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </Button>
         <a

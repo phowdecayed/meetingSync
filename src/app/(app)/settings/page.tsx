@@ -9,11 +9,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import {
   Select,
@@ -46,7 +44,7 @@ export default function SettingsPage() {
         const data = await res.json();
         setAllowRegistration(data.allowRegistration);
         setDefaultRole(data.defaultRole);
-      } catch (err) {
+      } catch {
         toast({
           variant: "destructive",
           title: "Gagal memuat pengaturan",
@@ -72,7 +70,7 @@ export default function SettingsPage() {
         title: "Berhasil",
         description: "Pengaturan berhasil disimpan.",
       });
-    } catch (err) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Gagal menyimpan",
@@ -86,7 +84,7 @@ export default function SettingsPage() {
   if (status === "loading" || !user) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -95,7 +93,7 @@ export default function SettingsPage() {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-headline font-bold">Access Denied</h1>
+          <h1 className="font-headline text-3xl font-bold">Access Denied</h1>
           <p className="text-muted-foreground">
             You do not have permission to view this page.
           </p>
@@ -107,7 +105,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-headline font-bold">
+        <h1 className="font-headline text-3xl font-bold">
           Pengaturan Aplikasi
         </h1>
         <p className="text-muted-foreground">
@@ -130,8 +128,8 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {loadingSettings ? (
-                <div className="flex items-center justify-center h-24">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <div className="flex h-24 items-center justify-center">
+                  <Loader2 className="text-primary h-6 w-6 animate-spin" />
                 </div>
               ) : (
                 <>
@@ -141,7 +139,7 @@ export default function SettingsPage() {
                       className="flex flex-col space-y-1"
                     >
                       <span>Izinkan Registrasi Pengguna Baru</span>
-                      <span className="font-normal leading-snug text-muted-foreground">
+                      <span className="text-muted-foreground leading-snug font-normal">
                         Aktifkan atau nonaktifkan halaman registrasi publik.
                       </span>
                     </Label>
@@ -152,7 +150,7 @@ export default function SettingsPage() {
                       disabled={saving || user?.role !== "admin"}
                     />
                   </div>
-                  <div className="space-y-2 max-w-sm">
+                  <div className="max-w-sm space-y-2">
                     <Label htmlFor="default-role">
                       Peran Default untuk Pengguna Baru
                     </Label>

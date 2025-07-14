@@ -4,7 +4,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,7 @@ export const MeetingSummary: React.FC<MeetingSummaryProps> = ({
           <DialogTitle>{summary.summary_title}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <pre className="whitespace-pre-wrap text-sm">
+          <pre className="text-sm whitespace-pre-wrap">
             {summary.summary_content}
           </pre>
         </div>

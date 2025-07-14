@@ -1,4 +1,4 @@
-import { getMeetings, type Meeting } from "@/lib/data";
+import { getMeetings } from "@/lib/data";
 import { auth } from "@/lib/auth";
 import { MeetingsViewTabs } from "@/components/meetings-view-tabs";
 
@@ -29,7 +29,7 @@ export default async function SchedulePage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-headline font-bold">My Schedule</h1>
+        <h1 className="font-headline text-3xl font-bold">My Schedule</h1>
         <p className="text-muted-foreground">
           Your upcoming meetings and appointments.
         </p>

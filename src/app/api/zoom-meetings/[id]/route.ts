@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { deleteZoomMeeting } from "@/lib/zoom";
+import axios from "axios";
 
 export async function GET(
   request: Request,
@@ -105,10 +106,23 @@ export async function DELETE(
     // Step 1: Delete from Zoom
     try {
       await deleteZoomMeeting(zoomMeetingId);
-    } catch (zoomError: any) {
-      if (zoomError.response?.status !== 404) {
-        console.error("Error deleting from Zoom:", zoomError);
-        // Do not throw error, just log it, so we can still delete from our DB
+    } catch (zoomError: unknown) {
+      if (axios.isAxiosError(zoomError)) {
+        // If the meeting is not found (404), we can ignore the error
+        // and proceed to delete it from our local database.
+        if (zoomError.response?.status !== 404) {
+          console.error(
+            "Error deleting from Zoom:",
+            zoomError.response?.data || zoomError.message,
+          );
+          // We still proceed to delete from our DB, so we don't re-throw
+        }
+      } else {
+        // Handle non-Axios errors
+        console.error(
+          "An unexpected non-axios error occurred during Zoom deletion:",
+          zoomError,
+        );
       }
     }
 
@@ -117,14 +131,13 @@ export async function DELETE(
       where: { id: meeting.id },
     });
 
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
+    console.error("Error deleting meeting:", errorMessage);
     return NextResponse.json(
-      { message: "Meeting deleted successfully" },
-      { status: 200 },
-    );
-  } catch (error) {
-    console.error("Error deleting meeting:", error);
-    return NextResponse.json(
-      { error: "Failed to delete meeting" },
+      { error: errorMessage || "Failed to delete meeting" },
       { status: 500 },
     );
   }

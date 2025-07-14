@@ -8,7 +8,7 @@ export default function RegisterPage() {
   const [allowRegistration, setAllowRegistration] = useState<boolean | null>(
     null,
   );
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function RegisterPage() {
         if (!res.ok) throw new Error("Gagal mengambil pengaturan");
         const data = await res.json();
         setAllowRegistration(data.allowRegistration);
-      } catch (err) {
+      } catch {
         setAllowRegistration(true); // fallback: tetap izinkan jika gagal fetch
       }
     }
@@ -40,7 +40,7 @@ export default function RegisterPage() {
   if (!allowRegistration) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-center space-y-4">
+        <div className="space-y-4 text-center">
           <h1 className="text-2xl font-bold">Pendaftaran Dinonaktifkan</h1>
           <p className="text-muted-foreground">
             Pendaftaran pengguna baru saat ini tidak diizinkan oleh admin.

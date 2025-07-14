@@ -56,7 +56,7 @@ export function LoginForm() {
         if (!res.ok) throw new Error("Gagal mengambil pengaturan");
         const data = await res.json();
         setAllowRegistration(data.allowRegistration);
-      } catch (err) {
+      } catch {
         setAllowRegistration(false); // fallback: tetap tampilkan jika gagal
       }
     }
@@ -100,8 +100,8 @@ export function LoginForm() {
 
   return (
     <Card className="w-full max-w-md">
-      <CardHeader className="text-center space-y-2">
-        <CardTitle className="text-3xl font-headline font-bold">
+      <CardHeader className="space-y-2 text-center">
+        <CardTitle className="font-headline text-3xl font-bold">
           Welcome Back!
         </CardTitle>
         <CardDescription>Sign in to continue to MeetingSync</CardDescription>
@@ -143,13 +143,13 @@ export function LoginForm() {
         </Form>
       </CardContent>
       <CardFooter className="flex justify-center">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           {!allowRegistration ? null : (
             <>
               Belum punya akun?{" "}
               <Link
                 href="/register"
-                className="font-semibold text-primary hover:underline"
+                className="text-primary font-semibold hover:underline"
               >
                 Daftar
               </Link>
@@ -216,8 +216,8 @@ export function RegisterForm() {
 
   return (
     <Card className="w-full max-w-md">
-      <CardHeader className="text-center space-y-2">
-        <CardTitle className="text-3xl font-headline font-bold">
+      <CardHeader className="space-y-2 text-center">
+        <CardTitle className="font-headline text-3xl font-bold">
           Create an Account
         </CardTitle>
         <CardDescription>Get started with MeetingSync today!</CardDescription>
@@ -272,11 +272,11 @@ export function RegisterForm() {
         </Form>
       </CardContent>
       <CardFooter className="flex justify-center">
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-semibold text-primary hover:underline"
+            className="text-primary font-semibold hover:underline"
           >
             Sign In
           </Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -41,12 +41,11 @@ import { Input } from "./ui/input";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { EventClickArg } from "@fullcalendar/core";
 
 function getMeetingStatus(
   startTime: string,
@@ -95,23 +94,14 @@ export function ZoomCalendar() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  useEffect(() => {
-    fetchZoomMeetings();
-  }, []);
-
-  // Reset page to 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, itemsPerPage]);
-
-  async function fetchZoomMeetings() {
+  const fetchZoomMeetings = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch("/api/zoom-meetings");
       if (!response.ok) throw new Error("Failed to fetch Zoom meetings");
       const data = await response.json();
       setMeetings(data.meetings);
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
@@ -120,7 +110,16 @@ export function ZoomCalendar() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchZoomMeetings();
+  }, [fetchZoomMeetings]);
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, itemsPerPage]);
 
   const sortedMeetings = useMemo(() => {
     return [...meetings].sort(
@@ -173,11 +172,13 @@ export function ZoomCalendar() {
         description: `Meeting "${meetingToDelete.topic}" has been deleted.`,
       });
       setMeetings((prev) => prev.filter((m) => m.id !== meetingToDelete.id));
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: errorMessage,
       });
     } finally {
       setIsDeleting(false);
@@ -198,7 +199,7 @@ export function ZoomCalendar() {
     [meetings],
   );
 
-  const handleEventClick = (clickInfo: any) => {
+  const handleEventClick = (clickInfo: EventClickArg) => {
     openMeetingDetails(clickInfo.event.extendedProps as ZoomMeeting);
   };
 
@@ -216,7 +217,7 @@ export function ZoomCalendar() {
           disabled={loading}
         >
           <RefreshCw
-            className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
           />
           Refresh
         </Button>
@@ -224,7 +225,7 @@ export function ZoomCalendar() {
       <CardContent>
         <Tabs
           value={activeTab}
-          onValueChange={(v) => setActiveTab(v as any)}
+          onValueChange={(v) => setActiveTab(v as "list" | "calendar")}
           className="w-full"
         >
           <TabsList className="mb-4">
@@ -232,9 +233,9 @@ export function ZoomCalendar() {
             <TabsTrigger value="calendar">Calendar View</TabsTrigger>
           </TabsList>
           <TabsContent value="list">
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="flex-1 relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
                 <Input
                   placeholder="Search meetings by topic..."
                   value={searchTerm}
@@ -275,7 +276,7 @@ export function ZoomCalendar() {
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : paginatedMeetings.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-muted-foreground py-8 text-center">
                 No meetings match your criteria.
               </div>
             ) : (
@@ -291,11 +292,11 @@ export function ZoomCalendar() {
                   return (
                     <div
                       key={meeting.id}
-                      className="rounded-lg border p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+                      className="flex flex-col items-start justify-between gap-4 rounded-lg border p-4 sm:flex-row sm:items-center"
                     >
                       <div className="flex-1">
                         <h3 className="font-semibold">{meeting.topic}</h3>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           {format(
                             new Date(meeting.start_time),
                             "dd MMM yyyy, HH:mm",
@@ -338,7 +339,7 @@ export function ZoomCalendar() {
             )}
 
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-6">
+              <div className="mt-6 flex items-center justify-center gap-4">
                 <Button
                   variant="outline"
                   size="icon"
@@ -395,8 +396,8 @@ export function ZoomCalendar() {
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete the meeting "
-                {meetingToDelete?.topic}".
+                This will permanently delete the meeting &quot;
+                {meetingToDelete?.topic}&quot;.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -4,7 +4,6 @@ import {
   getMeetings,
   getMeetingById,
   createMeeting,
-  updateMeeting,
   deleteMeeting,
 } from "@/lib/data";
 import prisma from "@/lib/prisma"; // Impor prisma
@@ -36,7 +35,7 @@ export async function GET(request: Request) {
 
     const meetings = await getMeetings();
     return NextResponse.json(meetings);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch meetings" },
       { status: 500 },
@@ -86,10 +85,12 @@ export async function POST(request: Request) {
     const meeting = await createMeeting(meetingData);
 
     return NextResponse.json(meeting);
-  } catch (error: any) {
-    console.error("Error creating meeting:", error);
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
+    console.error("Error creating meeting:", errorMessage);
     return NextResponse.json(
-      { error: error.message || "Failed to create meeting" },
+      { error: errorMessage || "Failed to create meeting" },
       { status: 500 },
     );
   }
@@ -120,10 +121,12 @@ export async function DELETE(request: Request) {
     const result = await deleteMeeting(id);
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    console.error("Error deleting meeting:", error);
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
+    console.error("Error deleting meeting:", errorMessage);
     return NextResponse.json(
-      { error: error.message || "Failed to delete meeting" },
+      { error: errorMessage || "Failed to delete meeting" },
       { status: 500 },
     );
   }

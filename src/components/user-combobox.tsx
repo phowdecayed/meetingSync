@@ -54,9 +54,9 @@ export function UserCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between h-auto min-h-10", className)}
+          className={cn("h-auto min-h-10 w-full justify-between", className)}
         >
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex flex-wrap gap-1">
             {selectedUserObjects.length > 0 ? (
               selectedUserObjects.map((user) => (
                 <Badge
@@ -106,7 +106,7 @@ export function UserCombobox({
                   />
                   <div>
                     <p>{user.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       {user.email}
                     </p>
                   </div>

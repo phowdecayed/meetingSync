@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 export default function AuthLayout({
   children,
 }: {
@@ -7,7 +5,7 @@ export default function AuthLayout({
 }) {
   return (
     <div className="flex min-h-screen w-full">
-      <div className="hidden lg:flex lg:w-1/2 items-center justify-center bg-primary p-12 text-primary-foreground">
+      <div className="bg-primary text-primary-foreground hidden items-center justify-center p-12 lg:flex lg:w-1/2">
         <div className="text-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -19,18 +17,18 @@ export default function AuthLayout({
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="mx-auto mb-6 h-20 w-20 text-accent"
+            className="text-accent mx-auto mb-6 h-20 w-20"
           >
             <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
             <circle cx="12" cy="13" r="3"></circle>
           </svg>
           <h1 className="font-headline text-4xl font-bold">MeetingSync</h1>
-          <p className="mt-4 text-lg text-primary-foreground/80">
+          <p className="text-primary-foreground/80 mt-4 text-lg">
             Streamline your scheduling, one meeting at a time.
           </p>
         </div>
       </div>
-      <div className="flex w-full lg:w-1/2 items-center justify-center bg-background p-8">
+      <div className="bg-background flex w-full items-center justify-center p-8 lg:w-1/2">
         {children}
       </div>
     </div>

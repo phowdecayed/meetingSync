@@ -22,7 +22,7 @@ export async function GET() {
 
     const users = await getUsers();
     return NextResponse.json(users);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch users" },
       { status: 500 },

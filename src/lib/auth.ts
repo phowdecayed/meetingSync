@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { verifyUserCredentials } from "@/lib/data";
 import type { NextAuthConfig } from "next-auth";
-import crypto from "crypto";
 
 // Membuat secret yang konsisten atau menggunakan environment variable jika tersedia
 const getAuthSecret = () => {

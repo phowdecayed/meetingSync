@@ -1,4 +1,4 @@
-import { getMeetings, getUsers, type User } from "@/lib/data";
+import { getMeetings, getUsers } from "@/lib/data";
 import {
   Card,
   CardContent,
@@ -88,7 +88,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between space-y-2">
         <div>
-          <h1 className="text-3xl font-headline font-bold">Dashboard</h1>
+          <h1 className="font-headline text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
             An overview of your meeting schedule.
           </p>
@@ -101,11 +101,11 @@ export default async function DashboardPage() {
             <CardTitle className="text-sm font-medium">
               My Upcoming Meetings
             </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{upcomingMeetings.length}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Your scheduled upcoming meetings
             </p>
           </CardContent>
@@ -115,11 +115,11 @@ export default async function DashboardPage() {
             <CardTitle className="text-sm font-medium">
               My Meetings this Week
             </CardTitle>
-            <BarChartIcon className="h-4 w-4 text-muted-foreground" />
+            <BarChartIcon className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalMeetingsThisWeek}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Meetings you are attending or organizing
             </p>
           </CardContent>
@@ -129,20 +129,20 @@ export default async function DashboardPage() {
             <CardTitle className="text-sm font-medium">
               Time in Meetings (My Week)
             </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {(totalDurationThisWeek / 60).toFixed(1)} hours
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Your total scheduled meeting time
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
         <MeetingsOverviewChart chartData={chartData} />
         <Card className="lg:col-span-3">
           <CardHeader>
@@ -169,14 +169,14 @@ export default async function DashboardPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="ml-4 space-y-1">
-                        <p className="text-sm font-medium leading-none">
+                        <p className="text-sm leading-none font-medium">
                           {meeting.title}
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           {format(new Date(meeting.date), "E, MMM d, p")}
                         </p>
                       </div>
-                      <div className="ml-auto text-sm text-muted-foreground">
+                      <div className="text-muted-foreground ml-auto text-sm">
                         {meeting.duration}m
                       </div>
                     </div>
@@ -184,7 +184,7 @@ export default async function DashboardPage() {
                 })
               ) : (
                 <div className="flex h-[200px] items-center justify-center">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     No upcoming meetings.
                   </p>
                 </div>

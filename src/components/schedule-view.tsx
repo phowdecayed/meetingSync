@@ -58,7 +58,7 @@ export function ScheduleView({ meetings }: { meetings: Meeting[] }) {
     if (upcomingMeetings.length === 0) {
       return (
         <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
+          <CardContent className="text-muted-foreground p-8 text-center">
             You have no upcoming meetings scheduled.
           </CardContent>
         </Card>
@@ -68,22 +68,22 @@ export function ScheduleView({ meetings }: { meetings: Meeting[] }) {
       <div className="space-y-6">
         {sortedDates.map((date) => (
           <div key={date}>
-            <h2 className="text-xl font-semibold mb-4">{date}</h2>
+            <h2 className="mb-4 text-xl font-semibold">{date}</h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {groupedByDate[date].map((meeting) => (
                 <Card key={meeting.id} className="flex flex-col">
                   <CardHeader>
                     <CardTitle className="text-lg">{meeting.title}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3 flex-grow">
-                    <div className="flex items-center text-sm text-muted-foreground">
+                  <CardContent className="flex-grow space-y-3">
+                    <div className="text-muted-foreground flex items-center text-sm">
                       <Clock className="mr-2 h-4 w-4" />
                       <span>
                         {format(new Date(meeting.date), "p")} (
                         {meeting.duration} min)
                       </span>
                     </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
+                    <div className="text-muted-foreground flex items-center text-sm">
                       <User className="mr-2 h-4 w-4" />
                       <span className="truncate">
                         {meeting.participants.join(", ")}
@@ -125,7 +125,7 @@ export function ScheduleView({ meetings }: { meetings: Meeting[] }) {
         <TabsContent value="calendar">
           {meetings.length === 0 ? (
             <Card>
-              <CardContent className="p-8 text-center text-muted-foreground">
+              <CardContent className="text-muted-foreground p-8 text-center">
                 You have no meetings to show in the calendar.
               </CardContent>
             </Card>

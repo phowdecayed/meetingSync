@@ -73,7 +73,7 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
         title: "Meeting Deleted",
         description: "The meeting has been successfully removed.",
       });
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
@@ -92,7 +92,7 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
       <TableRow>
         <TableCell>
           <div className="font-medium">{meeting.title}</div>
-          <div className="text-sm text-muted-foreground truncate max-w-xs">
+          <div className="text-muted-foreground max-w-xs truncate text-sm">
             {meeting.description || "No description"}
           </div>
         </TableCell>
@@ -164,7 +164,7 @@ export function MeetingsTable({ initialMeetings }: MeetingsTableProps) {
   const MeetingTableContent = ({ data }: { data: Meeting[] }) => {
     if (data.length === 0) {
       return (
-        <div className="text-center p-8 text-muted-foreground">
+        <div className="text-muted-foreground p-8 text-center">
           No meetings found.
         </div>
       );

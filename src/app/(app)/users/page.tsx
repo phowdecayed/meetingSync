@@ -127,7 +127,7 @@ export default function UsersPage() {
           a.name.localeCompare(b.name),
         );
         setUsers(sortedUsers);
-      } catch (error) {
+      } catch {
         toast({
           variant: "destructive",
           title: "Error",
@@ -173,7 +173,6 @@ export default function UsersPage() {
         throw new Error("Failed to update user role");
       }
 
-      const updatedUser = await response.json();
       setUsers(
         users
           .map((u) => (u.id === userToEdit.id ? { ...u, role: newRole } : u))
@@ -184,7 +183,7 @@ export default function UsersPage() {
         title: "Success",
         description: `User ${userToEdit.name}'s role has been updated to ${newRole}.`,
       });
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
@@ -215,7 +214,7 @@ export default function UsersPage() {
         title: "User Deleted",
         description: `User ${userToDelete.name} has been removed.`,
       });
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
@@ -266,7 +265,7 @@ export default function UsersPage() {
   if (status === "loading" || !currentUser) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -275,7 +274,7 @@ export default function UsersPage() {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-headline font-bold">Access Denied</h1>
+          <h1 className="font-headline text-3xl font-bold">Access Denied</h1>
           <p className="text-muted-foreground">
             You do not have permission to view this page.
           </p>
@@ -287,7 +286,7 @@ export default function UsersPage() {
   const UserTable = ({ data }: { data: User[] }) => {
     if (data.length === 0) {
       return (
-        <div className="text-center p-8 text-muted-foreground">
+        <div className="text-muted-foreground p-8 text-center">
           {searchQuery
             ? "No users match your search."
             : "No users found in the system."}
@@ -322,7 +321,7 @@ export default function UsersPage() {
                   </Avatar>
                   <div>
                     <div className="font-medium">{user.name}</div>
-                    <div className="text-sm text-muted-foreground sm:hidden">
+                    <div className="text-muted-foreground text-sm sm:hidden">
                       {user.email}
                     </div>
                   </div>
@@ -376,9 +375,9 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-headline font-bold">User Management</h1>
+          <h1 className="font-headline text-3xl font-bold">User Management</h1>
           <p className="text-muted-foreground">
             View, search, and manage all users in the system.
           </p>
@@ -401,7 +400,7 @@ export default function UsersPage() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex h-64 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="text-primary h-8 w-8 animate-spin" />
             </div>
           ) : (
             <UserTable data={filteredUsers} />

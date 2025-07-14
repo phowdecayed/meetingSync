@@ -16,14 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Loader2,
-  UserCheck,
-  Users,
-  Calendar,
-  Edit,
-  Search,
-} from "lucide-react";
+import { Loader2, UserCheck, Users, Calendar, Edit } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -74,7 +67,6 @@ export default function ProfilePage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [isMeetingsLoading, setIsMeetingsLoading] = useState(true);
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("profile");
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -110,7 +102,7 @@ export default function ProfilePage() {
         }
         const allMeetings = await response.json();
         setMeetings(allMeetings);
-      } catch (error) {
+      } catch {
         toast({
           variant: "destructive",
           title: "Error",
@@ -192,7 +184,7 @@ export default function ProfilePage() {
   if (status === "loading" || !user) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -216,14 +208,14 @@ export default function ProfilePage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-headline font-bold">My Profile</h1>
+        <h1 className="font-headline text-3xl font-bold">My Profile</h1>
         <p className="text-muted-foreground">
           View and manage your personal information and statistics.
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
+        <TabsList className="mb-8 grid w-full grid-cols-3">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
@@ -329,7 +321,7 @@ export default function ProfilePage() {
                 <CardHeader>
                   <CardTitle className="text-2xl">Change Password</CardTitle>
                   <CardDescription>
-                    Update your account's password.
+                    Update your account&apos;s password.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -387,42 +379,42 @@ export default function ProfilePage() {
         </TabsContent>
 
         <TabsContent value="statistics" className="space-y-4">
-          <Card className="bg-gradient-to-br from-primary/5 to-transparent">
+          <Card className="from-primary/5 bg-gradient-to-br to-transparent">
             <CardHeader>
               <CardTitle className="text-2xl">My Statistics</CardTitle>
               <CardDescription>Your meeting activity.</CardDescription>
             </CardHeader>
             <CardContent>
               {isMeetingsLoading ? (
-                <div className="flex justify-center items-center h-48">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <div className="flex h-48 items-center justify-center">
+                  <Loader2 className="text-primary h-6 w-6 animate-spin" />
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-4">
-                  <div className="flex items-center justify-between rounded-lg border bg-background/50 p-4 transition-all hover:bg-muted/50">
+                  <div className="bg-background/50 hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-all">
                     <div className="flex items-center gap-4">
-                      <UserCheck className="h-7 w-7 text-primary" />
+                      <UserCheck className="text-primary h-7 w-7" />
                       <span className="font-medium">Meetings Organized</span>
                     </div>
-                    <span className="text-2xl font-bold text-primary">
+                    <span className="text-primary text-2xl font-bold">
                       {meetingsOrganized}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between rounded-lg border bg-background/50 p-4 transition-all hover:bg-muted/50">
+                  <div className="bg-background/50 hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-all">
                     <div className="flex items-center gap-4">
-                      <Users className="h-7 w-7 text-primary" />
+                      <Users className="text-primary h-7 w-7" />
                       <span className="font-medium">Meetings Attended</span>
                     </div>
-                    <span className="text-2xl font-bold text-primary">
+                    <span className="text-primary text-2xl font-bold">
                       {meetingsAttended}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between rounded-lg border bg-background/50 p-4 transition-all hover:bg-muted/50">
+                  <div className="bg-background/50 hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-all">
                     <div className="flex items-center gap-4">
-                      <Calendar className="h-7 w-7 text-primary" />
+                      <Calendar className="text-primary h-7 w-7" />
                       <span className="font-medium">Upcoming Meetings</span>
                     </div>
-                    <span className="text-2xl font-bold text-primary">
+                    <span className="text-primary text-2xl font-bold">
                       {upcomingMeetingsCount}
                     </span>
                   </div>
