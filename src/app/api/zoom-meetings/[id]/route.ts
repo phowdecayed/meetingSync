@@ -4,20 +4,17 @@ import prisma from "@/lib/prisma";
 import { deleteZoomMeeting } from "@/lib/zoom";
 import axios from "axios";
 
-type RouteContext = {
-  params: {
-    id: string;
-  };
-};
-
-export async function GET(request: Request, context: RouteContext) {
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } },
+) {
   try {
     const session = await auth();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: zoomMeetingId } = context.params;
+    const { id: zoomMeetingId } = params;
 
     if (!zoomMeetingId) {
       return NextResponse.json(
@@ -65,14 +62,17 @@ export async function GET(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(request: Request, context: RouteContext) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } },
+) {
   try {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: zoomMeetingId } = context.params;
+    const { id: zoomMeetingId } = params;
 
     if (!zoomMeetingId) {
       return NextResponse.json(
