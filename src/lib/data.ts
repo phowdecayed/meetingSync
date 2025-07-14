@@ -147,9 +147,9 @@ export const createMeeting = async (
       settings: {
         host_video: true,
         participant_video: true,
-        join_before_host: false,
+        join_before_host: true,
         mute_upon_entry: true,
-        waiting_room: true,
+        waiting_room: false,
         auto_recording: "cloud",
         approval_type: 2,
         audio: "both",
