@@ -3,15 +3,33 @@
 Aplikasi untuk melakukan pemesanan meeting room dan integrasi Zoom di BPKAD Jabar.
 
 ## Fitur Utama
-- Booking meeting room dengan integrasi Zoom
-- Validasi double booking (maksimal 2 meeting bersamaan)
-- Kalender meeting (list & calendar view)
-- Manajemen akun Zoom (admin)
+
+- **Otentikasi Pengguna**: Sistem login untuk pengguna dan admin menggunakan NextAuth.js.
+- **Penjadwalan Meeting**: Buat, lihat, perbarui, dan hapus jadwal meeting.
+- **Integrasi Zoom**: Secara otomatis membuat meeting Zoom saat jadwal baru dibuat.
+- **Tampilan Kalender**: Visualisasikan jadwal meeting dalam format kalender interaktif menggunakan FullCalendar.
+- **Manajemen Pengguna**: Admin dapat mengelola pengguna.
+- **Dasbor**: Tampilan ringkas statistik meeting menggunakan Recharts.
+- **Desain Responsif**: Antarmuka yang dioptimalkan untuk desktop dan perangkat mobile.
+
+## Teknologi yang Digunakan
+
+- **Framework**: [Next.js](https://nextjs.org/) (dengan App Router & Turbopack)
+- **Bahasa**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **ORM**: [Prisma](https://www.prisma.io/)
+- **Database**: [PostgreSQL](https://www.postgresql.org/)
+- **Otentikasi**: [NextAuth.js](https://next-auth.js.org/)
+- **UI Komponen**: [Shadcn UI](https://ui.shadcn.com/), [FullCalendar](https://fullcalendar.io/), [Recharts](https://recharts.org/)
+- **Validasi Form**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
+- **Manajemen State**: [Zustand](https://zustand-demo.pmnd.rs/)
 
 ## Prasyarat
+
 - Node.js >= 18
 - npm >= 9
 - PostgreSQL >= 13
+- Docker & Docker Compose (untuk penyebaran)
 
 ## Setup Environment
 1. **Clone repository**
