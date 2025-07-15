@@ -80,35 +80,39 @@ const formatUser = (user: PrismaUser): User => {
   }
 }
 
-export const getMeetings = async (user?: {
-  id: string
-  email?: string | null
-  role: string
-}): Promise<Meeting[]> => {
+export const getMeetings = async (
+  user?: {
+    id: string
+    email?: string | null
+    role: string
+  },
+  fromDate?: Date,
+): Promise<Meeting[]> => {
   if (!user) {
     return []
   }
 
-  if (user.role === 'admin') {
-    const meetings = await prisma.meeting.findMany({
-      orderBy: {
-        date: 'asc',
+  const whereConditions: any = {}
+
+  if (fromDate) {
+    whereConditions.date = {
+      gte: fromDate,
+    }
+  }
+
+  if (user.role !== 'admin') {
+    whereConditions.OR = [
+      { organizerId: user.id },
+      {
+        participants: {
+          contains: user.email ?? 'unlikely-string-to-avoid-error',
+        },
       },
-    })
-    return meetings.map(formatMeeting)
+    ]
   }
 
   const meetings = await prisma.meeting.findMany({
-    where: {
-      OR: [
-        { organizerId: user.id },
-        {
-          participants: {
-            contains: user.email ?? 'unlikely-string-to-avoid-error',
-          },
-        },
-      ],
-    },
+    where: whereConditions,
     orderBy: {
       date: 'asc',
     },
@@ -349,8 +353,52 @@ export const deleteDbMeeting = async (id: string): Promise<void> => {
   }
 }
 
-export const getUsers = async (): Promise<User[]> => {
-  const users = await prisma.user.findMany()
+export const getUsers = async (options?: {
+  page?: number
+  perPage?: number
+  query?: string
+}): Promise<{ users: User[]; total: number }> => {
+  const page = options?.page || 1
+  const perPage = options?.perPage || 10
+  const query = options?.query || ''
+  const skip = (page - 1) * perPage
+
+  const where = query
+    ? {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { email: { contains: query, mode: 'insensitive' } },
+        ],
+      }
+    : {}
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      skip,
+      take: perPage,
+      orderBy: {
+        name: 'asc',
+      },
+    }),
+    prisma.user.count({ where }),
+  ])
+
+  return {
+    users: users.map(formatUser),
+    total,
+  }
+}
+
+export const getUsersByIds = async (ids: string[]): Promise<User[]> => {
+  if (ids.length === 0) return []
+  const users = await prisma.user.findMany({
+    where: {
+      id: {
+        in: ids,
+      },
+    },
+  })
   return users.map(formatUser)
 }
 

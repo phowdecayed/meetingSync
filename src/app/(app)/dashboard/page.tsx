@@ -1,4 +1,4 @@
-import { getMeetings, getUsers } from '@/lib/data'
+import { getMeetings, getUsersByIds } from '@/lib/data'
 import {
   Card,
   CardContent,
@@ -35,20 +35,15 @@ export default async function DashboardPage() {
     )
   }
 
-  const [userMeetings, allUsers] = await Promise.all([
-    getMeetings(user),
-    getUsers(),
-  ])
-
   const now = new Date()
-
-  const userMap = new Map(allUsers.map((user) => [user.id, user]))
-
-  const upcomingMeetings = userMeetings.filter((m) => new Date(m.date) >= now)
-
   const startOfWeek = new Date(now)
   startOfWeek.setDate(now.getDate() - now.getDay())
   startOfWeek.setHours(0, 0, 0, 0)
+
+  const userMeetings = await getMeetings(user, startOfWeek)
+
+  const upcomingMeetings = userMeetings.filter((m) => new Date(m.date) >= now)
+
   const endOfWeek = new Date(startOfWeek)
   endOfWeek.setDate(startOfWeek.getDate() + 7)
 
@@ -76,6 +71,12 @@ export default async function DashboardPage() {
   const next5UpcomingMeetings = upcomingMeetings
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 5)
+
+  const organizerIds = [
+    ...new Set(next5UpcomingMeetings.map((m) => m.organizerId)),
+  ]
+  const organizers = await getUsersByIds(organizerIds)
+  const userMap = new Map(organizers.map((u) => [u.id, u]))
 
   return (
     <div className="space-y-8">
