@@ -14,6 +14,7 @@ import { Home, Settings, Users, Video, Calendar, User } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { ThemeToggle } from './theme-toggle'
 import { Separator } from '@radix-ui/react-separator'
+import packageJson from '../../package.json'
 
 const allMenuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -93,7 +94,7 @@ export function SidebarNav() {
       <SidebarFooter className="items-center">
         <ThemeToggle />
         <p className="text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
-          v0.1.1
+          v{packageJson.version}
         </p>
         <div className="flex items-center justify-center gap-2">
           <p className="text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
