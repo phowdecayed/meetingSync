@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import prisma from '@/lib/prisma'
+import bcrypt from 'bcryptjs'
 
 // GET /api/settings - Ambil pengaturan umum aplikasi (Publik)
 export async function GET() {
@@ -17,9 +18,10 @@ export async function GET() {
       })
     }
 
-    // Admin gets all settings
+    // Admin gets all settings, but we don't want to expose the password hash
     if (session?.user?.role === 'admin') {
-      return NextResponse.json(settings)
+      const { defaultResetPassword, ...safeSettings } = settings
+      return NextResponse.json(safeSettings)
     }
 
     // Public only gets safe settings
@@ -45,30 +47,46 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json()
-    const { allowRegistration, defaultRole } = body
-
-    // Validasi input
-    if (
-      typeof allowRegistration !== 'boolean' ||
-      (defaultRole && typeof defaultRole !== 'string')
-    ) {
-      return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
-    }
+    const { allowRegistration, defaultRole, defaultResetPassword } = body
 
     const settings = await prisma.settings.findFirst()
     if (!settings) {
       return NextResponse.json({ error: 'Settings not found' }, { status: 404 })
     }
 
+    const dataToUpdate: {
+      allowRegistration?: boolean
+      defaultRole?: string
+      defaultResetPassword?: string
+    } = {}
+
+    if (typeof allowRegistration === 'boolean') {
+      dataToUpdate.allowRegistration = allowRegistration
+    }
+    if (typeof defaultRole === 'string') {
+      dataToUpdate.defaultRole = defaultRole
+    }
+    if (typeof defaultResetPassword === 'string' && defaultResetPassword) {
+      if (defaultResetPassword.length < 8) {
+        return NextResponse.json(
+          { error: 'Default password must be at least 8 characters' },
+          { status: 400 },
+        )
+      }
+      dataToUpdate.defaultResetPassword = await bcrypt.hash(
+        defaultResetPassword,
+        10,
+      )
+    }
+
     const updated = await prisma.settings.update({
       where: { id: settings.id },
-      data: {
-        allowRegistration,
-        defaultRole,
-      },
+      data: dataToUpdate,
     })
 
-    return NextResponse.json(updated)
+    const { defaultResetPassword: _, ...safeUpdatedSettings } = updated
+
+    return NextResponse.json(safeUpdatedSettings)
   } catch (error) {
     console.error('Error updating settings:', error)
     return NextResponse.json(

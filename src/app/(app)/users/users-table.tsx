@@ -68,6 +68,7 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
+  KeyRound,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Label } from '@/components/ui/label'
@@ -121,8 +122,10 @@ export function UsersTable({
   const [userToEdit, setUserToEdit] = useState<User | null>(null)
   const [newRole, setNewRole] = useState<'admin' | 'member'>('member')
   const [userToDelete, setUserToDelete] = useState<User | null>(null)
+  const [userToReset, setUserToReset] = useState<User | null>(null)
   const [isAddUserOpen, setIsAddUserOpen] = useState(false)
   const [isCreatingUser, setIsCreatingUser] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
   const addUserForm = useForm<z.infer<typeof addUserSchema>>({
@@ -223,6 +226,37 @@ export function UsersTable({
       })
     } finally {
       setUserToDelete(null)
+    }
+  }
+
+  const handleOpenResetDialog = (user: User) => {
+    setUserToReset(user)
+  }
+
+  const handleResetPassword = async () => {
+    if (!userToReset) return
+    setIsResetting(true)
+    try {
+      const response = await fetch(`/api/users/${userToReset.id}/reset-password`, {
+        method: 'POST',
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reset password.')
+      }
+      toast({
+        title: 'Password Reset',
+        description: `Password for ${userToReset.name} has been reset to the default.`,
+      })
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (error as Error).message,
+      })
+    } finally {
+      setIsResetting(false)
+      setUserToReset(null)
     }
   }
 
@@ -328,6 +362,11 @@ export function UsersTable({
                             <DropdownMenuItem onClick={() => handleOpenEditDialog(user)}>
                               <Edit className="mr-2 h-4 w-4" />
                               <span>Edit Role</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleOpenResetDialog(user)}>
+                              <KeyRound className="mr-2 h-4 w-4" />
+                              <span>Reset Password</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -544,6 +583,34 @@ export function UsersTable({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!userToReset}
+        onOpenChange={(isOpen) => !isOpen && setUserToReset(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Password?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reset the password for{' '}
+              <strong>{userToReset?.name}</strong>? Their new password will be
+              set to the default reset password. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setUserToReset(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetPassword}
+              disabled={isResetting}
+            >
+              {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Reset Password
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!userToDelete} onOpenChange={(isOpen) => !isOpen && setUserToDelete(null)}>
         <AlertDialogContent>

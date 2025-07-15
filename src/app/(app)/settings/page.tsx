@@ -12,7 +12,8 @@ import {
 } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Loader2 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -34,6 +35,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [allowRegistration, setAllowRegistration] = useState(true)
   const [defaultRole, setDefaultRole] = useState<'member' | 'admin'>('member')
+  const [defaultResetPassword, setDefaultResetPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     async function fetchSettings() {
@@ -44,6 +47,7 @@ export default function SettingsPage() {
         const data = await res.json()
         setAllowRegistration(data.allowRegistration)
         setDefaultRole(data.defaultRole)
+        // We don't fetch the password, it's write-only for security
       } catch {
         toast({
           variant: 'destructive',
@@ -60,21 +64,39 @@ export default function SettingsPage() {
   async function handleSave() {
     setSaving(true)
     try {
+      const payload: {
+        allowRegistration: boolean
+        defaultRole: 'member' | 'admin'
+        defaultResetPassword?: string
+      } = {
+        allowRegistration,
+        defaultRole,
+      }
+      if (defaultResetPassword) {
+        payload.defaultResetPassword = defaultResetPassword
+      }
+
       const res = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ allowRegistration, defaultRole }),
+        body: JSON.stringify(payload),
       })
-      if (!res.ok) throw new Error('Gagal menyimpan pengaturan')
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Gagal menyimpan pengaturan')
+      }
+
       toast({
         title: 'Berhasil',
         description: 'Pengaturan berhasil disimpan.',
       })
-    } catch {
+      setDefaultResetPassword('') // Clear the field after saving
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Gagal menyimpan',
-        description: 'Terjadi kesalahan saat menyimpan pengaturan.',
+        description: (error as Error).message,
       })
     } finally {
       setSaving(false)
@@ -147,7 +169,7 @@ export default function SettingsPage() {
                       id="allow-registration"
                       checked={allowRegistration}
                       onCheckedChange={setAllowRegistration}
-                      disabled={saving || user?.role !== 'admin'}
+                      disabled={saving}
                     />
                   </div>
                   <div className="max-w-sm space-y-2">
@@ -159,7 +181,7 @@ export default function SettingsPage() {
                       onValueChange={(v) =>
                         setDefaultRole(v as 'member' | 'admin')
                       }
-                      disabled={saving || user?.role !== 'admin'}
+                      disabled={saving}
                     >
                       <SelectTrigger id="default-role" className="w-[180px]">
                         <SelectValue placeholder="Pilih peran" />
@@ -170,16 +192,48 @@ export default function SettingsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {user?.role === 'admin' && (
-                    <div className="pt-2">
-                      <Button onClick={handleSave} disabled={saving}>
-                        {saving && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <div className="max-w-sm space-y-2">
+                    <Label htmlFor="default-reset-password">
+                      Default Reset Password
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="default-reset-password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={defaultResetPassword}
+                        onChange={(e) =>
+                          setDefaultResetPassword(e.target.value)
+                        }
+                        placeholder="Kosongkan jika tidak ingin diubah"
+                        disabled={saving}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-gray-500"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
                         )}
-                        Simpan Pengaturan
                       </Button>
                     </div>
-                  )}
+                    <p className="text-muted-foreground text-sm">
+                      Kata sandi ini akan digunakan saat admin mereset password
+                      pengguna.
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <Button onClick={handleSave} disabled={saving}>
+                      {saving && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Simpan Pengaturan
+                    </Button>
+                  </div>
                 </>
               )}
             </CardContent>
