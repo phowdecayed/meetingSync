@@ -28,7 +28,10 @@ export async function GET(
     const credential = await findCredentialForMeeting(meetingId)
 
     // Get a Zoom API client authenticated for that credential
-    const { apiClient } = await getZoomApiClient(credential)
+    const { apiClient } = await getZoomApiClient({
+      ...credential,
+      _count: { meetings: 0 }, // Add required _count property
+    })
 
     // Call Zoom API to get meeting instances
     const response = await apiClient.get(

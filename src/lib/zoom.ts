@@ -60,27 +60,27 @@ export async function getBalancedZoomCredential() {
   })
 
   if (credentials.length === 0) {
+    // Throw an error here because this is a configuration problem, not a capacity issue.
     throw new Error(
       'Zoom credentials not found. Please set up Zoom integration first.',
     )
   }
 
   // Urutkan berdasarkan jumlah meeting
-  credentials.sort((a, b) => a._count.meetings - b._count.meetings)
+  credentials.sort(
+    (
+      a: { _count: { meetings: number } },
+      b: { _count: { meetings: number } },
+    ) => a._count.meetings - b._count.meetings,
+  )
 
   // Cari kredensial dengan kurang dari 2 meeting
   const suitableCredential = credentials.find(
-    (cred) => cred._count.meetings < 2,
+    (cred: { _count: { meetings: number } }) => cred._count.meetings < 2,
   )
 
-  // Jika tidak ada kredensial yang cocok, berarti semua sudah penuh
-  if (!suitableCredential) {
-    throw new Error(
-      'All Zoom accounts are at maximum capacity (2 meetings). Please wait or add more credentials.',
-    )
-  }
-
-  return suitableCredential
+  // Jika tidak ada kredensial yang cocok, kembalikan null
+  return suitableCredential || null
 }
 
 // Fungsi untuk memverifikasi kredensial S2S
@@ -119,9 +119,8 @@ export async function verifyS2SCredentials(
 
 // Fungsi untuk mendapatkan S2S access token untuk kredensial tertentu
 export async function getS2SAccessToken(
-  credential: Pick<
-    Awaited<ReturnType<typeof getBalancedZoomCredential>>,
-    'clientId' | 'clientSecret' | 'accountId' | 'id'
+  credential: NonNullable<
+    Awaited<ReturnType<typeof getBalancedZoomCredential>>
   >,
 ): Promise<{ accessToken: string; credentialId: string }> {
   try {
@@ -133,7 +132,9 @@ export async function getS2SAccessToken(
       }),
       {
         headers: {
-          Authorization: `Basic ${Buffer.from(`${credential.clientId}:${credential.clientSecret}`).toString('base64')}`,
+          Authorization: `Basic ${Buffer.from(
+            `${credential.clientId}:${credential.clientSecret}`,
+          ).toString('base64')}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       },
@@ -159,9 +160,8 @@ export async function getS2SAccessToken(
 
 // Fungsi untuk mendapatkan instance axios dengan headers yang diperlukan
 export async function getZoomApiClient(
-  credential: Pick<
-    Awaited<ReturnType<typeof getBalancedZoomCredential>>,
-    'clientId' | 'clientSecret' | 'accountId' | 'id'
+  credential: NonNullable<
+    Awaited<ReturnType<typeof getBalancedZoomCredential>>
   >,
 ) {
   const { accessToken, credentialId } = await getS2SAccessToken(credential)
@@ -207,7 +207,16 @@ export async function createZoomMeeting(
   credential?: Awaited<ReturnType<typeof getBalancedZoomCredential>>,
 ) {
   try {
-    const zoomCredential = credential ?? (await getBalancedZoomCredential())
+    // If a credential is provided, use it. Otherwise, get a balanced one.
+    const zoomCredential = credential || (await getBalancedZoomCredential())
+
+    // If no credential could be found (i.e., all are at capacity), throw an error.
+    if (!zoomCredential) {
+      throw new Error(
+        'CAPACITY_FULL:All Zoom accounts are at maximum capacity (2 meetings). Please wait or add more credentials.',
+      )
+    }
+
     const { apiClient, credentialId } = await getZoomApiClient(zoomCredential)
 
     const userId = 'me'
@@ -253,6 +262,10 @@ export async function createZoomMeeting(
     } else {
       console.error('An unexpected error occurred:', error)
     }
+    // Re-throw the original error to be handled by the calling function
+    if (error instanceof Error) {
+      throw error
+    }
     throw new Error('Failed to create Zoom meeting')
   }
 }
@@ -270,7 +283,10 @@ export async function updateZoomMeeting(
 ) {
   try {
     const credential = await findCredentialForMeeting(zoomMeetingId)
-    const { apiClient } = await getZoomApiClient(credential)
+    const { apiClient } = await getZoomApiClient({
+      ...credential,
+      _count: { meetings: 0 }, // Add required _count property
+    })
 
     // Format update payload based on Zoom API requirements
     const updatePayload = {
@@ -326,7 +342,10 @@ export async function updateZoomMeeting(
 export async function deleteZoomMeeting(meetingId: string) {
   try {
     const credential = await findCredentialForMeeting(meetingId)
-    const { apiClient } = await getZoomApiClient(credential)
+    const { apiClient } = await getZoomApiClient({
+      ...credential,
+      _count: { meetings: 0 },
+    })
     // The DELETE request will throw an AxiosError for non-2xx responses
     await apiClient.delete(`/meetings/${meetingId}`)
   } catch (error) {
@@ -348,7 +367,10 @@ export async function listZoomMeetings() {
   try {
     for (const cred of credentials) {
       let next_page_token: string | undefined = undefined
-      const { apiClient } = await getZoomApiClient(cred)
+      const { apiClient } = await getZoomApiClient({
+        ...cred,
+        _count: { meetings: 0 },
+      })
       const userId = 'me'
 
       do {
@@ -387,7 +409,10 @@ export async function listZoomMeetings() {
     let last_next_page_token: string | undefined = undefined
     for (const cred of credentials) {
       let next_page_token_cred: string | undefined = undefined
-      const { apiClient } = await getZoomApiClient(cred)
+      const { apiClient } = await getZoomApiClient({
+        ...cred,
+        _count: { meetings: 0 },
+      })
       const userId = 'me'
       do {
         const params: ListZoomMeetingsParams = {
@@ -465,7 +490,10 @@ export async function getZoomMeeting(
 ): Promise<ZoomMeeting> {
   try {
     const credential = await findCredentialForMeeting(zoomMeetingId)
-    const { apiClient } = await getZoomApiClient(credential)
+    const { apiClient } = await getZoomApiClient({
+      ...credential,
+      _count: { meetings: 0 },
+    })
     const response = await apiClient.get<ZoomMeeting>(
       `/meetings/${zoomMeetingId}`,
     )
@@ -486,7 +514,10 @@ export async function getZoomMeetingUUID(
     console.log('getZoomMeetingUUID called with meetingId:', numericMeetingId)
 
     const credential = await findCredentialForMeeting(numericMeetingId)
-    const { apiClient } = await getZoomApiClient(credential)
+    const { apiClient } = await getZoomApiClient({
+      ...credential,
+      _count: { meetings: 0 },
+    })
 
     // Approach 3: Try the instances endpoint (original approach)
     console.log(
@@ -576,7 +607,10 @@ export async function getZoomMeetingSummary(
     }
 
     const credential = await findCredentialForMeeting(numericMeetingId)
-    const { apiClient } = await getZoomApiClient(credential)
+    const { apiClient } = await getZoomApiClient({
+      ...credential,
+      _count: { meetings: 0 },
+    })
 
     const encodedUUID = encodeMeetingUUID(meetingUUID)
     console.log('Encoded UUID:', encodedUUID)

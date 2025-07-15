@@ -219,11 +219,30 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       }
       router.push('/schedule')
       router.refresh()
-    } catch {
+    } catch (error) {
+      let errorMessage = 'Something went wrong.'
+      if (error instanceof Error) {
+        if (error.message.startsWith('CAPACITY_FULL:')) {
+          // This is an expected, user-facing error, not a system failure.
+          // We don't need to log it as a "scary" error in the console.
+          errorMessage = error.message.replace('CAPACITY_FULL:', '')
+        } else {
+          // This is an unexpected error, so we should log it.
+          console.error('An unexpected error occurred:', error)
+          try {
+            // Attempt to parse for more detailed server messages
+            const parsedError = JSON.parse(error.message)
+            errorMessage =
+              parsedError.details || parsedError.error || error.message
+          } catch {
+            errorMessage = error.message
+          }
+        }
+      }
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Something went wrong.',
+        title: 'Error Creating Meeting',
+        description: errorMessage,
       })
     } finally {
       setIsLoading(false)

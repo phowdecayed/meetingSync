@@ -27,20 +27,21 @@ export const useMeetingStore = create<MeetingStore>((set) => ({
         body: JSON.stringify(meetingData),
       })
 
+      const result = await response.json()
+
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create meeting')
+        // Throw a new error with the specific message from the server
+        throw new Error(result.error || 'Failed to create meeting')
       }
 
-      const newMeeting = await response.json()
-
       set((state) => ({
-        meetings: [...state.meetings, newMeeting],
+        meetings: [...state.meetings, result],
       }))
 
-      return newMeeting
+      return result
     } catch (error) {
       console.error('Error adding meeting:', error)
+      // Re-throw the error so the component can catch it
       throw error
     }
   },

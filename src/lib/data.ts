@@ -129,8 +129,15 @@ export const createMeeting = async (
   data: Omit<Meeting, 'id'>,
 ): Promise<Meeting> => {
   try {
-    // 1. Get the least busy credential first. This will throw an error if all are at capacity.
+    // 1. Get the least busy credential first.
     const credential = await getBalancedZoomCredential()
+
+    // If no credential is available (all are at capacity), stop the process.
+    if (!credential) {
+      throw new Error(
+        'CAPACITY_FULL:All Zoom accounts are at maximum capacity (2 meetings). Please wait or add more credentials.',
+      )
+    }
 
     // 2. Check for overlaps on the specific credential that will be used.
     const meetingDate =
