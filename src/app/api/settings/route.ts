@@ -5,21 +5,24 @@ import prisma from '@/lib/prisma'
 // GET /api/settings - Ambil pengaturan umum aplikasi (Publik)
 export async function GET() {
   try {
-    // Menemukan pengaturan pertama, atau membuat default jika tidak ada.
+    const session = await auth()
     let settings = await prisma.settings.findFirst()
 
     if (!settings) {
-      // Jika tidak ada pengaturan di DB, buat satu dengan nilai default.
-      // Ini memastikan aplikasi selalu memiliki record pengaturan.
       settings = await prisma.settings.create({
         data: {
-          allowRegistration: true, // Default value
-          defaultRole: 'member', // Default value
+          allowRegistration: true,
+          defaultRole: 'member',
         },
       })
     }
 
-    // Hanya mengembalikan field yang relevan dan aman untuk publik
+    // Admin gets all settings
+    if (session?.user?.role === 'admin') {
+      return NextResponse.json(settings)
+    }
+
+    // Public only gets safe settings
     return NextResponse.json({
       allowRegistration: settings.allowRegistration,
     })
