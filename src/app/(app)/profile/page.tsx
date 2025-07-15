@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Loader2, UserCheck, Users, Calendar, Edit } from 'lucide-react'
+import { Loader2, UserCheck, Users, Calendar } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -30,9 +30,13 @@ import {
 } from '@/components/ui/form'
 import { useToast } from '@/hooks/use-toast'
 import type { Meeting } from '@/lib/data'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { signOut } from 'next-auth/react'
+import { AlertTriangle } from 'lucide-react'
 
 const profileSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email.' }),
 })
 
 const passwordSchema = z
@@ -58,21 +62,40 @@ function getInitials(name: string = ''): string {
     .toUpperCase()
 }
 
+function ProfileStatistic({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType
+  label: string
+  value: number | string
+}) {
+  return (
+    <div className="bg-background/50 hover:bg-muted/50 flex items-center justify-between rounded-lg border p-3 transition-all">
+      <div className="flex items-center gap-3">
+        <Icon className="text-muted-foreground h-5 w-5" />
+        <span className="text-sm font-medium">{label}</span>
+      </div>
+      <span className="text-primary text-lg font-bold">{value}</span>
+    </div>
+  )
+}
+
 export default function ProfilePage() {
   const { data: session, status, update: updateSession } = useSession()
   const user = session?.user
-  const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [isMeetingsLoading, setIsMeetingsLoading] = useState(true)
   const { toast } = useToast()
-  const [activeTab, setActiveTab] = useState('profile')
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     values: {
       name: user?.name || '',
+      email: user?.email || '',
     },
   })
 
@@ -85,11 +108,14 @@ export default function ProfilePage() {
     },
   })
 
+  const watchedEmail = form.watch('email')
+  const isEmailDirty = watchedEmail !== user?.email
+
   useEffect(() => {
     if (user) {
-      form.reset({ name: user.name || '' })
+      form.reset({ name: user.name || '', email: user.email || '' })
     }
-  }, [user, form, isEditing])
+  }, [user, form])
 
   useEffect(() => {
     async function loadMeetings() {
@@ -97,16 +123,14 @@ export default function ProfilePage() {
       setIsMeetingsLoading(true)
       try {
         const response = await fetch('/api/meetings')
-        if (!response.ok) {
-          throw new Error('Failed to load meetings')
-        }
+        if (!response.ok) throw new Error('Failed to load meetings')
         const allMeetings = await response.json()
         setMeetings(allMeetings)
       } catch {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Failed to load meetings. Please try again later.',
+          description: 'Failed to load meetings.',
         })
       } finally {
         setIsMeetingsLoading(false)
@@ -121,25 +145,32 @@ export default function ProfilePage() {
     try {
       const response = await fetch('/api/profile', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name: values.name }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
       })
+
+      const result = await response.json()
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update profile')
+        throw new Error(result.error || 'Failed to update profile')
       }
 
-      // Trigger a session update to reflect the new name
-      await updateSession({ user: { ...session?.user, name: values.name } })
-
-      toast({
-        title: 'Profile Updated',
-        description: 'Your name has been successfully updated.',
-      })
-      setIsEditing(false)
+      if (result.emailChanged) {
+        toast({
+          title: 'Email Changed Successfully',
+          description:
+            'Your email has been updated. Please log in with your new email.',
+        })
+        // Log out the user and redirect to login page
+        await signOut({ callbackUrl: '/login' })
+      } else {
+        // If only name was changed, just update the session
+        await updateSession({ user: { ...session?.user, name: values.name } })
+        toast({
+          title: 'Profile Updated',
+          description: 'Your name has been successfully updated.',
+        })
+      }
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -210,220 +241,203 @@ export default function ProfilePage() {
       <div>
         <h1 className="font-headline text-3xl font-bold">My Profile</h1>
         <p className="text-muted-foreground">
-          View and manage your personal information and statistics.
+          Manage your personal information and see your activity.
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-8 grid w-full grid-cols-3">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="statistics">Statistics</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profile" className="space-y-4">
-          <Card>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)}>
-                <CardHeader className="flex flex-row items-start justify-between">
-                  <div>
-                    <CardTitle className="text-2xl">
-                      Personal Information
-                    </CardTitle>
-                    <CardDescription>
-                      Update your name and view your details.
-                    </CardDescription>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsEditing(!isEditing)}
-                    disabled={isSaving}
-                  >
-                    <Edit className="h-5 w-5" />
-                    <span className="sr-only">Edit Profile</span>
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center gap-6">
-                    <Avatar className="h-20 w-20">
-                      <AvatarImage
-                        src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name || '')}`}
-                        alt={user.name || ''}
-                        data-ai-hint="user avatar"
-                      />
-                      <AvatarFallback className="text-2xl">
-                        {getInitials(user.name || '')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="space-y-1">
-                      <h2 className="text-2xl font-semibold">
-                        {form.watch('name')}
-                      </h2>
-                      <Badge
-                        variant={
-                          user.role === 'admin' ? 'default' : 'secondary'
-                        }
-                      >
-                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} readOnly={!isEditing} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid w-full items-center gap-1.5">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" value={user.email || ''} readOnly />
-                  </div>
-                </CardContent>
-                {isEditing && (
-                  <CardFooter className="justify-end gap-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setIsEditing(false)
-                        form.reset({ name: user.name ?? '' })
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={isSaving}>
-                      {isSaving && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Save Changes
-                    </Button>
-                  </CardFooter>
-                )}
-              </form>
-            </Form>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        {/* Left Column: Profile Card & Stats */}
+        <div className="space-y-8 lg:col-span-1">
+          <Card className="from-primary/5 to-background/0 bg-gradient-to-br text-center">
+            <CardContent className="p-6">
+              <Avatar className="mx-auto mb-4 h-24 w-24 border-2 border-primary/50">
+                <AvatarImage
+                  src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name || '')}`}
+                  alt={user.name || ''}
+                  data-ai-hint="user avatar"
+                />
+                <AvatarFallback className="text-3xl">
+                  {getInitials(user.name || '')}
+                </AvatarFallback>
+              </Avatar>
+              <h2 className="text-2xl font-semibold">{user.name}</h2>
+              <p className="text-muted-foreground">{user.email}</p>
+              <Badge
+                className="mt-2"
+                variant={user.role === 'admin' ? 'default' : 'secondary'}
+              >
+                {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+              </Badge>
+            </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="security" className="space-y-4">
           <Card>
-            <Form {...passwordForm}>
-              <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
-                <CardHeader>
-                  <CardTitle className="text-2xl">Change Password</CardTitle>
-                  <CardDescription>
-                    Update your account&apos;s password.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={passwordForm.control}
-                    name="currentPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Current Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={passwordForm.control}
-                    name="newPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>New Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={passwordForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm New Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-                <CardFooter className="justify-end">
-                  <Button type="submit" disabled={isChangingPassword}>
-                    {isChangingPassword && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Change Password
-                  </Button>
-                </CardFooter>
-              </form>
-            </Form>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="statistics" className="space-y-4">
-          <Card className="from-primary/5 bg-gradient-to-br to-transparent">
             <CardHeader>
-              <CardTitle className="text-2xl">My Statistics</CardTitle>
-              <CardDescription>Your meeting activity.</CardDescription>
+              <CardTitle>My Statistics</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               {isMeetingsLoading ? (
-                <div className="flex h-48 items-center justify-center">
+                <div className="flex h-32 items-center justify-center">
                   <Loader2 className="text-primary h-6 w-6 animate-spin" />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="bg-background/50 hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-all">
-                    <div className="flex items-center gap-4">
-                      <UserCheck className="text-primary h-7 w-7" />
-                      <span className="font-medium">Meetings Organized</span>
-                    </div>
-                    <span className="text-primary text-2xl font-bold">
-                      {meetingsOrganized}
-                    </span>
-                  </div>
-                  <div className="bg-background/50 hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-all">
-                    <div className="flex items-center gap-4">
-                      <Users className="text-primary h-7 w-7" />
-                      <span className="font-medium">Meetings Attended</span>
-                    </div>
-                    <span className="text-primary text-2xl font-bold">
-                      {meetingsAttended}
-                    </span>
-                  </div>
-                  <div className="bg-background/50 hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-all">
-                    <div className="flex items-center gap-4">
-                      <Calendar className="text-primary h-7 w-7" />
-                      <span className="font-medium">Upcoming Meetings</span>
-                    </div>
-                    <span className="text-primary text-2xl font-bold">
-                      {upcomingMeetingsCount}
-                    </span>
-                  </div>
-                </div>
+                <>
+                  <ProfileStatistic
+                    icon={UserCheck}
+                    label="Meetings Organized"
+                    value={meetingsOrganized}
+                  />
+                  <ProfileStatistic
+                    icon={Users}
+                    label="Meetings Attended"
+                    value={meetingsAttended}
+                  />
+                  <ProfileStatistic
+                    icon={Calendar}
+                    label="Upcoming Meetings"
+                    value={upcomingMeetingsCount}
+                  />
+                </>
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+
+        {/* Right Column: Tabs for Editing */}
+        <div className="lg:col-span-2">
+          <Tabs defaultValue="edit-profile" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="edit-profile">Edit Profile</TabsTrigger>
+              <TabsTrigger value="change-password">Change Password</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="edit-profile">
+              <Card>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <CardHeader>
+                      <CardTitle>Personal Information</CardTitle>
+                      <CardDescription>
+                        Update your public display name and email address.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Full Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email Address</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {isEmailDirty && (
+                        <Alert variant="destructive">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertTitle>Warning</AlertTitle>
+                          <AlertDescription>
+                            Changing your email will update your login
+                            credentials. You will be logged out after saving.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
+                    <CardFooter className="justify-end">
+                      <Button type="submit" disabled={isSaving}>
+                        {isSaving && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Save Changes
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </Form>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="change-password">
+              <Card>
+                <Form {...passwordForm}>
+                  <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
+                    <CardHeader>
+                      <CardTitle>Security</CardTitle>
+                      <CardDescription>
+                        Update your account password.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={passwordForm.control}
+                        name="currentPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Current Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="newPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>New Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Confirm New Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                    <CardFooter className="justify-end">
+                      <Button type="submit" disabled={isChangingPassword}>
+                        {isChangingPassword && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Update Password
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </Form>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
     </div>
   )
 }
