@@ -12,18 +12,10 @@ import {
 } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Loader2,
-  UserCheck,
-  Users,
-  Calendar,
-  Eye,
-  EyeOff,
-} from 'lucide-react'
+import { Loader2, UserCheck, Users, Calendar, Eye, EyeOff } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -262,7 +254,7 @@ export default function ProfilePage() {
         <div className="space-y-8 lg:col-span-1">
           <Card className="from-primary/5 to-background/0 bg-gradient-to-br text-center">
             <CardContent className="p-6">
-              <Avatar className="mx-auto mb-4 h-24 w-24 border-2 border-primary/50">
+              <Avatar className="border-primary/50 mx-auto mb-4 h-24 w-24 border-2">
                 <AvatarImage
                   src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name || '')}`}
                   alt={user.name || ''}
@@ -414,7 +406,7 @@ export default function ProfilePage() {
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-gray-500"
+                                className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 text-gray-500"
                                 onClick={() =>
                                   setShowCurrentPassword(!showCurrentPassword)
                                 }
@@ -447,7 +439,7 @@ export default function ProfilePage() {
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-gray-500"
+                                className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 text-gray-500"
                                 onClick={() =>
                                   setShowNewPassword(!showNewPassword)
                                 }
@@ -482,7 +474,7 @@ export default function ProfilePage() {
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-gray-500"
+                                className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 text-gray-500"
                                 onClick={() =>
                                   setShowConfirmPassword(!showConfirmPassword)
                                 }

@@ -5,5 +5,5 @@ import { getUsers } from '@/lib/data'
 export default async function NewMeetingPage() {
   const allUsers = await getUsers()
 
-  return <MeetingForm allUsers={allUsers} />
+  return <MeetingForm allUsers={allUsers.users} />
 }

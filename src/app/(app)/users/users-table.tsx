@@ -237,9 +237,12 @@ export function UsersTable({
     if (!userToReset) return
     setIsResetting(true)
     try {
-      const response = await fetch(`/api/users/${userToReset.id}/reset-password`, {
-        method: 'POST',
-      })
+      const response = await fetch(
+        `/api/users/${userToReset.id}/reset-password`,
+        {
+          method: 'POST',
+        },
+      )
       const result = await response.json()
       if (!response.ok) {
         throw new Error(result.error || 'Failed to reset password.')
@@ -333,7 +336,9 @@ export function UsersTable({
                             src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name)}`}
                             alt={user.name}
                           />
-                          <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                          <AvatarFallback>
+                            {getInitials(user.name)}
+                          </AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="font-medium">{user.name}</div>
@@ -343,9 +348,15 @@ export function UsersTable({
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">{user.email}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {user.email}
+                    </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                      <Badge
+                        variant={
+                          user.role === 'admin' ? 'default' : 'secondary'
+                        }
+                      >
                         {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                       </Badge>
                     </TableCell>
@@ -359,12 +370,16 @@ export function UsersTable({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleOpenEditDialog(user)}>
+                            <DropdownMenuItem
+                              onClick={() => handleOpenEditDialog(user)}
+                            >
                               <Edit className="mr-2 h-4 w-4" />
                               <span>Edit Role</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleOpenResetDialog(user)}>
+                            <DropdownMenuItem
+                              onClick={() => handleOpenResetDialog(user)}
+                            >
                               <KeyRound className="mr-2 h-4 w-4" />
                               <span>Reset Password</span>
                             </DropdownMenuItem>
@@ -448,10 +463,15 @@ export function UsersTable({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New User</DialogTitle>
-            <DialogDescription>Enter the details for the new user.</DialogDescription>
+            <DialogDescription>
+              Enter the details for the new user.
+            </DialogDescription>
           </DialogHeader>
           <Form {...addUserForm}>
-            <form onSubmit={addUserForm.handleSubmit(handleAddUser)} className="space-y-4">
+            <form
+              onSubmit={addUserForm.handleSubmit(handleAddUser)}
+              className="space-y-4"
+            >
               <FormField
                 control={addUserForm.control}
                 name="name"
@@ -496,7 +516,7 @@ export function UsersTable({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-gray-500"
+                        className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 text-gray-500"
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? (
@@ -516,7 +536,10 @@ export function UsersTable({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Role</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a role" />
@@ -540,7 +563,9 @@ export function UsersTable({
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isCreatingUser}>
-                  {isCreatingUser && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isCreatingUser && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Create User
                 </Button>
               </DialogFooter>
@@ -549,13 +574,16 @@ export function UsersTable({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!userToEdit} onOpenChange={(isOpen) => !isOpen && setUserToEdit(null)}>
+      <Dialog
+        open={!!userToEdit}
+        onOpenChange={(isOpen) => !isOpen && setUserToEdit(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Role for {userToEdit?.name}</DialogTitle>
             <DialogDescription>
-              Change the role for this user. Be careful, promoting a user to admin gives them full
-              access.
+              Change the role for this user. Be careful, promoting a user to
+              admin gives them full access.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -612,17 +640,22 @@ export function UsersTable({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!userToDelete} onOpenChange={(isOpen) => !isOpen && setUserToDelete(null)}>
+      <AlertDialog
+        open={!!userToDelete}
+        onOpenChange={(isOpen) => !isOpen && setUserToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the account for{' '}
-              {userToDelete?.name}.
+              This action cannot be undone. This will permanently delete the
+              account for {userToDelete?.name}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setUserToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive hover:bg-destructive/90"
               onClick={handleDeleteUser}

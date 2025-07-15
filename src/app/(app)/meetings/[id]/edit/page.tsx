@@ -18,5 +18,5 @@ export default async function EditMeetingPage({
     notFound()
   }
 
-  return <MeetingForm existingMeeting={meeting} allUsers={allUsers} />
+  return <MeetingForm existingMeeting={meeting} allUsers={allUsers.users} />
 }

@@ -20,8 +20,8 @@ export async function GET() {
 
     // Admin gets all settings, but we don't want to expose the password hash
     if (session?.user?.role === 'admin') {
-      const { defaultResetPassword, ...safeSettings } = settings
-      return NextResponse.json(safeSettings)
+      const { id, allowRegistration, defaultRole } = settings
+      return NextResponse.json({ id, allowRegistration, defaultRole })
     }
 
     // Public only gets safe settings
@@ -84,9 +84,11 @@ export async function PUT(request: Request) {
       data: dataToUpdate,
     })
 
-    const { defaultResetPassword: _, ...safeUpdatedSettings } = updated
-
-    return NextResponse.json(safeUpdatedSettings)
+    return NextResponse.json({
+      id: updated.id,
+      allowRegistration: updated.allowRegistration,
+      defaultRole: updated.defaultRole,
+    })
   } catch (error) {
     console.error('Error updating settings:', error)
     return NextResponse.json(

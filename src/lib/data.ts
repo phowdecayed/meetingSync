@@ -7,6 +7,7 @@ import {
   getBalancedZoomCredential,
 } from './zoom'
 import { format } from 'date-fns'
+import { Prisma } from '@prisma/client'
 
 // --- SHARED TYPES & UTILS ---
 export type Meeting = {
@@ -52,6 +53,7 @@ type PrismaUser = {
   name: string
   role: string
   passwordHash: string | null
+  createdAt: Date
 }
 
 // Add password for user creation and verification
@@ -71,7 +73,7 @@ const formatMeeting = (meeting: PrismaMeeting): Meeting => {
 }
 
 // Helper function to format User data
-const formatUser = (user: PrismaUser): User => {
+export const formatUser = (user: PrismaUser): User => {
   return {
     id: user.id,
     name: user.name,
@@ -92,7 +94,7 @@ export const getMeetings = async (
     return []
   }
 
-  const whereConditions: any = {}
+  const whereConditions: Prisma.MeetingWhereInput = {}
 
   if (fromDate) {
     whereConditions.date = {
@@ -363,7 +365,7 @@ export const getUsers = async (options?: {
   const query = options?.query || ''
   const skip = (page - 1) * perPage
 
-  const where = query
+  const where: Prisma.UserWhereInput = query
     ? {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
@@ -385,7 +387,12 @@ export const getUsers = async (options?: {
   ])
 
   return {
-    users: users.map(formatUser),
+    users: users.map((user) => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role as 'admin' | 'member',
+    })),
     total,
   }
 }
@@ -399,7 +406,12 @@ export const getUsersByIds = async (ids: string[]): Promise<User[]> => {
       },
     },
   })
-  return users.map(formatUser)
+  return users.map((user) => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role as 'admin' | 'member',
+  }))
 }
 
 export const createUser = async (data: {
@@ -422,7 +434,7 @@ export const createUser = async (data: {
       },
     })
 
-    return formatUser(user)
+    return formatUser({ ...user, createdAt: new Date() })
   } catch {
     throw new Error('A user with this email already exists.')
   }
@@ -438,7 +450,7 @@ export const updateUserRole = async (
       data: { role },
     })
 
-    return formatUser(user)
+    return formatUser({ ...user, createdAt: new Date() })
   } catch {
     throw new Error('User not found')
   }
@@ -462,7 +474,7 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
     where: { email },
   })
 
-  return user ? formatUser(user) : null
+  return user ? formatUser({ ...user, createdAt: new Date() }) : null
 }
 
 export const updateAuthUser = async (
@@ -475,9 +487,78 @@ export const updateAuthUser = async (
       data: { name: data.name },
     })
 
-    return formatUser(user)
+    return formatUser({ ...user, createdAt: new Date() })
   } catch {
     throw new Error('User not found')
+  }
+}
+
+export const getAdminDashboardStats = async () => {
+  const [totalUsers, totalMeetings, connectedZoomAccounts] = await Promise.all([
+    prisma.user.count(),
+    prisma.meeting.count(),
+    prisma.zoomCredentials.count(),
+  ])
+
+  const mostActiveUsersData = await prisma.meeting.groupBy({
+    by: ['organizerId'],
+    _count: {
+      organizerId: true,
+    },
+    orderBy: {
+      _count: {
+        organizerId: 'desc',
+      },
+    },
+    take: 4,
+  })
+
+  const userIds = mostActiveUsersData.map((u) => u.organizerId)
+  const users = await prisma.user.findMany({
+    where: {
+      id: {
+        in: userIds,
+      },
+    },
+  })
+  const userMap = new Map(users.map((u) => [u.id, u]))
+
+  const mostActiveUsers = mostActiveUsersData.map((u) => ({
+    ...(userMap.get(u.organizerId) as User),
+    meetingCount: u._count.organizerId,
+  }))
+
+  const nextSevenDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() + i)
+    return d
+  })
+
+  const meetingsPerDay = await Promise.all(
+    nextSevenDays.map(async (day) => {
+      const startOfDay = new Date(day.setHours(0, 0, 0, 0))
+      const endOfDay = new Date(day.setHours(23, 59, 59, 999))
+      const count = await prisma.meeting.count({
+        where: {
+          date: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+        },
+      })
+      return {
+        date: format(startOfDay, 'EEE'),
+        count,
+      }
+    }),
+  )
+
+  return {
+    totalUsers,
+    totalMeetings,
+    connectedZoomAccounts,
+    mostActiveUsers,
+    meetingsPerDay,
   }
 }
 
@@ -494,5 +575,5 @@ export const verifyUserCredentials = async (
   const passwordsMatch = await bcrypt.compare(pass, user.passwordHash)
   if (!passwordsMatch) return null
 
-  return formatUser(user)
+  return formatUser({ ...user, createdAt: new Date() })
 }

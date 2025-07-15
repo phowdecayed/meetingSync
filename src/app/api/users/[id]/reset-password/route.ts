@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import prisma from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
 
 export async function POST(
   request: Request,
@@ -16,7 +15,7 @@ export async function POST(
     const userIdToReset = params.id
     if (userIdToReset === session.user.id) {
       return NextResponse.json(
-        { error: "Admin cannot reset their own password here." },
+        { error: 'Admin cannot reset their own password here.' },
         { status: 400 },
       )
     }
@@ -39,7 +38,9 @@ export async function POST(
       data: { passwordHash },
     })
 
-    return NextResponse.json({ message: 'Password has been reset successfully.' })
+    return NextResponse.json({
+      message: 'Password has been reset successfully.',
+    })
   } catch (error) {
     console.error('Error resetting password:', error)
     return NextResponse.json(
