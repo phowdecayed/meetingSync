@@ -53,23 +53,14 @@ export async function POST(request: Request) {
     }
 
     // Simpan kredensial
-    const result = await saveZoomCredentials(
-      clientId,
-      clientSecret,
-      accountId,
-      hostKey,
-    );
-
-    if (!result) {
-      return NextResponse.json(
-        { error: "Failed to save Zoom credentials" },
-        { status: 500 },
-      );
-    }
+    await saveZoomCredentials(clientId, clientSecret, accountId, hostKey);
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error saving Zoom credentials:", error);
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 409 }); // 409 Conflict
+    }
     return NextResponse.json(
       { error: "Failed to save Zoom credentials" },
       { status: 500 },

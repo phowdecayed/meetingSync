@@ -331,8 +331,14 @@ export async function saveZoomCredentials(
   hostKey?: string,
 ) {
   try {
-    // Hapus kredensial lama jika ada
-    await prisma.zoomCredentials.deleteMany({});
+    // Cek apakah kredensial dengan clientId yang sama sudah ada
+    const existingCredential = await prisma.zoomCredentials.findFirst({
+      where: { clientId },
+    });
+
+    if (existingCredential) {
+      throw new Error("Kredensial Zoom dengan Client ID tersebut sudah ada.");
+    }
 
     // Simpan kredensial baru
     const newCredentials = await prisma.zoomCredentials.create({
@@ -346,6 +352,9 @@ export async function saveZoomCredentials(
     return newCredentials;
   } catch (error) {
     console.error("Error saving Zoom credentials:", error);
+    if (error instanceof Error) {
+      throw error;
+    }
     throw new Error("Could not save Zoom credentials.");
   }
 }

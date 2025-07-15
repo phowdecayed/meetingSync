@@ -109,7 +109,6 @@ export function ZoomSettings() {
     }
   }
 
-  // Fungsi untuk menangani submit form
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -137,7 +136,10 @@ export function ZoomSettings() {
       });
 
       if (!response.ok) {
-        throw new Error("Gagal menyimpan kredensial Zoom");
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || "Gagal menyimpan kredensial Zoom",
+        );
       }
 
       toast({
@@ -154,11 +156,14 @@ export function ZoomSettings() {
 
       // Refresh daftar akun
       fetchZoomAccounts();
-    } catch {
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Gagal menyimpan kredensial Zoom",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Gagal menyimpan kredensial Zoom",
       });
     } finally {
       setSubmitting(false);
