@@ -1,12 +1,12 @@
-"use client";
+'use client'
 
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { ZoomCalendar } from "@/components/zoom-calendar";
+} from '@/components/ui/card'
+import { ZoomCalendar } from '@/components/zoom-calendar'
 
 export function MeetingsViewTabs() {
   return (
@@ -22,5 +22,5 @@ export function MeetingsViewTabs() {
       </Card>
       <ZoomCalendar />
     </div>
-  );
+  )
 }

@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { getZoomApiClient } from "@/lib/zoom";
+import { NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { getZoomApiClient, findCredentialForMeeting } from '@/lib/zoom'
 
 /**
  * GET endpoint to retrieve all instances (occurrences) of a Zoom meeting
@@ -11,41 +11,40 @@ import { getZoomApiClient } from "@/lib/zoom";
  */
 export async function GET(
   request: Request,
-  context: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
-    const session = await auth();
+    const session = await auth()
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Correctly await params before accessing the id property
-    const { id: meetingId } = await context.params;
+    const meetingId = params.id
     if (!meetingId) {
-      return NextResponse.json(
-        { error: "Missing meeting ID" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Missing meeting ID' }, { status: 400 })
     }
 
-    // Get Zoom API client
-    const zoomClient = await getZoomApiClient();
+    // Find the correct credential for this specific meeting
+    const credential = await findCredentialForMeeting(meetingId)
+
+    // Get a Zoom API client authenticated for that credential
+    const { apiClient } = await getZoomApiClient(credential)
 
     // Call Zoom API to get meeting instances
-    const response = await zoomClient.get(
+    const response = await apiClient.get(
       `/past_meetings/${meetingId}/instances`,
-    );
-    return NextResponse.json(response.data);
+    )
+    return NextResponse.json(response.data)
   } catch (error: unknown) {
     const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
-    console.error("Failed to fetch meeting instances:", errorMessage);
+      error instanceof Error ? error.message : 'An unknown error occurred'
+    console.error('Failed to fetch meeting instances:', errorMessage)
     return NextResponse.json(
       {
-        error: "Failed to fetch meeting instances",
+        error: 'Failed to fetch meeting instances',
         details: errorMessage,
       },
       { status: 500 },
-    );
+    )
   }
 }

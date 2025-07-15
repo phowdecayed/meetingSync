@@ -1,7 +1,7 @@
 export default function AuthLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <div className="flex min-h-screen w-full">
@@ -9,7 +9,7 @@ export default function AuthLayout({
         className="bg-primary/80 text-primary-foreground relative hidden items-center justify-center bg-cover bg-center p-12 lg:flex lg:w-1/2"
         style={{
           backgroundImage:
-            "url(https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)",
+            'url(https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)',
         }}
       >
         <div className="bg-primary/80 absolute inset-0" />
@@ -39,5 +39,5 @@ export default function AuthLayout({
         {children}
       </div>
     </div>
-  );
+  )
 }

@@ -1,95 +1,95 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Loader2 } from "lucide-react";
+} from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Loader2 } from 'lucide-react'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { ZoomSettings } from "@/components/zoom-settings";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+} from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
+import { ZoomSettings } from '@/components/zoom-settings'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 export default function SettingsPage() {
-  const { data: session, status } = useSession();
-  const user = session?.user;
-  const { toast } = useToast();
+  const { data: session, status } = useSession()
+  const user = session?.user
+  const { toast } = useToast()
 
   // State untuk pengaturan umum
-  const [loadingSettings, setLoadingSettings] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [allowRegistration, setAllowRegistration] = useState(true);
-  const [defaultRole, setDefaultRole] = useState<"member" | "admin">("member");
+  const [loadingSettings, setLoadingSettings] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [allowRegistration, setAllowRegistration] = useState(true)
+  const [defaultRole, setDefaultRole] = useState<'member' | 'admin'>('member')
 
   useEffect(() => {
     async function fetchSettings() {
-      setLoadingSettings(true);
+      setLoadingSettings(true)
       try {
-        const res = await fetch("/api/settings");
-        if (!res.ok) throw new Error("Gagal mengambil data pengaturan");
-        const data = await res.json();
-        setAllowRegistration(data.allowRegistration);
-        setDefaultRole(data.defaultRole);
+        const res = await fetch('/api/settings')
+        if (!res.ok) throw new Error('Gagal mengambil data pengaturan')
+        const data = await res.json()
+        setAllowRegistration(data.allowRegistration)
+        setDefaultRole(data.defaultRole)
       } catch {
         toast({
-          variant: "destructive",
-          title: "Gagal memuat pengaturan",
-          description: "Terjadi kesalahan saat mengambil data pengaturan.",
-        });
+          variant: 'destructive',
+          title: 'Gagal memuat pengaturan',
+          description: 'Terjadi kesalahan saat mengambil data pengaturan.',
+        })
       } finally {
-        setLoadingSettings(false);
+        setLoadingSettings(false)
       }
     }
-    fetchSettings();
-  }, [toast]);
+    fetchSettings()
+  }, [toast])
 
   async function handleSave() {
-    setSaving(true);
+    setSaving(true)
     try {
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ allowRegistration, defaultRole }),
-      });
-      if (!res.ok) throw new Error("Gagal menyimpan pengaturan");
+      })
+      if (!res.ok) throw new Error('Gagal menyimpan pengaturan')
       toast({
-        title: "Berhasil",
-        description: "Pengaturan berhasil disimpan.",
-      });
+        title: 'Berhasil',
+        description: 'Pengaturan berhasil disimpan.',
+      })
     } catch {
       toast({
-        variant: "destructive",
-        title: "Gagal menyimpan",
-        description: "Terjadi kesalahan saat menyimpan pengaturan.",
-      });
+        variant: 'destructive',
+        title: 'Gagal menyimpan',
+        description: 'Terjadi kesalahan saat menyimpan pengaturan.',
+      })
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
   }
 
-  if (status === "loading" || !user) {
+  if (status === 'loading' || !user) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="text-primary h-8 w-8 animate-spin" />
       </div>
-    );
+    )
   }
 
-  if (user.role !== "admin") {
+  if (user.role !== 'admin') {
     return (
       <div className="space-y-8">
         <div>
@@ -99,7 +99,7 @@ export default function SettingsPage() {
           </p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -147,7 +147,7 @@ export default function SettingsPage() {
                       id="allow-registration"
                       checked={allowRegistration}
                       onCheckedChange={setAllowRegistration}
-                      disabled={saving || user?.role !== "admin"}
+                      disabled={saving || user?.role !== 'admin'}
                     />
                   </div>
                   <div className="max-w-sm space-y-2">
@@ -157,9 +157,9 @@ export default function SettingsPage() {
                     <Select
                       value={defaultRole}
                       onValueChange={(v) =>
-                        setDefaultRole(v as "member" | "admin")
+                        setDefaultRole(v as 'member' | 'admin')
                       }
-                      disabled={saving || user?.role !== "admin"}
+                      disabled={saving || user?.role !== 'admin'}
                     >
                       <SelectTrigger id="default-role" className="w-[180px]">
                         <SelectValue placeholder="Pilih peran" />
@@ -170,7 +170,7 @@ export default function SettingsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {user?.role === "admin" && (
+                  {user?.role === 'admin' && (
                     <div className="pt-2">
                       <Button onClick={handleSave} disabled={saving}>
                         {saving && (
@@ -201,5 +201,5 @@ export default function SettingsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }

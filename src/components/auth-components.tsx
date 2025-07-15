@@ -1,10 +1,10 @@
-"use client";
+'use client'
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Card,
   CardContent,
@@ -12,7 +12,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card'
 import {
   Form,
   FormControl,
@@ -20,81 +20,81 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { signIn } from "next-auth/react";
-import { createUser } from "@/lib/data";
+} from '@/components/ui/form'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useToast } from '@/hooks/use-toast'
+import { signIn } from 'next-auth/react'
+import { createUser } from '@/lib/data'
 
 const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email." }),
-  password: z.string().min(1, { message: "Password is required." }),
-});
+  email: z.string().email({ message: 'Please enter a valid email.' }),
+  password: z.string().min(1, { message: 'Password is required.' }),
+})
 
 const registerSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email." }),
+  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email.' }),
   password: z
     .string()
-    .min(8, { message: "Password must be at least 8 characters." }),
-});
+    .min(8, { message: 'Password must be at least 8 characters.' }),
+})
 
 export function LoginForm() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [allowRegistration, setAllowRegistration] = useState(true);
-  const searchParams = useSearchParams();
+  const router = useRouter()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+  const [allowRegistration, setAllowRegistration] = useState(true)
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     async function fetchSettings() {
       try {
-        const res = await fetch("/api/settings");
-        if (!res.ok) throw new Error("Gagal mengambil pengaturan");
-        const data = await res.json();
-        setAllowRegistration(data.allowRegistration);
+        const res = await fetch('/api/settings')
+        if (!res.ok) throw new Error('Gagal mengambil pengaturan')
+        const data = await res.json()
+        setAllowRegistration(data.allowRegistration)
       } catch {
-        setAllowRegistration(false); // fallback: tetap tampilkan jika gagal
+        setAllowRegistration(false) // fallback: tetap tampilkan jika gagal
       }
     }
-    fetchSettings();
-  }, []);
+    fetchSettings()
+  }, [])
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: '',
+      password: '',
     },
-  });
+  })
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
-    setIsLoading(true);
-    const result = await signIn("credentials", {
+    setIsLoading(true)
+    const result = await signIn('credentials', {
       redirect: false,
       email: values.email,
       password: values.password,
-    });
+    })
 
     if (result?.error) {
       toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: "Invalid email or password.",
-      });
-      setIsLoading(false);
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Invalid email or password.',
+      })
+      setIsLoading(false)
     } else {
       // Redirect aman hanya ke path internal
-      const from = searchParams && searchParams.get("from");
-      if (from && from.startsWith("/")) {
-        router.replace(from);
+      const from = searchParams && searchParams.get('from')
+      if (from && from.startsWith('/')) {
+        router.replace(from)
       } else {
-        router.replace("/dashboard");
+        router.replace('/dashboard')
       }
-      router.refresh(); // Refresh to ensure session is fully loaded
+      router.refresh() // Refresh to ensure session is fully loaded
     }
   }
 
@@ -146,7 +146,7 @@ export function LoginForm() {
         <p className="text-muted-foreground text-sm">
           {!allowRegistration ? null : (
             <>
-              Belum punya akun?{" "}
+              Belum punya akun?{' '}
               <Link
                 href="/register"
                 className="text-primary font-semibold hover:underline"
@@ -158,59 +158,59 @@ export function LoginForm() {
         </p>
       </CardFooter>
     </Card>
-  );
+  )
 }
 
 export function RegisterForm() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: "",
-      email: "",
-      password: "",
+      name: '',
+      email: '',
+      password: '',
     },
-  });
+  })
 
   async function onSubmit(values: z.infer<typeof registerSchema>) {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
       await createUser({
         name: values.name,
         email: values.email,
-        role: "member",
+        role: 'member',
         password: values.password,
-      });
+      })
 
       // After successful creation, sign the user in
-      const signInResult = await signIn("credentials", {
+      const signInResult = await signIn('credentials', {
         email: values.email,
         password: values.password,
         redirect: false,
-      });
+      })
 
       if (signInResult?.error) {
         toast({
-          variant: "destructive",
-          title: "Login after registration failed",
-          description: "Please try logging in manually.",
-        });
-        setIsLoading(false);
-        router.push("/login");
+          variant: 'destructive',
+          title: 'Login after registration failed',
+          description: 'Please try logging in manually.',
+        })
+        setIsLoading(false)
+        router.push('/login')
       } else {
-        router.push("/dashboard");
-        router.refresh();
+        router.push('/dashboard')
+        router.refresh()
       }
     } catch (error) {
       toast({
-        variant: "destructive",
-        title: "Registration Failed",
+        variant: 'destructive',
+        title: 'Registration Failed',
         description: (error as Error).message,
-      });
-      setIsLoading(false);
+      })
+      setIsLoading(false)
     }
   }
 
@@ -273,7 +273,7 @@ export function RegisterForm() {
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-muted-foreground text-center text-sm">
-          Already have an account?{" "}
+          Already have an account?{' '}
           <Link
             href="/login"
             className="text-primary font-semibold hover:underline"
@@ -283,5 +283,5 @@ export function RegisterForm() {
         </p>
       </CardFooter>
     </Card>
-  );
+  )
 }

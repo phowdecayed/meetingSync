@@ -1,26 +1,26 @@
-"use client";
-import { LoginForm } from "@/components/auth-components";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+'use client'
+import { LoginForm } from '@/components/auth-components'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function LoginPage() {
-  const { status } = useSession();
-  const router = useRouter();
+  const { status } = useSession()
+  const router = useRouter()
 
   useEffect(() => {
-    if (status === "authenticated") {
-      router.replace("/dashboard");
+    if (status === 'authenticated') {
+      router.replace('/dashboard')
     }
-  }, [status, router]);
+  }, [status, router])
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return (
       <div className="flex h-screen items-center justify-center">
         <span>Memuat...</span>
       </div>
-    );
+    )
   }
 
-  return <LoginForm />;
+  return <LoginForm />
 }

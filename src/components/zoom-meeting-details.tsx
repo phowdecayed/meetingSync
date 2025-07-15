@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
 import {
   Dialog,
   DialogContent,
@@ -7,10 +7,10 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { format } from 'date-fns'
 import {
   Calendar,
   Link as LinkIcon,
@@ -21,50 +21,50 @@ import {
   Eye,
   EyeOff,
   Clipboard,
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import ReactMarkdown from "react-markdown";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
+} from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import ReactMarkdown from 'react-markdown'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 
 interface ZoomMeetingDetail {
-  id: number;
-  topic: string;
-  start_time: string;
-  duration: number;
-  join_url: string;
-  host_url?: string;
-  password?: string;
-  description?: string;
+  id: number
+  topic: string
+  start_time: string
+  duration: number
+  join_url: string
+  host_url?: string
+  password?: string
+  description?: string
   organizer?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  isOrganizer?: boolean;
-  participants?: string[];
+    id: string
+    name: string
+    email: string
+  }
+  isOrganizer?: boolean
+  participants?: string[]
 }
 
 interface ZoomMeetingDetailsProps {
-  meeting?: ZoomMeetingDetail | null;
-  isOpen: boolean;
-  onClose: () => void;
+  meeting?: ZoomMeetingDetail | null
+  isOpen: boolean
+  onClose: () => void
 }
 
 // Function to determine meeting status
 function getMeetingStatus(
   startTime: string,
   duration: number,
-): "past" | "ongoing" | "upcoming" {
-  const now = new Date();
-  const meetingStart = new Date(startTime);
-  const meetingEnd = new Date(meetingStart.getTime() + duration * 60 * 1000); // duration is in minutes
+): 'past' | 'ongoing' | 'upcoming' {
+  const now = new Date()
+  const meetingStart = new Date(startTime)
+  const meetingEnd = new Date(meetingStart.getTime() + duration * 60 * 1000) // duration is in minutes
 
   if (now < meetingStart) {
-    return "upcoming";
+    return 'upcoming'
   } else if (now >= meetingStart && now <= meetingEnd) {
-    return "ongoing";
+    return 'ongoing'
   } else {
-    return "past";
+    return 'past'
   }
 }
 
@@ -73,46 +73,51 @@ export function ZoomMeetingDetails({
   isOpen,
   onClose,
 }: ZoomMeetingDetailsProps) {
-  const { data: session } = useSession();
-  const { toast } = useToast();
-  const [hostKey, setHostKey] = useState<string | null>(null);
+  const { data: session } = useSession()
+  const { toast } = useToast()
+  const [hostKey, setHostKey] = useState<string | null>(null)
   const [detailedMeeting, setDetailedMeeting] =
-    useState<ZoomMeetingDetail | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showHostKey, setShowHostKey] = useState(false);
+    useState<ZoomMeetingDetail | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showHostKey, setShowHostKey] = useState(false)
   const [meetingSummary, setMeetingSummary] = useState<null | {
-    summary_title: string;
-    summary_content: string;
-    summary_created_time: string;
-    summary_last_modified_time: string;
-    summary_last_modified_user_email: string;
-  }>(null);
-  const [loadingSummary, setLoadingSummary] = useState(false);
-  const [activeTab, setActiveTab] = useState<"detail" | "summary">("detail");
+    summary_title: string
+    summary_content: string
+    summary_created_time: string
+    summary_last_modified_time: string
+    summary_last_modified_user_email: string
+  }>(null)
+  const [loadingSummary, setLoadingSummary] = useState(false)
+  const [activeTab, setActiveTab] = useState<'detail' | 'summary'>('detail')
 
-  const fetchHostKey = useCallback(() => {
-    fetch("/api/zoom-settings/host-key")
-      .then((response) => response.json())
+  const fetchHostKey = useCallback((zoomMeetingId: number) => {
+    fetch(`/api/zoom-settings/host-key?zoomMeetingId=${zoomMeetingId}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch host key')
+        }
+        return response.json()
+      })
       .then((data) => {
-        if (data.hostKey) setHostKey(data.hostKey);
+        if (data.hostKey) setHostKey(data.hostKey)
       })
       .catch((error) => {
-        console.error("Error fetching host key:", error);
-        setHostKey(null);
-      });
-  }, []);
+        console.error('Error fetching host key:', error)
+        setHostKey(null)
+      })
+  }, [])
 
   // Fetch detailed meeting info from database when opened
   useEffect(() => {
     // Only run if the dialog is open and we have a meeting to display
     if (isOpen && meeting) {
-      setActiveTab("detail");
+      setActiveTab('detail')
 
       // Fetch full meeting details from our API
       fetch(`/api/zoom-meetings/${meeting.id}`)
         .then((response) => {
-          if (!response.ok) throw new Error("Failed to fetch meeting details");
-          return response.json();
+          if (!response.ok) throw new Error('Failed to fetch meeting details')
+          return response.json()
         })
         .then((data) => {
           setDetailedMeeting({
@@ -122,90 +127,90 @@ export function ZoomMeetingDetails({
             isOrganizer: data.isOrganizer,
             participants: data.participants,
             password: data.password || meeting.password,
-          });
+          })
 
-          // If user is the organizer or an admin, fetch the host key
-          if (data.isOrganizer || session?.user?.role === "admin") {
-            fetchHostKey();
+          // If user is the organizer or an admin, fetch the host key for this specific meeting
+          if (data.isOrganizer || session?.user?.role === 'admin') {
+            fetchHostKey(meeting.id)
           }
         })
         .catch((error) => {
-          console.error("Error fetching meeting details:", error);
+          console.error('Error fetching meeting details:', error)
           // Fallback to the basic meeting data if the detailed fetch fails
-          setDetailedMeeting(meeting);
-        });
+          setDetailedMeeting(meeting)
+        })
 
       // Reset and fetch meeting summary for past meetings
-      setMeetingSummary(null);
-      const status = getMeetingStatus(meeting.start_time, meeting.duration);
-      if (status === "past") {
-        setLoadingSummary(true);
+      setMeetingSummary(null)
+      const status = getMeetingStatus(meeting.start_time, meeting.duration)
+      if (status === 'past') {
+        setLoadingSummary(true)
         fetch(`/api/zoom-meetings/${meeting.id}/instances`)
           .then((res) =>
-            res.ok ? res.json() : Promise.reject("Failed to fetch instances"),
+            res.ok ? res.json() : Promise.reject('Failed to fetch instances'),
           )
           .then((data) => {
-            const meetingUUID = data.meetings?.[0]?.uuid;
+            const meetingUUID = data.meetings?.[0]?.uuid
             return fetch(
-              `/api/zoom-meetings/${meeting.id}/meeting_summary${meetingUUID ? `?uuid=${meetingUUID}` : ""}`,
-            );
+              `/api/zoom-meetings/${meeting.id}/meeting_summary${meetingUUID ? `?uuid=${meetingUUID}` : ''}`,
+            )
           })
           .then((res) =>
-            res.ok ? res.json() : Promise.reject("Failed to fetch summary"),
+            res.ok ? res.json() : Promise.reject('Failed to fetch summary'),
           )
           .then((data) => {
-            if (data.summary_title) setMeetingSummary(data);
+            if (data.summary_title) setMeetingSummary(data)
           })
-          .catch((err) => console.error("Error fetching meeting summary:", err))
-          .finally(() => setLoadingSummary(false));
+          .catch((err) => console.error('Error fetching meeting summary:', err))
+          .finally(() => setLoadingSummary(false))
       }
     } else {
       // Reset state when the dialog is closed
-      setDetailedMeeting(null);
-      setMeetingSummary(null);
-      setHostKey(null);
+      setDetailedMeeting(null)
+      setMeetingSummary(null)
+      setHostKey(null)
     }
-  }, [isOpen, meeting, session?.user?.role, fetchHostKey]); // Depend on meeting.id to prevent re-renders
+  }, [isOpen, meeting, session?.user?.role, fetchHostKey]) // Depend on meeting.id to prevent re-renders
   const copyToClipboard = (text: string, label: string): void => {
     navigator.clipboard.writeText(text).then(
       () =>
         toast({
-          title: "Copied!",
+          title: 'Copied!',
           description: `${label} copied to clipboard.`,
         }),
       () =>
         toast({
-          variant: "destructive",
-          title: "Failed to copy",
+          variant: 'destructive',
+          title: 'Failed to copy',
           description: `Could not copy ${label}.`,
         }),
-    );
-  };
+    )
+  }
 
   const copyInvitation = () => {
-    if (!activeMeeting) return;
+    if (!activeMeeting) return
     const invitation =
       `bpkad@jabarprov.go.id is inviting you to a scheduled Zoom meeting.\n\n` +
       `Penanggung Jawab:\n${activeMeeting.organizer?.name} (${activeMeeting.organizer?.email})\n\n` +
       `Topic: ${activeMeeting.topic}\n` +
       (activeMeeting.description
         ? `Description : ${activeMeeting.description}\n`
-        : "") +
-      `Time: ${format(new Date(activeMeeting.start_time), "PPpp")}\n` +
+        : '') +
+      `Time: ${format(new Date(activeMeeting.start_time), 'PPpp')}\n` +
       `Join Zoom Meeting\n${activeMeeting.join_url}\n\n` +
-      `Meeting ID: ${String(activeMeeting.id).replace(/(\d{3})(\d{4})(\d{4})/, "$1 $2 $3")}\n` +
-      (activeMeeting.password ? `Passcode: ${activeMeeting.password}\n` : "");
-    copyToClipboard(invitation, "Meeting Invitation");
-  };
+      `Meeting ID: ${String(activeMeeting.id).replace(/(\d{3})(\d{4})(\d{4})/, '$1 $2 $3')}\n` +
+      (activeMeeting.password ? `Passcode: ${activeMeeting.password}\n` : '')
+    copyToClipboard(invitation, 'Meeting Invitation')
+  }
 
-  const activeMeeting = detailedMeeting || meeting;
-  if (!activeMeeting) return null;
+  const activeMeeting = detailedMeeting || meeting
+  if (!activeMeeting) return null
 
-  const meetingDate = new Date(activeMeeting.start_time);
+  const meetingDate = new Date(activeMeeting.start_time)
   const status = getMeetingStatus(
     activeMeeting.start_time,
     activeMeeting.duration,
-  );
+  )
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -216,11 +221,11 @@ export function ZoomMeetingDetails({
             <DialogDescription>Zoom meeting details</DialogDescription>
             <Badge
               variant={
-                status === "ongoing"
-                  ? "default"
-                  : status === "upcoming"
-                    ? "secondary"
-                    : "outline"
+                status === 'ongoing'
+                  ? 'default'
+                  : status === 'upcoming'
+                    ? 'secondary'
+                    : 'outline'
               }
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -230,12 +235,12 @@ export function ZoomMeetingDetails({
 
         <Tabs
           value={activeTab}
-          onValueChange={(v) => setActiveTab(v as "detail" | "summary")}
+          onValueChange={(v) => setActiveTab(v as 'detail' | 'summary')}
           className="w-full"
         >
           <TabsList>
             <TabsTrigger value="detail">Details</TabsTrigger>
-            <TabsTrigger value="summary" disabled={status !== "past"}>
+            <TabsTrigger value="summary" disabled={status !== 'past'}>
               Summary
             </TabsTrigger>
           </TabsList>
@@ -246,8 +251,8 @@ export function ZoomMeetingDetails({
               <div>
                 <h4 className="text-sm font-medium">Organizer</h4>
                 <p className="text-sm text-gray-500">
-                  {detailedMeeting?.organizer?.name || "Loading..."} (
-                  {detailedMeeting?.organizer?.email || "..."})
+                  {detailedMeeting?.organizer?.name || 'Loading...'} (
+                  {detailedMeeting?.organizer?.email || '...'})
                 </p>
               </div>
             </div>
@@ -256,8 +261,8 @@ export function ZoomMeetingDetails({
               <div>
                 <h4 className="text-sm font-medium">Date and Time</h4>
                 <p className="text-sm text-gray-500">
-                  {format(meetingDate, "EEEE, MMMM d, yyyy")} at{" "}
-                  {format(meetingDate, "h:mm a")}
+                  {format(meetingDate, 'EEEE, MMMM d, yyyy')} at{' '}
+                  {format(meetingDate, 'h:mm a')}
                 </p>
               </div>
             </div>
@@ -282,7 +287,7 @@ export function ZoomMeetingDetails({
                     size="sm"
                     className="ml-2 h-6 px-2"
                     onClick={() =>
-                      copyToClipboard(activeMeeting.join_url, "Join URL")
+                      copyToClipboard(activeMeeting.join_url, 'Join URL')
                     }
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -331,7 +336,7 @@ export function ZoomMeetingDetails({
                       onClick={() =>
                         copyToClipboard(
                           activeMeeting.password!,
-                          "Meeting Password",
+                          'Meeting Password',
                         )
                       }
                     >
@@ -339,13 +344,13 @@ export function ZoomMeetingDetails({
                     </Button>
                   </h4>
                   <p className="font-mono text-sm text-gray-500">
-                    {showPassword ? activeMeeting.password : "••••••••"}
+                    {showPassword ? activeMeeting.password : '••••••••'}
                   </p>
                 </div>
               </div>
             )}
             {(detailedMeeting?.isOrganizer ||
-              session?.user?.role === "admin") &&
+              session?.user?.role === 'admin') &&
               hostKey && (
                 <div className="flex items-start gap-3">
                   <User className="mt-0.5 h-5 w-5 text-gray-500" />
@@ -368,13 +373,13 @@ export function ZoomMeetingDetails({
                         variant="ghost"
                         size="sm"
                         className="h-6 px-2"
-                        onClick={() => copyToClipboard(hostKey, "Host Key")}
+                        onClick={() => copyToClipboard(hostKey, 'Host Key')}
                       >
                         <Copy className="h-3.5 w-3.5" />
                       </Button>
                     </h4>
                     <p className="font-mono text-sm text-gray-500">
-                      {showHostKey ? hostKey : "••••••"}
+                      {showHostKey ? hostKey : '••••••'}
                     </p>
                     <p className="mt-1 text-xs text-gray-500 italic">
                       Use this key to claim host controls in the meeting.
@@ -398,7 +403,7 @@ export function ZoomMeetingDetails({
                     onClick={() =>
                       copyToClipboard(
                         `# ${meetingSummary.summary_title}\n\n${meetingSummary.summary_content}`,
-                        "Meeting Summary",
+                        'Meeting Summary',
                       )
                     }
                   >
@@ -406,10 +411,10 @@ export function ZoomMeetingDetails({
                   </Button>
                 </div>
                 <div className="text-xs text-gray-400">
-                  Last updated:{" "}
+                  Last updated:{' '}
                   {new Date(
                     meetingSummary.summary_last_modified_time,
-                  ).toLocaleString("id-ID")}{" "}
+                  ).toLocaleString('id-ID')}{' '}
                   by {meetingSummary.summary_last_modified_user_email}
                 </div>
                 <div className="prose prose-sm max-w-none">
@@ -430,11 +435,11 @@ export function ZoomMeetingDetails({
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
-          {status !== "past" && (
+          {status !== 'past' && (
             <Button
               asChild
               className={
-                status === "ongoing" ? "bg-green-600 hover:bg-green-700" : ""
+                status === 'ongoing' ? 'bg-green-600 hover:bg-green-700' : ''
               }
             >
               <a
@@ -442,12 +447,12 @@ export function ZoomMeetingDetails({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {status === "ongoing" ? "Join Now" : "Join Meeting"}
+                {status === 'ongoing' ? 'Join Now' : 'Join Meeting'}
               </a>
             </Button>
           )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

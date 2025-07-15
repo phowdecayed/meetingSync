@@ -1,18 +1,18 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "@/components/theme-provider";
-import NextAuthSessionProvider from "@/components/auth/session-provider";
+import type { Metadata } from 'next'
+import './globals.css'
+import { Toaster } from '@/components/ui/toaster'
+import { ThemeProvider } from '@/components/theme-provider'
+import NextAuthSessionProvider from '@/components/auth/session-provider'
 
 export const metadata: Metadata = {
-  title: "MeetingSync",
-  description: "Efficiently manage and schedule your Zoom meetings.",
-};
+  title: 'MeetingSync',
+  description: 'Efficiently manage and schedule your Zoom meetings.',
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -43,5 +43,5 @@ export default function RootLayout({
         </NextAuthSessionProvider>
       </body>
     </html>
-  );
+  )
 }

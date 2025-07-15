@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Card,
@@ -6,27 +6,27 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
+} from '@/components/ui/card'
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+} from '@/components/ui/chart'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 
 const chartConfig = {
   meetings: {
-    label: "Meetings",
-    color: "hsl(var(--primary))",
+    label: 'Meetings',
+    color: 'hsl(var(--primary))',
   },
-};
+}
 
 type MeetingsOverviewChartProps = {
   chartData: {
-    date: string;
-    meetings: number;
-  }[];
-};
+    date: string
+    meetings: number
+  }[]
+}
 
 export function MeetingsOverviewChart({
   chartData,
@@ -71,5 +71,5 @@ export function MeetingsOverviewChart({
         </ChartContainer>
       </CardContent>
     </Card>
-  );
+  )
 }

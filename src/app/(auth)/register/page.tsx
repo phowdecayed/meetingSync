@@ -1,40 +1,40 @@
-"use client";
-import { RegisterForm } from "@/components/auth-components";
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+'use client'
+import { RegisterForm } from '@/components/auth-components'
+import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 export default function RegisterPage() {
   const [allowRegistration, setAllowRegistration] = useState<boolean | null>(
     null,
-  );
-  const { status } = useSession();
-  const router = useRouter();
+  )
+  const { status } = useSession()
+  const router = useRouter()
 
   useEffect(() => {
-    if (status === "authenticated") {
-      router.replace("/dashboard");
-      return;
+    if (status === 'authenticated') {
+      router.replace('/dashboard')
+      return
     }
     async function fetchSettings() {
       try {
-        const res = await fetch("/api/settings");
-        if (!res.ok) throw new Error("Gagal mengambil pengaturan");
-        const data = await res.json();
-        setAllowRegistration(data.allowRegistration);
+        const res = await fetch('/api/settings')
+        if (!res.ok) throw new Error('Gagal mengambil pengaturan')
+        const data = await res.json()
+        setAllowRegistration(data.allowRegistration)
       } catch {
-        setAllowRegistration(true); // fallback: tetap izinkan jika gagal fetch
+        setAllowRegistration(true) // fallback: tetap izinkan jika gagal fetch
       }
     }
-    fetchSettings();
-  }, [status, router]);
+    fetchSettings()
+  }, [status, router])
 
-  if (status === "loading" || allowRegistration === null) {
+  if (status === 'loading' || allowRegistration === null) {
     return (
       <div className="flex h-screen items-center justify-center">
         <span>Memuat pengaturan...</span>
       </div>
-    );
+    )
   }
 
   if (!allowRegistration) {
@@ -47,8 +47,8 @@ export default function RegisterPage() {
           </p>
         </div>
       </div>
-    );
+    )
   }
 
-  return <RegisterForm />;
+  return <RegisterForm />
 }

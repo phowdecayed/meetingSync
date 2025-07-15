@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Dialog,
@@ -7,11 +7,11 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import type { Meeting } from "@/lib/data";
-import { format } from "date-fns";
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import type { Meeting } from '@/lib/data'
+import { format } from 'date-fns'
 import {
   Calendar,
   Clock,
@@ -22,15 +22,15 @@ import {
   Copy,
   Eye,
   EyeOff,
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+} from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { useSession } from 'next-auth/react'
+import { useState, useEffect } from 'react'
 
 interface MeetingDetailsDialogProps {
-  meeting: Meeting | null;
-  isOpen: boolean;
-  onClose: () => void;
+  meeting: Meeting | null
+  isOpen: boolean
+  onClose: () => void
 }
 
 export function MeetingDetailsDialog({
@@ -38,72 +38,72 @@ export function MeetingDetailsDialog({
   isOpen,
   onClose,
 }: MeetingDetailsDialogProps) {
-  const { toast } = useToast();
-  const { data: session } = useSession();
-  const [hostKey, setHostKey] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showHostKey, setShowHostKey] = useState(false);
+  const { toast } = useToast()
+  const { data: session } = useSession()
+  const [hostKey, setHostKey] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showHostKey, setShowHostKey] = useState(false)
 
   // Determine if the current user is the organizer
-  const isOrganizer = meeting && session?.user?.id === meeting.organizerId;
+  const isOrganizer = meeting && session?.user?.id === meeting.organizerId
 
   useEffect(() => {
     // Fetch host key only if user is the organizer
     if (isOpen && isOrganizer) {
-      fetch("/api/zoom-settings/host-key")
+      fetch('/api/zoom-settings/host-key')
         .then((response) => response.json())
         .then((data) => {
           if (data.hostKey) {
-            setHostKey(data.hostKey);
+            setHostKey(data.hostKey)
           }
         })
         .catch((error) => {
-          console.error("Error fetching host key:", error);
-          setHostKey(null);
-        });
+          console.error('Error fetching host key:', error)
+          setHostKey(null)
+        })
     } else {
-      setHostKey(null);
+      setHostKey(null)
     }
-  }, [isOpen, isOrganizer]);
+  }, [isOpen, isOrganizer])
 
-  if (!meeting) return null;
+  if (!meeting) return null
 
   // Determine if the meeting is in the past
-  const now = new Date();
-  const meetingDate = new Date(meeting.date);
+  const now = new Date()
+  const meetingDate = new Date(meeting.date)
   const meetingEndTime = new Date(
     meetingDate.getTime() + meeting.duration * 60 * 1000,
-  );
-  const isPastMeeting = now > meetingEndTime;
+  )
+  const isPastMeeting = now > meetingEndTime
 
   const handleJoinMeeting = () => {
     if (meeting.zoomPassword) {
       // Show toast with password information
       toast({
-        title: "Meeting Password",
+        title: 'Meeting Password',
         description: `Password: ${meeting.zoomPassword}`,
         duration: 10000, // Show for 10 seconds to give user time to read and copy
-      });
+      })
     }
-  };
+  }
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text).then(
       () => {
         toast({
-          title: "Copied!",
+          title: 'Copied!',
           description: `${label} copied to clipboard`,
-        });
+        })
       },
       () => {
         toast({
-          variant: "destructive",
-          title: "Failed to copy",
-          description: "Could not copy to clipboard",
-        });
+          variant: 'destructive',
+          title: 'Failed to copy',
+          description: 'Could not copy to clipboard',
+        })
       },
-    );
-  };
+    )
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -127,7 +127,7 @@ export function MeetingDetailsDialog({
             <div>
               <h4 className="font-semibold">Date & Time</h4>
               <p className="text-muted-foreground">
-                {format(new Date(meeting.date), "PPPP p")}
+                {format(new Date(meeting.date), 'PPPP p')}
               </p>
             </div>
           </div>
@@ -187,7 +187,7 @@ export function MeetingDetailsDialog({
                   <p className="text-muted-foreground mt-1 text-sm">
                     Password:
                     <span className="ml-1 font-mono">
-                      {showPassword ? meeting.zoomPassword : "••••••••"}
+                      {showPassword ? meeting.zoomPassword : '••••••••'}
                     </span>
                     <Button
                       variant="ghost"
@@ -241,14 +241,14 @@ export function MeetingDetailsDialog({
                       variant="ghost"
                       size="sm"
                       className="h-6 px-2"
-                      onClick={() => copyToClipboard(hostKey, "Host Key")}
+                      onClick={() => copyToClipboard(hostKey, 'Host Key')}
                     >
                       <Copy className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </h4>
                 <p className="text-muted-foreground font-mono text-sm">
-                  {showHostKey ? hostKey : "••••••••"}
+                  {showHostKey ? hostKey : '••••••••'}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs italic">
                   Gunakan Host Key untuk claim Host
@@ -286,5 +286,5 @@ export function MeetingDetailsDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

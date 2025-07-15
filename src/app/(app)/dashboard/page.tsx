@@ -1,29 +1,29 @@
-import { getMeetings, getUsers } from "@/lib/data";
+import { getMeetings, getUsers } from '@/lib/data'
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { BarChart as BarChartIcon, Calendar, Clock } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { format, addDays, isSameDay, eachDayOfInterval } from "date-fns";
-import { MeetingsOverviewChart } from "@/components/meetings-overview-chart";
-import { auth } from "@/lib/auth";
+} from '@/components/ui/card'
+import { BarChart as BarChartIcon, Calendar, Clock } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { format, addDays, isSameDay, eachDayOfInterval } from 'date-fns'
+import { MeetingsOverviewChart } from '@/components/meetings-overview-chart'
+import { auth } from '@/lib/auth'
 
-function getInitials(name: string = ""): string {
-  if (!name) return "";
+function getInitials(name: string = ''): string {
+  if (!name) return ''
   return name
-    .split(" ")
+    .split(' ')
     .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+    .join('')
+    .toUpperCase()
 }
 
 export default async function DashboardPage() {
-  const session = await auth();
-  const user = session?.user;
+  const session = await auth()
+  const user = session?.user
 
   if (!user) {
     // This case should be handled by middleware, but it's good practice
@@ -32,50 +32,50 @@ export default async function DashboardPage() {
       <div className="flex h-full items-center justify-center">
         <p>You need to be signed in to view this page.</p>
       </div>
-    );
+    )
   }
 
   const [userMeetings, allUsers] = await Promise.all([
     getMeetings(user),
     getUsers(),
-  ]);
+  ])
 
-  const now = new Date();
+  const now = new Date()
 
-  const userMap = new Map(allUsers.map((user) => [user.id, user]));
+  const userMap = new Map(allUsers.map((user) => [user.id, user]))
 
-  const upcomingMeetings = userMeetings.filter((m) => new Date(m.date) >= now);
+  const upcomingMeetings = userMeetings.filter((m) => new Date(m.date) >= now)
 
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 7);
+  const startOfWeek = new Date(now)
+  startOfWeek.setDate(now.getDate() - now.getDay())
+  startOfWeek.setHours(0, 0, 0, 0)
+  const endOfWeek = new Date(startOfWeek)
+  endOfWeek.setDate(startOfWeek.getDate() + 7)
 
   const meetingsThisWeek = userMeetings.filter((m) => {
-    const meetingDate = new Date(m.date);
-    return meetingDate >= startOfWeek && meetingDate < endOfWeek;
-  });
+    const meetingDate = new Date(m.date)
+    return meetingDate >= startOfWeek && meetingDate < endOfWeek
+  })
 
-  const totalMeetingsThisWeek = meetingsThisWeek.length;
+  const totalMeetingsThisWeek = meetingsThisWeek.length
 
   const totalDurationThisWeek = meetingsThisWeek.reduce(
     (acc, m) => acc + m.duration,
     0,
-  );
+  )
 
   // Data for overview chart (based on user's meetings)
-  const nextSevenDays = eachDayOfInterval({ start: now, end: addDays(now, 6) });
+  const nextSevenDays = eachDayOfInterval({ start: now, end: addDays(now, 6) })
   const chartData = nextSevenDays.map((day) => ({
-    date: format(day, "EEE"),
+    date: format(day, 'EEE'),
     meetings: userMeetings.filter((m) => isSameDay(new Date(m.date), day))
       .length,
-  }));
+  }))
 
   // Data for upcoming meetings list
   const next5UpcomingMeetings = upcomingMeetings
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, 5);
+    .slice(0, 5)
 
   return (
     <div className="space-y-8">
@@ -148,13 +148,13 @@ export default async function DashboardPage() {
             <div className="space-y-6">
               {next5UpcomingMeetings.length > 0 ? (
                 next5UpcomingMeetings.map((meeting) => {
-                  const organizer = userMap.get(meeting.organizerId);
+                  const organizer = userMap.get(meeting.organizerId)
                   return (
                     <div key={meeting.id} className="flex items-center">
                       <Avatar className="h-10 w-10">
                         <AvatarImage
-                          src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(organizer?.name ?? "")}`}
-                          alt={organizer?.name ?? ""}
+                          src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(organizer?.name ?? '')}`}
+                          alt={organizer?.name ?? ''}
                           data-ai-hint="user avatar"
                         />
                         <AvatarFallback>
@@ -166,14 +166,14 @@ export default async function DashboardPage() {
                           {meeting.title}
                         </p>
                         <p className="text-muted-foreground text-sm">
-                          {format(new Date(meeting.date), "E, MMM d, p")}
+                          {format(new Date(meeting.date), 'E, MMM d, p')}
                         </p>
                       </div>
                       <div className="text-muted-foreground ml-auto text-sm">
                         {meeting.duration}m
                       </div>
                     </div>
-                  );
+                  )
                 })
               ) : (
                 <div className="flex h-[200px] items-center justify-center">
@@ -187,5 +187,5 @@ export default async function DashboardPage() {
         </Card>
       </div>
     </div>
-  );
+  )
 }

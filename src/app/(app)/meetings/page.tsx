@@ -1,13 +1,13 @@
-import { MeetingsViewTabs } from "@/components/meetings-view-tabs";
-import { auth } from "@/lib/auth";
+import { MeetingsViewTabs } from '@/components/meetings-view-tabs'
+import { auth } from '@/lib/auth'
 
 export default async function AllMeetingsPage() {
-  const session = await auth();
-  const user = session?.user;
+  const session = await auth()
+  const user = session?.user
 
   if (!user) {
     // This should be handled by middleware, but it's a good safeguard.
-    return <div>Not authenticated.</div>;
+    return <div>Not authenticated.</div>
   }
 
   return (
@@ -20,5 +20,5 @@ export default async function AllMeetingsPage() {
       </div>
       <MeetingsViewTabs />
     </div>
-  );
+  )
 }

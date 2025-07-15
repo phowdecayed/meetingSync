@@ -1,9 +1,9 @@
-"use client";
+'use client'
 
-import { useEffect, useState, useMemo } from "react";
-import { useSession } from "next-auth/react";
-import { type User } from "@/lib/data";
-import { Card, CardContent } from "@/components/ui/card";
+import { useEffect, useState, useMemo } from 'react'
+import { useSession } from 'next-auth/react'
+import { type User } from '@/lib/data'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -11,10 +11,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +22,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,7 +32,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog'
 import {
   Dialog,
   DialogContent,
@@ -40,14 +40,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select'
 import {
   Form,
   FormControl,
@@ -55,222 +55,214 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Loader2,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  PlusCircle,
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Label } from "@/components/ui/label";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Loader2, MoreHorizontal, Edit, Trash2, PlusCircle } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { Label } from '@/components/ui/label'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 
-function getInitials(name: string = "") {
+function getInitials(name: string = '') {
   return name
-    .split(" ")
+    .split(' ')
     .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+    .join('')
+    .toUpperCase()
 }
 
 const addUserSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email." }),
-  role: z.enum(["admin", "member"]),
+  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email.' }),
+  role: z.enum(['admin', 'member']),
   password: z
     .string()
-    .min(8, { message: "Password must be at least 8 characters." }),
-});
+    .min(8, { message: 'Password must be at least 8 characters.' }),
+})
 
 export default function UsersPage() {
-  const { data: session, status } = useSession();
-  const currentUser = session?.user;
-  const { toast } = useToast();
+  const { data: session, status } = useSession()
+  const currentUser = session?.user
+  const { toast } = useToast()
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [users, setUsers] = useState<User[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // State for dialogs
-  const [userToEdit, setUserToEdit] = useState<User | null>(null);
-  const [newRole, setNewRole] = useState<"admin" | "member">("member");
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
-  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<User | null>(null)
+  const [newRole, setNewRole] = useState<'admin' | 'member'>('member')
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false)
+  const [isCreatingUser, setIsCreatingUser] = useState(false)
 
   const addUserForm = useForm<z.infer<typeof addUserSchema>>({
     resolver: zodResolver(addUserSchema),
     defaultValues: {
-      name: "",
-      email: "",
-      role: "member",
-      password: "",
+      name: '',
+      email: '',
+      role: 'member',
+      password: '',
     },
-  });
+  })
 
   useEffect(() => {
     async function loadUsers() {
-      if (currentUser?.role !== "admin") return;
-      setIsLoading(true);
+      if (currentUser?.role !== 'admin') return
+      setIsLoading(true)
       try {
-        const response = await fetch("/api/users");
+        const response = await fetch('/api/users')
         if (!response.ok) {
-          throw new Error("Failed to fetch users");
+          throw new Error('Failed to fetch users')
         }
-        const fetchedUsers = await response.json();
+        const fetchedUsers = await response.json()
         const sortedUsers = fetchedUsers.sort((a: User, b: User) =>
           a.name.localeCompare(b.name),
-        );
-        setUsers(sortedUsers);
+        )
+        setUsers(sortedUsers)
       } catch {
         toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load users. Please try again later.",
-        });
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load users. Please try again later.',
+        })
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
     }
-    loadUsers();
-  }, [currentUser, toast]);
+    loadUsers()
+  }, [currentUser, toast])
 
   const filteredUsers = useMemo(() => {
-    if (!searchQuery) return users;
+    if (!searchQuery) return users
     return users.filter(
       (user) =>
         user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
-  }, [users, searchQuery]);
+    )
+  }, [users, searchQuery])
 
   const handleOpenEditDialog = (user: User) => {
-    setUserToEdit(user);
-    setNewRole(user.role);
-  };
+    setUserToEdit(user)
+    setNewRole(user.role)
+  }
 
   const handleUpdateRole = async () => {
-    if (!userToEdit) return;
+    if (!userToEdit) return
 
     try {
-      const response = await fetch("/api/users", {
-        method: "PUT",
+      const response = await fetch('/api/users', {
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           id: userToEdit.id,
           role: newRole,
         }),
-      });
+      })
 
       if (!response.ok) {
-        throw new Error("Failed to update user role");
+        throw new Error('Failed to update user role')
       }
 
       setUsers(
         users
           .map((u) => (u.id === userToEdit.id ? { ...u, role: newRole } : u))
           .sort((a, b) => a.name.localeCompare(b.name)),
-      );
+      )
 
       toast({
-        title: "Success",
+        title: 'Success',
         description: `User ${userToEdit.name}'s role has been updated to ${newRole}.`,
-      });
+      })
     } catch {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update user role.",
-      });
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update user role.',
+      })
     } finally {
-      setUserToEdit(null);
+      setUserToEdit(null)
     }
-  };
+  }
 
   const handleOpenDeleteDialog = (user: User) => {
-    setUserToDelete(user);
-  };
+    setUserToDelete(user)
+  }
 
   const handleDeleteUser = async () => {
-    if (!userToDelete) return;
+    if (!userToDelete) return
     try {
       const response = await fetch(`/api/users?id=${userToDelete.id}`, {
-        method: "DELETE",
-      });
+        method: 'DELETE',
+      })
 
       if (!response.ok) {
-        throw new Error("Failed to delete user");
+        throw new Error('Failed to delete user')
       }
 
-      setUsers(users.filter((u) => u.id !== userToDelete.id));
+      setUsers(users.filter((u) => u.id !== userToDelete.id))
       toast({
-        title: "User Deleted",
+        title: 'User Deleted',
         description: `User ${userToDelete.name} has been removed.`,
-      });
+      })
     } catch {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete user.",
-      });
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete user.',
+      })
     } finally {
-      setUserToDelete(null);
+      setUserToDelete(null)
     }
-  };
+  }
 
   const handleAddUser = async (values: z.infer<typeof addUserSchema>) => {
-    setIsCreatingUser(true);
+    setIsCreatingUser(true)
     try {
-      const response = await fetch("/api/users", {
-        method: "POST",
+      const response = await fetch('/api/users', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(values),
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create user");
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create user')
       }
 
-      const newUser = await response.json();
-      setUsers(
-        [...users, newUser].sort((a, b) => a.name.localeCompare(b.name)),
-      );
+      const newUser = await response.json()
+      setUsers([...users, newUser].sort((a, b) => a.name.localeCompare(b.name)))
       toast({
-        title: "User Created",
+        title: 'User Created',
         description: `User ${newUser.name} has been added to the system.`,
-      });
-      setIsAddUserOpen(false);
-      addUserForm.reset();
+      })
+      setIsAddUserOpen(false)
+      addUserForm.reset()
     } catch (error) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: (error as Error).message || "Failed to create user.",
-      });
+        variant: 'destructive',
+        title: 'Error',
+        description: (error as Error).message || 'Failed to create user.',
+      })
     } finally {
-      setIsCreatingUser(false);
+      setIsCreatingUser(false)
     }
-  };
+  }
 
-  if (status === "loading" || !currentUser) {
+  if (status === 'loading' || !currentUser) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="text-primary h-8 w-8 animate-spin" />
       </div>
-    );
+    )
   }
 
-  if (currentUser.role !== "admin") {
+  if (currentUser.role !== 'admin') {
     return (
       <div className="space-y-8">
         <div>
@@ -280,7 +272,7 @@ export default function UsersPage() {
           </p>
         </div>
       </div>
-    );
+    )
   }
 
   const UserTable = ({ data }: { data: User[] }) => {
@@ -288,10 +280,10 @@ export default function UsersPage() {
       return (
         <div className="text-muted-foreground p-8 text-center">
           {searchQuery
-            ? "No users match your search."
-            : "No users found in the system."}
+            ? 'No users match your search.'
+            : 'No users found in the system.'}
         </div>
-      );
+      )
     }
 
     return (
@@ -332,7 +324,7 @@ export default function UsersPage() {
               </TableCell>
               <TableCell className="hidden md:table-cell">
                 <Badge
-                  variant={user.role === "admin" ? "default" : "secondary"}
+                  variant={user.role === 'admin' ? 'default' : 'secondary'}
                 >
                   {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                 </Badge>
@@ -370,8 +362,8 @@ export default function UsersPage() {
           ))}
         </TableBody>
       </Table>
-    );
-  };
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -527,7 +519,7 @@ export default function UsersPage() {
               <Label htmlFor="role-select">Role</Label>
               <Select
                 value={newRole}
-                onValueChange={(value: "admin" | "member") => setNewRole(value)}
+                onValueChange={(value: 'admin' | 'member') => setNewRole(value)}
               >
                 <SelectTrigger id="role-select">
                   <SelectValue placeholder="Select a role" />
@@ -575,5 +567,5 @@ export default function UsersPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
+  )
 }

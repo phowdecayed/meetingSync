@@ -1,8 +1,8 @@
-"use client";
+'use client'
 
-import { useSession, signOut } from "next-auth/react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { useSession, signOut } from 'next-auth/react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,26 +10,26 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { LogOut, PlusCircle, Settings, User } from "lucide-react";
-import Link from "next/link";
+} from '@/components/ui/dropdown-menu'
+import { SidebarTrigger } from '@/components/ui/sidebar'
+import { LogOut, PlusCircle, Settings, User } from 'lucide-react'
+import Link from 'next/link'
 
 export function DashboardHeader() {
-  const { data: session } = useSession();
-  const user = session?.user;
+  const { data: session } = useSession()
+  const user = session?.user
 
   const handleLogout = () => {
-    signOut({ callbackUrl: "/login" });
-  };
+    signOut({ callbackUrl: '/login' })
+  }
 
-  const getInitials = (name: string = "") => {
+  const getInitials = (name: string = '') => {
     return name
-      .split(" ")
+      .split(' ')
       .map((n) => n[0])
-      .join("")
-      .toUpperCase();
-  };
+      .join('')
+      .toUpperCase()
+  }
 
   return (
     <header className="bg-background sticky top-0 z-10 flex h-16 items-center gap-4 border-b px-4 md:px-6">
@@ -52,10 +52,10 @@ export function DashboardHeader() {
                       ? `https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name)}`
                       : undefined
                   }
-                  alt={user?.name ?? ""}
+                  alt={user?.name ?? ''}
                   data-ai-hint="user avatar"
                 />
-                <AvatarFallback>{getInitials(user?.name ?? "")}</AvatarFallback>
+                <AvatarFallback>{getInitials(user?.name ?? '')}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
@@ -75,7 +75,7 @@ export function DashboardHeader() {
                 <span>Profile</span>
               </DropdownMenuItem>
             </Link>
-            {user?.role === "admin" && (
+            {user?.role === 'admin' && (
               <Link href="/settings" passHref>
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />
@@ -92,5 +92,5 @@ export function DashboardHeader() {
         </DropdownMenu>
       </div>
     </header>
-  );
+  )
 }

@@ -1,6 +1,6 @@
-"use client";
+'use client'
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from 'react'
 import {
   Card,
   CardContent,
@@ -8,193 +8,191 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Loader2, Plus, RefreshCw, Trash } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+} from './ui/card'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Loader2, Plus, RefreshCw, Trash } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 // Tipe data untuk akun Zoom
 type ZoomAccount = {
-  id: string;
-  clientId: string;
-  clientSecret: string;
-  accountId: string;
-  hostKey?: string;
-  createdAt: string;
-  updatedAt: string;
-};
+  id: string
+  clientId: string
+  clientSecret: string
+  accountId: string
+  hostKey?: string
+  createdAt: string
+  updatedAt: string
+}
 
 export function ZoomSettings() {
-  const [accounts, setAccounts] = useState<ZoomAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const { toast } = useToast();
+  const [accounts, setAccounts] = useState<ZoomAccount[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const { toast } = useToast()
 
   // State untuk menyimpan kredensial Zoom
-  const [clientId, setClientId] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
-  const [accountId, setAccountId] = useState("");
-  const [hostKey, setHostKey] = useState("");
-  const [verifying, setVerifying] = useState(false);
+  const [clientId, setClientId] = useState('')
+  const [clientSecret, setClientSecret] = useState('')
+  const [accountId, setAccountId] = useState('')
+  const [hostKey, setHostKey] = useState('')
+  const [verifying, setVerifying] = useState(false)
 
   const fetchZoomAccounts = useCallback(async () => {
     try {
-      setLoading(true);
-      const response = await fetch("/api/zoom-accounts");
+      setLoading(true)
+      const response = await fetch('/api/zoom-accounts')
 
       if (!response.ok) {
-        throw new Error("Failed to fetch Zoom accounts");
+        throw new Error('Failed to fetch Zoom accounts')
       }
 
-      const data = await response.json();
-      setAccounts(data);
+      const data = await response.json()
+      setAccounts(data)
     } catch {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to fetch Zoom accounts",
-      });
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to fetch Zoom accounts',
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [toast]);
+  }, [toast])
 
   useEffect(() => {
-    fetchZoomAccounts();
-  }, [fetchZoomAccounts]);
+    fetchZoomAccounts()
+  }, [fetchZoomAccounts])
 
   // Fungsi untuk menangani verifikasi kredensial
   async function handleVerify() {
     if (!clientId || !clientSecret || !accountId) {
       toast({
-        variant: "destructive",
-        title: "Kolom Hilang",
-        description: "Harap isi semua kolom yang diperlukan untuk verifikasi.",
-      });
-      return;
+        variant: 'destructive',
+        title: 'Kolom Hilang',
+        description: 'Harap isi semua kolom yang diperlukan untuk verifikasi.',
+      })
+      return
     }
 
-    setVerifying(true);
+    setVerifying(true)
     try {
-      const response = await fetch("/api/zoom/verify-credentials", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/zoom/verify-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientId, clientSecret, accountId }),
-      });
+      })
 
-      const result = await response.json();
+      const result = await response.json()
 
       if (response.ok && result.success) {
         toast({
-          title: "Sukses",
-          description: "Kredensial berhasil diverifikasi.",
-        });
+          title: 'Sukses',
+          description: 'Kredensial berhasil diverifikasi.',
+        })
       } else {
-        throw new Error(result.message || "Gagal memverifikasi kredensial.");
+        throw new Error(result.message || 'Gagal memverifikasi kredensial.')
       }
     } catch (error: unknown) {
       toast({
-        variant: "destructive",
-        title: "Error Verifikasi",
+        variant: 'destructive',
+        title: 'Error Verifikasi',
         description:
           error instanceof Error
             ? error.message
-            : "Failed to verify credentials",
-      });
+            : 'Failed to verify credentials',
+      })
     } finally {
-      setVerifying(false);
+      setVerifying(false)
     }
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!clientId || !clientSecret || !accountId) {
       toast({
-        variant: "destructive",
-        title: "Kolom Hilang",
-        description: "Harap isi semua kolom yang diperlukan.",
-      });
-      return;
+        variant: 'destructive',
+        title: 'Kolom Hilang',
+        description: 'Harap isi semua kolom yang diperlukan.',
+      })
+      return
     }
 
     try {
-      setSubmitting(true);
+      setSubmitting(true)
 
-      const response = await fetch("/api/zoom-accounts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/zoom-accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId,
           clientSecret,
           accountId,
           hostKey,
         }),
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || "Gagal menyimpan kredensial Zoom",
-        );
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Gagal menyimpan kredensial Zoom')
       }
 
       toast({
-        title: "Sukses",
-        description: "Kredensial Zoom berhasil disimpan.",
-      });
+        title: 'Sukses',
+        description: 'Kredensial Zoom berhasil disimpan.',
+      })
 
       // Reset form dan sembunyikan
-      setClientId("");
-      setClientSecret("");
-      setAccountId("");
-      setHostKey("");
-      setShowForm(false);
+      setClientId('')
+      setClientSecret('')
+      setAccountId('')
+      setHostKey('')
+      setShowForm(false)
 
       // Refresh daftar akun
-      fetchZoomAccounts();
+      fetchZoomAccounts()
     } catch (error) {
       toast({
-        variant: "destructive",
-        title: "Error",
+        variant: 'destructive',
+        title: 'Error',
         description:
           error instanceof Error
             ? error.message
-            : "Gagal menyimpan kredensial Zoom",
-      });
+            : 'Gagal menyimpan kredensial Zoom',
+      })
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
   }
 
   async function handleDelete(id: string) {
     try {
-      const response = await fetch("/api/zoom-accounts", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/zoom-accounts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
-      });
+      })
 
       if (!response.ok) {
-        throw new Error("Failed to delete Zoom account");
+        throw new Error('Failed to delete Zoom account')
       }
 
       toast({
-        title: "Success",
-        description: "Zoom account deleted successfully",
-      });
+        title: 'Success',
+        description: 'Zoom account deleted successfully',
+      })
 
       // Refresh accounts list
-      fetchZoomAccounts();
+      fetchZoomAccounts()
     } catch {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete Zoom account",
-      });
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete Zoom account',
+      })
     }
   }
 
@@ -230,10 +228,10 @@ export function ZoomSettings() {
                     >
                       <div className="truncate">{account.clientId}</div>
                       <div className="truncate">
-                        {account.accountId || "Not set"}
+                        {account.accountId || 'Not set'}
                       </div>
                       <div className="truncate">
-                        {account.hostKey || "Not set"}
+                        {account.hostKey || 'Not set'}
                       </div>
                       <div className="flex justify-end">
                         <Button
@@ -360,5 +358,5 @@ export function ZoomSettings() {
         </a>
       </CardFooter>
     </Card>
-  );
+  )
 }

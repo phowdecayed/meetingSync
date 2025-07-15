@@ -1,17 +1,17 @@
-"use client";
+'use client'
 
-import { Resolver, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
+import { Resolver, useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Calendar } from '@/components/ui/calendar'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/ui/popover'
 import {
   Form,
   FormControl,
@@ -20,16 +20,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { meetingSchema } from "@/lib/validators/meeting";
-import { Meeting, User } from "@/lib/data";
-import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
-import { useMeetingStore } from "@/store/use-meeting-store";
-import { useSession } from "next-auth/react";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+} from '@/components/ui/form'
+import { meetingSchema } from '@/lib/validators/meeting'
+import { Meeting, User } from '@/lib/data'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
+import { useMeetingStore } from '@/store/use-meeting-store'
+import { useSession } from 'next-auth/react'
+import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
+import { Calendar as CalendarIcon, Loader2 } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -37,133 +37,133 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { UserCombobox } from "./user-combobox";
-import { format } from "date-fns";
+} from './ui/card'
+import { UserCombobox } from './user-combobox'
+import { format } from 'date-fns'
 
 type MeetingFormProps = {
-  allUsers: User[];
-  existingMeeting?: Meeting;
-};
+  allUsers: User[]
+  existingMeeting?: Meeting
+}
 
 export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
-  const router = useRouter();
-  const { toast, dismiss } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const { addMeeting, updateMeeting } = useMeetingStore();
-  const { data: session } = useSession();
-  const user = session?.user;
+  const router = useRouter()
+  const { toast, dismiss } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+  const { addMeeting, updateMeeting } = useMeetingStore()
+  const { data: session } = useSession()
+  const user = session?.user
 
-  const isEditMode = !!existingMeeting;
+  const isEditMode = !!existingMeeting
 
   const defaultValues =
     isEditMode && existingMeeting
       ? {
           title: existingMeeting.title,
           date: new Date(existingMeeting.date),
-          time: format(new Date(existingMeeting.date), "HH:mm"),
+          time: format(new Date(existingMeeting.date), 'HH:mm'),
           duration: existingMeeting.duration,
           participants: Array.isArray(existingMeeting.participants)
             ? existingMeeting.participants
-            : typeof existingMeeting.participants === "string"
+            : typeof existingMeeting.participants === 'string'
               ? (existingMeeting.participants as string)
-                  .split(",")
+                  .split(',')
                   .map((p: string) => p.trim())
               : [],
-          description: existingMeeting.description || "",
-          password: existingMeeting.zoomPassword || "BPKADJabar",
+          description: existingMeeting.description || '',
+          password: existingMeeting.zoomPassword || 'BPKADJabar',
         }
       : {
-          title: "",
+          title: '',
           date: new Date(),
-          time: format(new Date(), "HH:mm"),
+          time: format(new Date(), 'HH:mm'),
           duration: 30,
           participants: [],
-          description: "",
-          password: "BPKADJabar",
-        };
+          description: '',
+          password: 'BPKADJabar',
+        }
 
   const form = useForm<z.infer<typeof meetingSchema>>({
     resolver: zodResolver(meetingSchema) as Resolver<
       z.infer<typeof meetingSchema>
     >,
     defaultValues,
-  });
+  })
 
-  const [allMeetings, setAllMeetings] = useState<Meeting[]>([]);
-  const [overlapError, setOverlapError] = useState<string | null>(null);
-  const overlapToastShown = useRef(false);
+  const [allMeetings, setAllMeetings] = useState<Meeting[]>([])
+  const [overlapError, setOverlapError] = useState<string | null>(null)
+  const overlapToastShown = useRef(false)
 
   // Fetch all meetings for overlap check (except when editing, exclude current meeting)
   useEffect(() => {
     async function fetchMeetings() {
       try {
-        const res = await fetch("/api/meetings");
-        const data = await res.json();
+        const res = await fetch('/api/meetings')
+        const data = await res.json()
         setAllMeetings(
           isEditMode && existingMeeting
             ? data.filter((m: Meeting) => m.id !== existingMeeting.id)
             : data,
-        );
+        )
       } catch {
         // ignore
       }
     }
-    fetchMeetings();
-  }, [isEditMode, existingMeeting]);
+    fetchMeetings()
+  }, [isEditMode, existingMeeting])
 
-  const watchedDate = form.watch("date");
-  const watchedTime = form.watch("time");
-  const watchedDuration = form.watch("duration");
+  const watchedDate = form.watch('date')
+  const watchedTime = form.watch('time')
+  const watchedDuration = form.watch('duration')
 
   // Check for overlap whenever date, time, or duration changes
   useEffect(() => {
     if (!watchedDate || !watchedTime || !watchedDuration) {
-      setOverlapError(null);
+      setOverlapError(null)
       if (overlapToastShown.current) {
-        overlapToastShown.current = false;
-        dismiss();
+        overlapToastShown.current = false
+        dismiss()
       }
-      return;
+      return
     }
-    const [hours, minutes] = watchedTime.split(":").map(Number);
-    const newStart = new Date(watchedDate);
-    newStart.setHours(hours, minutes, 0, 0);
-    const newEnd = new Date(newStart.getTime() + watchedDuration * 60 * 1000);
-    const startOfDay = new Date(newStart);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(newStart);
-    endOfDay.setHours(23, 59, 59, 999);
+    const [hours, minutes] = watchedTime.split(':').map(Number)
+    const newStart = new Date(watchedDate)
+    newStart.setHours(hours, minutes, 0, 0)
+    const newEnd = new Date(newStart.getTime() + watchedDuration * 60 * 1000)
+    const startOfDay = new Date(newStart)
+    startOfDay.setHours(0, 0, 0, 0)
+    const endOfDay = new Date(newStart)
+    endOfDay.setHours(23, 59, 59, 999)
     const meetingsOnDay = allMeetings.filter((m) => {
-      const d = new Date(m.date);
-      return d >= startOfDay && d <= endOfDay;
-    });
+      const d = new Date(m.date)
+      return d >= startOfDay && d <= endOfDay
+    })
     // Count overlaps
     const overlapCount = meetingsOnDay.reduce((count, m) => {
-      const existingStart = new Date(m.date);
+      const existingStart = new Date(m.date)
       const existingEnd = new Date(
         existingStart.getTime() + m.duration * 60 * 1000,
-      );
+      )
       return newStart < existingEnd && newEnd > existingStart
         ? count + 1
-        : count;
-    }, 0);
+        : count
+    }, 0)
     if (overlapCount >= 2) {
       setOverlapError(
-        "A maximum of 2 meetings can run simultaneously in the same timeslot.",
-      );
+        'A maximum of 2 meetings can run simultaneously in the same timeslot.',
+      )
       if (!overlapToastShown.current) {
         toast({
-          variant: "destructive",
-          title: "Double Booking Limit",
+          variant: 'destructive',
+          title: 'Double Booking Limit',
           description:
-            "A maximum of 2 meetings can run simultaneously in the same timeslot.",
+            'A maximum of 2 meetings can run simultaneously in the same timeslot.',
           duration: 5000,
-        });
-        overlapToastShown.current = true;
+        })
+        overlapToastShown.current = true
       }
     } else {
-      setOverlapError(null);
+      setOverlapError(null)
       // We don't want to automatically dismiss the toast.
       // The user should be able to see the error and act on it.
       // if (overlapToastShown.current) {
@@ -171,27 +171,27 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       //   overlapToastShown.current = false;
       // }
     }
-  }, [watchedDate, watchedTime, watchedDuration, allMeetings, dismiss, toast]);
+  }, [watchedDate, watchedTime, watchedDuration, allMeetings, dismiss, toast])
 
   async function onSubmit(values: z.infer<typeof meetingSchema>) {
-    setIsLoading(true);
+    setIsLoading(true)
 
     if (!user) {
       toast({
-        variant: "destructive",
-        title: "Authentication Error",
-        description: "You must be logged in.",
-      });
-      setIsLoading(false);
-      return;
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in.',
+      })
+      setIsLoading(false)
+      return
     }
 
-    const localDate = new Date(values.date);
+    const localDate = new Date(values.date)
 
     // Gunakan waktu lokal Asia/Jakarta tanpa konversi UTC
     const combinedDateTime = new Date(
-      `${localDate.getFullYear()}-${(localDate.getMonth() + 1).toString().padStart(2, "0")}-${localDate.getDate().toString().padStart(2, "0")}T${values.time}:00`,
-    );
+      `${localDate.getFullYear()}-${(localDate.getMonth() + 1).toString().padStart(2, '0')}-${localDate.getDate().toString().padStart(2, '0')}T${values.time}:00`,
+    )
 
     const meetingData = {
       title: values.title,
@@ -201,32 +201,32 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       description: values.description,
       password: values.password,
       organizerId: user.id,
-    };
+    }
 
     try {
       if (isEditMode && existingMeeting) {
-        await updateMeeting(existingMeeting.id, meetingData);
+        await updateMeeting(existingMeeting.id, meetingData)
         toast({
-          title: "Success",
-          description: "Meeting updated successfully.",
-        });
+          title: 'Success',
+          description: 'Meeting updated successfully.',
+        })
       } else {
-        await addMeeting(meetingData);
+        await addMeeting(meetingData)
         toast({
-          title: "Success",
-          description: "Meeting created successfully.",
-        });
+          title: 'Success',
+          description: 'Meeting created successfully.',
+        })
       }
-      router.push("/schedule");
-      router.refresh();
+      router.push('/schedule')
+      router.refresh()
     } catch {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Something went wrong.",
-      });
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Something went wrong.',
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
@@ -236,12 +236,12 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
         <Card className="mx-auto max-w-3xl">
           <CardHeader>
             <CardTitle>
-              {isEditMode ? "Edit Meeting" : "Create New Meeting"}
+              {isEditMode ? 'Edit Meeting' : 'Create New Meeting'}
             </CardTitle>
             <CardDescription>
               {isEditMode
-                ? "Update the details for your meeting."
-                : "Fill in the details to schedule your next meeting."}
+                ? 'Update the details for your meeting.'
+                : 'Fill in the details to schedule your next meeting.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
@@ -269,14 +269,14 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
-                            variant={"outline"}
+                            variant={'outline'}
                             className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground",
+                              'pl-3 text-left font-normal',
+                              !field.value && 'text-muted-foreground',
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "PPP")
+                              format(field.value, 'PPP')
                             ) : (
                               <span>Pick a date</span>
                             )}
@@ -341,7 +341,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                       <Input
                         placeholder="Enter password for Zoom meeting"
                         {...field}
-                        value={field.value || ""}
+                        value={field.value || ''}
                       />
                     </FormControl>
                     <FormDescription>
@@ -399,11 +399,11 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
             </Button>
             <Button type="submit" disabled={isLoading || !!overlapError}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditMode ? "Save Changes" : "Create Meeting"}
+              {isEditMode ? 'Save Changes' : 'Create Meeting'}
             </Button>
           </CardFooter>
         </Card>
       </form>
     </Form>
-  );
+  )
 }

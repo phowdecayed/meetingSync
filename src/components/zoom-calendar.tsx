@@ -1,15 +1,15 @@
-"use client";
+'use client'
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { Button } from "./ui/button";
-import { useToast } from "@/hooks/use-toast";
+} from './ui/card'
+import { Button } from './ui/button'
+import { useToast } from '@/hooks/use-toast'
 import {
   Loader2,
   RefreshCw,
@@ -17,11 +17,11 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
-import { format, addMinutes } from "date-fns";
-import { ZoomMeetingDetails } from "./zoom-meeting-details";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
-import { useSession } from "next-auth/react";
+} from 'lucide-react'
+import { format, addMinutes } from 'date-fns'
+import { ZoomMeetingDetails } from './zoom-meeting-details'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
+import { useSession } from 'next-auth/react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,163 +31,163 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import { Badge } from "./ui/badge";
-import { Input } from "./ui/input";
+} from '@/components/ui/alert-dialog'
+import FullCalendar from '@fullcalendar/react'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import timeGridPlugin from '@fullcalendar/timegrid'
+import interactionPlugin from '@fullcalendar/interaction'
+import { Badge } from './ui/badge'
+import { Input } from './ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { EventClickArg } from "@fullcalendar/core";
+} from './ui/select'
+import { EventClickArg } from '@fullcalendar/core'
 
 function getMeetingStatus(
   startTime: string,
   duration: number,
-): "past" | "ongoing" | "upcoming" {
-  const now = new Date();
-  const meetingStart = new Date(startTime);
-  const meetingEnd = addMinutes(meetingStart, duration);
+): 'past' | 'ongoing' | 'upcoming' {
+  const now = new Date()
+  const meetingStart = new Date(startTime)
+  const meetingEnd = addMinutes(meetingStart, duration)
 
-  if (now < meetingStart) return "upcoming";
-  if (now >= meetingStart && now <= meetingEnd) return "ongoing";
-  return "past";
+  if (now < meetingStart) return 'upcoming'
+  if (now >= meetingStart && now <= meetingEnd) return 'ongoing'
+  return 'past'
 }
 
 type ZoomMeeting = {
-  id: number;
-  topic: string;
-  start_time: string;
-  duration: number;
-  join_url: string;
-  password?: string;
-  description?: string;
-  isOwner: boolean;
-};
+  id: number
+  topic: string
+  start_time: string
+  duration: number
+  join_url: string
+  password?: string
+  description?: string
+  isOwner: boolean
+}
 
 export function ZoomCalendar() {
-  const { data: session } = useSession();
-  const [meetings, setMeetings] = useState<ZoomMeeting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const { data: session } = useSession()
+  const [meetings, setMeetings] = useState<ZoomMeeting[]>([])
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
-  const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
+  const [activeTab, setActiveTab] = useState<'list' | 'calendar'>('list')
   const [selectedMeeting, setSelectedMeeting] = useState<ZoomMeeting | null>(
     null,
-  );
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  )
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false)
   const [meetingToDelete, setMeetingToDelete] = useState<ZoomMeeting | null>(
     null,
-  );
-  const [isDeleting, setIsDeleting] = useState(false);
+  )
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // State for List View
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("upcoming");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('upcoming')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const fetchZoomMeetings = useCallback(async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const response = await fetch("/api/zoom-meetings");
-      const data = await response.json();
+      const response = await fetch('/api/zoom-meetings')
+      const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch Zoom meetings");
+        throw new Error(data.error || 'Failed to fetch Zoom meetings')
       }
-      setMeetings(data.meetings);
+      setMeetings(data.meetings)
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : "An unknown error occurred";
+        error instanceof Error ? error.message : 'An unknown error occurred'
       toast({
-        variant: "destructive",
-        title: "Error",
+        variant: 'destructive',
+        title: 'Error',
         description: errorMessage,
-      });
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [toast]);
+  }, [toast])
 
   useEffect(() => {
-    fetchZoomMeetings();
-  }, [fetchZoomMeetings]);
+    fetchZoomMeetings()
+  }, [fetchZoomMeetings])
 
   // Reset page to 1 when filters change
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, itemsPerPage]);
+    setCurrentPage(1)
+  }, [searchTerm, statusFilter, itemsPerPage])
 
   const sortedMeetings = useMemo(() => {
     return [...meetings].sort(
       (a, b) =>
         new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
-    );
-  }, [meetings]);
+    )
+  }, [meetings])
 
   const filteredMeetings = useMemo(() => {
     return sortedMeetings.filter((meeting) => {
-      const status = getMeetingStatus(meeting.start_time, meeting.duration);
+      const status = getMeetingStatus(meeting.start_time, meeting.duration)
       const searchMatch = meeting.topic
         .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-      const statusMatch = statusFilter === "all" || status === statusFilter;
-      return searchMatch && statusMatch;
-    });
-  }, [sortedMeetings, searchTerm, statusFilter]);
+        .includes(searchTerm.toLowerCase())
+      const statusMatch = statusFilter === 'all' || status === statusFilter
+      return searchMatch && statusMatch
+    })
+  }, [sortedMeetings, searchTerm, statusFilter])
 
   const paginatedMeetings = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredMeetings.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredMeetings, currentPage, itemsPerPage]);
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filteredMeetings.slice(startIndex, startIndex + itemsPerPage)
+  }, [filteredMeetings, currentPage, itemsPerPage])
 
-  const totalPages = Math.ceil(filteredMeetings.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredMeetings.length / itemsPerPage)
 
   function openMeetingDetails(meeting: ZoomMeeting) {
-    setSelectedMeeting(meeting);
-    setIsDetailsModalOpen(true);
+    setSelectedMeeting(meeting)
+    setIsDetailsModalOpen(true)
   }
 
   function confirmDeleteMeeting(meeting: ZoomMeeting) {
-    setMeetingToDelete(meeting);
-    setIsDeleteAlertOpen(true);
+    setMeetingToDelete(meeting)
+    setIsDeleteAlertOpen(true)
   }
 
   async function handleDeleteMeeting() {
-    if (!meetingToDelete) return;
-    setIsDeleting(true);
+    if (!meetingToDelete) return
+    setIsDeleting(true)
     try {
       const response = await fetch(`/api/zoom-meetings/${meetingToDelete.id}`, {
-        method: "DELETE",
-      });
+        method: 'DELETE',
+      })
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete meeting");
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete meeting')
       }
       toast({
-        title: "Success",
+        title: 'Success',
         description: `Meeting "${meetingToDelete.topic}" has been deleted.`,
-      });
-      setMeetings((prev) => prev.filter((m) => m.id !== meetingToDelete.id));
+      })
+      setMeetings((prev) => prev.filter((m) => m.id !== meetingToDelete.id))
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : "An unknown error occurred";
+        error instanceof Error ? error.message : 'An unknown error occurred'
       toast({
-        variant: "destructive",
-        title: "Error",
+        variant: 'destructive',
+        title: 'Error',
         description: errorMessage,
-      });
+      })
     } finally {
-      setIsDeleting(false);
-      setIsDeleteAlertOpen(false);
-      setMeetingToDelete(null);
+      setIsDeleting(false)
+      setIsDeleteAlertOpen(false)
+      setMeetingToDelete(null)
     }
   }
 
@@ -201,11 +201,11 @@ export function ZoomCalendar() {
         extendedProps: { ...meeting },
       })),
     [meetings],
-  );
+  )
 
   const handleEventClick = (clickInfo: EventClickArg) => {
-    openMeetingDetails(clickInfo.event.extendedProps as ZoomMeeting);
-  };
+    openMeetingDetails(clickInfo.event.extendedProps as ZoomMeeting)
+  }
 
   return (
     <Card className="w-full">
@@ -221,7 +221,7 @@ export function ZoomCalendar() {
           disabled={loading}
         >
           <RefreshCw
-            className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
+            className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
           />
           Refresh
         </Button>
@@ -229,7 +229,7 @@ export function ZoomCalendar() {
       <CardContent>
         <Tabs
           value={activeTab}
-          onValueChange={(v) => setActiveTab(v as "list" | "calendar")}
+          onValueChange={(v) => setActiveTab(v as 'list' | 'calendar')}
           className="w-full"
         >
           <TabsList className="mb-4">
@@ -289,10 +289,10 @@ export function ZoomCalendar() {
                   const status = getMeetingStatus(
                     meeting.start_time,
                     meeting.duration,
-                  );
+                  )
                   const canDelete =
-                    (meeting.isOwner || session?.user?.role === "admin") &&
-                    status === "upcoming";
+                    (meeting.isOwner || session?.user?.role === 'admin') &&
+                    status === 'upcoming'
                   return (
                     <div
                       key={meeting.id}
@@ -303,19 +303,19 @@ export function ZoomCalendar() {
                         <p className="text-muted-foreground text-sm">
                           {format(
                             new Date(meeting.start_time),
-                            "dd MMM yyyy, HH:mm",
-                          )}{" "}
+                            'dd MMM yyyy, HH:mm',
+                          )}{' '}
                           - {meeting.duration} min
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge
                           variant={
-                            status === "ongoing"
-                              ? "default"
-                              : status === "upcoming"
-                                ? "secondary"
-                                : "outline"
+                            status === 'ongoing'
+                              ? 'default'
+                              : status === 'upcoming'
+                                ? 'secondary'
+                                : 'outline'
                           }
                         >
                           {status}
@@ -337,7 +337,7 @@ export function ZoomCalendar() {
                         </Button>
                       </div>
                     </div>
-                  );
+                  )
                 })}
               </div>
             )}
@@ -373,9 +373,9 @@ export function ZoomCalendar() {
                 initialView="dayGridMonth"
                 themeSystem="standard"
                 headerToolbar={{
-                  left: "prev,next today",
-                  center: "title",
-                  right: "dayGridMonth,timeGridWeek,timeGridDay",
+                  left: 'prev,next today',
+                  center: 'title',
+                  right: 'dayGridMonth,timeGridWeek,timeGridDay',
                 }}
                 events={calendarEvents}
                 eventClick={handleEventClick}
@@ -420,5 +420,5 @@ export function ZoomCalendar() {
         </AlertDialog>
       </CardContent>
     </Card>
-  );
+  )
 }

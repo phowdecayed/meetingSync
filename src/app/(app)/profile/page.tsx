@@ -1,7 +1,7 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import {
   Card,
   CardContent,
@@ -9,17 +9,17 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-} from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Loader2, UserCheck, Users, Calendar, Edit } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+} from '@/components/ui/card'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Loader2, UserCheck, Users, Calendar, Edit } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import {
   Form,
   FormControl,
@@ -27,183 +27,183 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
-import type { Meeting } from "@/lib/data";
+} from '@/components/ui/form'
+import { useToast } from '@/hooks/use-toast'
+import type { Meeting } from '@/lib/data'
 
 const profileSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-});
+  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+})
 
 const passwordSchema = z
   .object({
     currentPassword: z
       .string()
-      .min(1, { message: "Current password is required." }),
+      .min(1, { message: 'Current password is required.' }),
     newPassword: z
       .string()
-      .min(8, { message: "New password must be at least 8 characters." }),
+      .min(8, { message: 'New password must be at least 8 characters.' }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "New passwords don't match.",
-    path: ["confirmPassword"],
-  });
+    path: ['confirmPassword'],
+  })
 
-function getInitials(name: string = ""): string {
+function getInitials(name: string = ''): string {
   return name
-    .split(" ")
+    .split(' ')
     .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+    .join('')
+    .toUpperCase()
 }
 
 export default function ProfilePage() {
-  const { data: session, status, update: updateSession } = useSession();
-  const user = session?.user;
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [isMeetingsLoading, setIsMeetingsLoading] = useState(true);
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("profile");
+  const { data: session, status, update: updateSession } = useSession()
+  const user = session?.user
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [meetings, setMeetings] = useState<Meeting[]>([])
+  const [isMeetingsLoading, setIsMeetingsLoading] = useState(true)
+  const { toast } = useToast()
+  const [activeTab, setActiveTab] = useState('profile')
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     values: {
-      name: user?.name || "",
+      name: user?.name || '',
     },
-  });
+  })
 
   const passwordForm = useForm<z.infer<typeof passwordSchema>>({
     resolver: zodResolver(passwordSchema),
     defaultValues: {
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
     },
-  });
+  })
 
   useEffect(() => {
     if (user) {
-      form.reset({ name: user.name || "" });
+      form.reset({ name: user.name || '' })
     }
-  }, [user, form, isEditing]);
+  }, [user, form, isEditing])
 
   useEffect(() => {
     async function loadMeetings() {
-      if (!user) return;
-      setIsMeetingsLoading(true);
+      if (!user) return
+      setIsMeetingsLoading(true)
       try {
-        const response = await fetch("/api/meetings");
+        const response = await fetch('/api/meetings')
         if (!response.ok) {
-          throw new Error("Failed to load meetings");
+          throw new Error('Failed to load meetings')
         }
-        const allMeetings = await response.json();
-        setMeetings(allMeetings);
+        const allMeetings = await response.json()
+        setMeetings(allMeetings)
       } catch {
         toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load meetings. Please try again later.",
-        });
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load meetings. Please try again later.',
+        })
       } finally {
-        setIsMeetingsLoading(false);
+        setIsMeetingsLoading(false)
       }
     }
-    loadMeetings();
-  }, [user, toast]);
+    loadMeetings()
+  }, [user, toast])
 
   async function onSubmit(values: z.infer<typeof profileSchema>) {
-    if (!user) return;
-    setIsSaving(true);
+    if (!user) return
+    setIsSaving(true)
     try {
-      const response = await fetch("/api/profile", {
-        method: "PUT",
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ name: values.name }),
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update profile");
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update profile')
       }
 
       // Trigger a session update to reflect the new name
-      await updateSession({ user: { ...session?.user, name: values.name } });
+      await updateSession({ user: { ...session?.user, name: values.name } })
 
       toast({
-        title: "Profile Updated",
-        description: "Your name has been successfully updated.",
-      });
-      setIsEditing(false);
+        title: 'Profile Updated',
+        description: 'Your name has been successfully updated.',
+      })
+      setIsEditing(false)
     } catch (error) {
       toast({
-        variant: "destructive",
-        title: "Update Failed",
-        description: (error as Error).message || "Something went wrong.",
-      });
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: (error as Error).message || 'Something went wrong.',
+      })
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
   }
 
   async function onPasswordSubmit(values: z.infer<typeof passwordSchema>) {
-    setIsChangingPassword(true);
+    setIsChangingPassword(true)
     try {
-      const response = await fetch("/api/profile/change-password", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/profile/change-password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to change password");
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to change password')
       }
 
       toast({
-        title: "Password Changed",
-        description: "Your password has been successfully updated.",
-      });
-      passwordForm.reset();
+        title: 'Password Changed',
+        description: 'Your password has been successfully updated.',
+      })
+      passwordForm.reset()
     } catch (error) {
       toast({
-        variant: "destructive",
-        title: "Change Password Failed",
-        description: (error as Error).message || "Something went wrong.",
-      });
+        variant: 'destructive',
+        title: 'Change Password Failed',
+        description: (error as Error).message || 'Something went wrong.',
+      })
     } finally {
-      setIsChangingPassword(false);
+      setIsChangingPassword(false)
     }
   }
 
-  if (status === "loading" || !user) {
+  if (status === 'loading' || !user) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="text-primary h-8 w-8 animate-spin" />
       </div>
-    );
+    )
   }
 
   const meetingsOrganized = meetings.filter(
     (m) => m.organizerId === user.id,
-  ).length;
+  ).length
   const meetingsAttended = meetings.filter((m) => {
-    const userEmail = user.email || "";
-    return m.participants.includes(userEmail) && m.organizerId !== user.id;
-  }).length;
-  const now = new Date();
+    const userEmail = user.email || ''
+    return m.participants.includes(userEmail) && m.organizerId !== user.id
+  }).length
+  const now = new Date()
   const upcomingMeetingsCount = meetings.filter((m) => {
-    const userEmail = user.email || "";
+    const userEmail = user.email || ''
     return (
       (m.organizerId === user.id || m.participants.includes(userEmail)) &&
       new Date(m.date) >= now
-    );
-  }).length;
+    )
+  }).length
 
   return (
     <div className="space-y-8">
@@ -249,21 +249,21 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-6">
                     <Avatar className="h-20 w-20">
                       <AvatarImage
-                        src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name || "")}`}
-                        alt={user.name || ""}
+                        src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name || '')}`}
+                        alt={user.name || ''}
                         data-ai-hint="user avatar"
                       />
                       <AvatarFallback className="text-2xl">
-                        {getInitials(user.name || "")}
+                        {getInitials(user.name || '')}
                       </AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
                       <h2 className="text-2xl font-semibold">
-                        {form.watch("name")}
+                        {form.watch('name')}
                       </h2>
                       <Badge
                         variant={
-                          user.role === "admin" ? "default" : "secondary"
+                          user.role === 'admin' ? 'default' : 'secondary'
                         }
                       >
                         {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
@@ -286,7 +286,7 @@ export default function ProfilePage() {
                   />
                   <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" value={user.email || ""} readOnly />
+                    <Input id="email" value={user.email || ''} readOnly />
                   </div>
                 </CardContent>
                 {isEditing && (
@@ -295,8 +295,8 @@ export default function ProfilePage() {
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        setIsEditing(false);
-                        form.reset({ name: user.name ?? "" });
+                        setIsEditing(false)
+                        form.reset({ name: user.name ?? '' })
                       }}
                     >
                       Cancel
@@ -425,5 +425,5 @@ export default function ProfilePage() {
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }

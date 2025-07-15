@@ -1,7 +1,7 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import {
   SidebarHeader,
   SidebarMenu,
@@ -9,35 +9,35 @@ import {
   SidebarMenuButton,
   SidebarContent,
   SidebarFooter,
-} from "@/components/ui/sidebar";
-import { Home, Settings, Users, Video, Calendar, User } from "lucide-react";
-import { useSession } from "next-auth/react";
-import { ThemeToggle } from "./theme-toggle";
-import { Separator } from "@radix-ui/react-separator";
+} from '@/components/ui/sidebar'
+import { Home, Settings, Users, Video, Calendar, User } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { ThemeToggle } from './theme-toggle'
+import { Separator } from '@radix-ui/react-separator'
 
 const allMenuItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/meetings", label: "All Meetings", icon: Video, roles: ["admin"] },
+  { href: '/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/meetings', label: 'All Meetings', icon: Video, roles: ['admin'] },
   {
-    href: "/schedule",
-    label: "My Schedule",
+    href: '/schedule',
+    label: 'My Schedule',
     icon: Calendar,
-    roles: ["member"],
+    roles: ['member'],
   },
-  { href: "/profile", label: "My Profile", icon: User },
-  { href: "/users", label: "User Management", icon: Users, roles: ["admin"] },
-  { href: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
-];
+  { href: '/profile', label: 'My Profile', icon: User },
+  { href: '/users', label: 'User Management', icon: Users, roles: ['admin'] },
+  { href: '/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
+]
 
 export function SidebarNav() {
-  const pathname = usePathname();
-  const { data: session } = useSession();
-  const user = session?.user;
+  const pathname = usePathname()
+  const { data: session } = useSession()
+  const user = session?.user
 
   const menuItems = allMenuItems.filter((item) => {
-    if (!item.roles) return true;
-    return user?.role && item.roles.includes(user.role);
-  });
+    if (!item.roles) return true
+    return user?.role && item.roles.includes(user.role)
+  })
 
   return (
     <>
@@ -73,12 +73,12 @@ export function SidebarNav() {
               <Link href={item.href} passHref>
                 <SidebarMenuButton
                   isActive={
-                    item.href === "/profile"
+                    item.href === '/profile'
                       ? pathname === item.href
                       : (pathname?.startsWith(item.href) ?? false)
                   }
                   className="flex flex-row items-center text-center"
-                  tooltip={{ children: item.label, side: "right" }}
+                  tooltip={{ children: item.label, side: 'right' }}
                 >
                   <item.icon />
                   <span className="group-data-[collapsible=icon]:hidden">
@@ -102,5 +102,5 @@ export function SidebarNav() {
         </div>
       </SidebarFooter>
     </>
-  );
+  )
 }

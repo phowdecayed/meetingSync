@@ -1,10 +1,10 @@
-import { MeetingForm } from "@/components/meeting-form";
-import { getMeetingById, getUsers } from "@/lib/data";
-import { notFound } from "next/navigation";
+import { MeetingForm } from '@/components/meeting-form'
+import { getMeetingById, getUsers } from '@/lib/data'
+import { notFound } from 'next/navigation'
 
 type EditMeetingPageProps = {
-  params: { id: string };
-};
+  params: { id: string }
+}
 
 export default async function EditMeetingPage({
   params: { id },
@@ -12,11 +12,11 @@ export default async function EditMeetingPage({
   const [meeting, allUsers] = await Promise.all([
     getMeetingById(id),
     getUsers(),
-  ]);
+  ])
 
   if (!meeting) {
-    notFound();
+    notFound()
   }
 
-  return <MeetingForm existingMeeting={meeting} allUsers={allUsers} />;
+  return <MeetingForm existingMeeting={meeting} allUsers={allUsers} />
 }

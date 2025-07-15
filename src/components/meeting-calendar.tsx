@@ -1,46 +1,46 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { format, isSameDay } from "date-fns";
-import { type Meeting } from "@/lib/data";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from 'react'
+import { format, isSameDay } from 'date-fns'
+import { type Meeting } from '@/lib/data'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Clock,
   Link as LinkIcon,
   Info,
   Users,
   Calendar as CalendarIcon,
-} from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { Badge } from "./ui/badge";
+} from 'lucide-react'
+import { Calendar } from '@/components/ui/calendar'
+import { Badge } from './ui/badge'
 
 type MeetingCalendarProps = {
-  meetings: Meeting[];
-};
+  meetings: Meeting[]
+}
 
 export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
-  const [selectedDay, setSelectedDay] = useState<Date | undefined>(new Date());
+  const [selectedDay, setSelectedDay] = useState<Date | undefined>(new Date())
 
   const meetingsByDay = meetings.reduce(
     (acc, meeting) => {
-      const day = format(new Date(meeting.date), "yyyy-MM-dd");
+      const day = format(new Date(meeting.date), 'yyyy-MM-dd')
       if (!acc[day]) {
-        acc[day] = [];
+        acc[day] = []
       }
-      acc[day].push(meeting);
-      return acc;
+      acc[day].push(meeting)
+      return acc
     },
     {} as Record<string, Meeting[]>,
-  );
+  )
 
   const daysWithMeetings = Object.keys(meetingsByDay).map((dayStr) => {
-    const [year, month, day] = dayStr.split("-").map(Number);
-    return new Date(year, month - 1, day);
-  });
+    const [year, month, day] = dayStr.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  })
 
   const selectedDayMeetings = selectedDay
     ? meetings.filter((m) => isSameDay(new Date(m.date), selectedDay))
-    : [];
+    : []
 
   return (
     <>
@@ -53,13 +53,13 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                 selected={selectedDay}
                 onSelect={setSelectedDay}
                 modifiers={{ hasMeeting: daysWithMeetings }}
-                modifiersClassNames={{ hasMeeting: "rdp-day_has-meeting" }}
+                modifiersClassNames={{ hasMeeting: 'rdp-day_has-meeting' }}
                 className="rounded-lg border p-2"
               />
             </div>
             <div className="lg:col-span-2">
               <h3 className="mb-4 text-lg font-semibold">
-                Meetings on {selectedDay ? format(selectedDay, "PPP") : "..."}
+                Meetings on {selectedDay ? format(selectedDay, 'PPP') : '...'}
               </h3>
               <div className="h-[300px] space-y-4 overflow-y-auto pr-2 lg:h-[450px]">
                 {selectedDayMeetings.length > 0 ? (
@@ -73,7 +73,7 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                         meeting.zoomJoinUrl ||
                         (meeting.zoomMeetingId
                           ? `https://zoom.us/j/${meeting.zoomMeetingId}`
-                          : null);
+                          : null)
                       return (
                         <Card key={meeting.id} className="flex flex-col">
                           <CardHeader className="py-4">
@@ -89,7 +89,7 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                                   Date & Time
                                 </h4>
                                 <p className="text-muted-foreground text-sm">
-                                  {format(new Date(meeting.date), "PPPP p")}
+                                  {format(new Date(meeting.date), 'PPPP p')}
                                 </p>
                               </div>
                             </div>
@@ -162,7 +162,7 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                             </div>
                           </CardContent>
                         </Card>
-                      );
+                      )
                     })
                 ) : (
                   <div className="flex h-full items-center justify-center">
@@ -177,5 +177,5 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
         </CardContent>
       </Card>
     </>
-  );
+  )
 }

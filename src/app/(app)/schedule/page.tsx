@@ -1,4 +1,4 @@
-import { MeetingsViewTabs } from "@/components/meetings-view-tabs";
+import { MeetingsViewTabs } from '@/components/meetings-view-tabs'
 
 export default async function SchedulePage() {
   return (
@@ -12,5 +12,5 @@ export default async function SchedulePage() {
 
       <MeetingsViewTabs />
     </div>
-  );
+  )
 }

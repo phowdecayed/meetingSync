@@ -1,10 +1,10 @@
-"use client";
+'use client'
 
-import * as React from "react";
-import { Check, ChevronsUpDown, X } from "lucide-react";
+import * as React from 'react'
+import { Check, ChevronsUpDown, X } from 'lucide-react'
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import {
   Command,
   CommandEmpty,
@@ -12,20 +12,20 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
+} from '@/components/ui/command'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
-import type { User } from "@/lib/data";
+} from '@/components/ui/popover'
+import { Badge } from '@/components/ui/badge'
+import type { User } from '@/lib/data'
 
 interface UserComboboxProps {
-  allUsers: User[];
-  selectedUsers: string[]; // array of emails
-  onChange: (selectedUsers: string[]) => void;
-  className?: string;
+  allUsers: User[]
+  selectedUsers: string[] // array of emails
+  onChange: (selectedUsers: string[]) => void
+  className?: string
 }
 
 export function UserCombobox({
@@ -34,18 +34,18 @@ export function UserCombobox({
   onChange,
   className,
 }: UserComboboxProps) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(false)
 
   const handleSelect = (email: string) => {
     const newSelection = selectedUsers.includes(email)
       ? selectedUsers.filter((u) => u !== email)
-      : [...selectedUsers, email];
-    onChange(newSelection);
-  };
+      : [...selectedUsers, email]
+    onChange(newSelection)
+  }
 
   const selectedUserObjects = allUsers.filter((u) =>
     selectedUsers.includes(u.email),
-  );
+  )
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -54,7 +54,7 @@ export function UserCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("h-auto min-h-10 w-full justify-between", className)}
+          className={cn('h-auto min-h-10 w-full justify-between', className)}
         >
           <div className="flex flex-wrap gap-1">
             {selectedUserObjects.length > 0 ? (
@@ -64,9 +64,9 @@ export function UserCombobox({
                   key={user.id}
                   className="mr-1"
                   onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleSelect(user.email);
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleSelect(user.email)
                   }}
                 >
                   {user.name}
@@ -93,15 +93,15 @@ export function UserCombobox({
                   key={user.id}
                   value={user.email}
                   onSelect={(currentValue) => {
-                    handleSelect(currentValue);
+                    handleSelect(currentValue)
                   }}
                 >
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
+                      'mr-2 h-4 w-4',
                       selectedUsers.includes(user.email)
-                        ? "opacity-100"
-                        : "opacity-0",
+                        ? 'opacity-100'
+                        : 'opacity-0',
                     )}
                   />
                   <div>
@@ -117,5 +117,5 @@ export function UserCombobox({
         </Command>
       </PopoverContent>
     </Popover>
-  );
+  )
 }

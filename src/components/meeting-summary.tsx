@@ -1,20 +1,20 @@
-import React from "react";
+import React from 'react'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 interface MeetingSummaryProps {
   summary: {
-    summary_title: string;
-    summary_content: string;
-  } | null;
-  isOpen: boolean;
-  onClose: () => void;
+    summary_title: string
+    summary_content: string
+  } | null
+  isOpen: boolean
+  onClose: () => void
 }
 
 export const MeetingSummary: React.FC<MeetingSummaryProps> = ({
@@ -23,7 +23,7 @@ export const MeetingSummary: React.FC<MeetingSummaryProps> = ({
   onClose,
 }) => {
   if (!isOpen || !summary) {
-    return null;
+    return null
   }
 
   return (
@@ -42,5 +42,5 @@ export const MeetingSummary: React.FC<MeetingSummaryProps> = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-};
+  )
+}

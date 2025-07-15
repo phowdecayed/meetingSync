@@ -1,73 +1,74 @@
-import bcrypt from "bcryptjs";
-import prisma from "./prisma";
+import bcrypt from 'bcryptjs'
+import prisma from './prisma'
 import {
   createZoomMeeting,
   updateZoomMeeting,
   deleteZoomMeeting,
-} from "./zoom";
-import { format } from "date-fns";
+  getBalancedZoomCredential,
+} from './zoom'
+import { format } from 'date-fns'
 
 // --- SHARED TYPES & UTILS ---
 export type Meeting = {
-  id: string;
-  title: string;
-  date: Date;
-  duration: number; // in minutes
-  participants: string[];
-  description?: string;
-  password?: string; // Password for Zoom meeting
-  organizerId: string;
-  zoomMeetingId?: string;
-  zoomJoinUrl?: string;
-  zoomStartUrl?: string;
-  zoomPassword?: string;
-};
+  id: string
+  title: string
+  date: Date
+  duration: number // in minutes
+  participants: string[]
+  description?: string
+  password?: string // Password for Zoom meeting
+  organizerId: string
+  zoomMeetingId?: string
+  zoomJoinUrl?: string
+  zoomStartUrl?: string
+  zoomPassword?: string
+}
 
 export type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: "admin" | "member";
-};
+  id: string
+  name: string
+  email: string
+  role: 'admin' | 'member'
+}
 
 // Tipe dari skema Prisma
 type PrismaMeeting = {
-  id: string;
-  title: string;
-  date: Date;
-  duration: number;
-  participants: string;
-  description: string | null;
-  organizerId: string;
-  zoomMeetingId: string | null;
-  zoomJoinUrl: string | null;
-  zoomStartUrl: string | null;
-  zoomPassword: string | null;
-};
+  id: string
+  title: string
+  date: Date
+  duration: number
+  participants: string
+  description: string | null
+  organizerId: string
+  zoomMeetingId: string | null
+  zoomJoinUrl: string | null
+  zoomStartUrl: string | null
+  zoomPassword: string | null
+}
 
 type PrismaUser = {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  passwordHash: string | null;
-};
+  id: string
+  email: string
+  name: string
+  role: string
+  passwordHash: string | null
+}
 
 // Add password for user creation and verification
-export type FullUser = User & { password?: string };
+export type FullUser = User & { password?: string }
 
 // Helper function to format Meeting data
 const formatMeeting = (meeting: PrismaMeeting): Meeting => {
   return {
     ...meeting,
-    participants: meeting.participants.split(",").map((p: string) => p.trim()),
+    participants: meeting.participants.split(',').map((p: string) => p.trim()),
     description: meeting.description || undefined,
     zoomMeetingId: meeting.zoomMeetingId || undefined,
     zoomJoinUrl: meeting.zoomJoinUrl || undefined,
     zoomStartUrl: meeting.zoomStartUrl || undefined,
     zoomPassword: meeting.zoomPassword || undefined,
-  };
-};
+  }
+}
 
 // Helper function to format User data
 const formatUser = (user: PrismaUser): User => {
@@ -75,26 +76,26 @@ const formatUser = (user: PrismaUser): User => {
     id: user.id,
     name: user.name,
     email: user.email,
-    role: user.role as "admin" | "member",
-  };
-};
+    role: user.role as 'admin' | 'member',
+  }
+}
 
 export const getMeetings = async (user?: {
-  id: string;
-  email?: string | null;
-  role: string;
+  id: string
+  email?: string | null
+  role: string
 }): Promise<Meeting[]> => {
   if (!user) {
-    return [];
+    return []
   }
 
-  if (user.role === "admin") {
+  if (user.role === 'admin') {
     const meetings = await prisma.meeting.findMany({
       orderBy: {
-        date: "asc",
+        date: 'asc',
       },
-    });
-    return meetings.map(formatMeeting);
+    })
+    return meetings.map(formatMeeting)
   }
 
   const meetings = await prisma.meeting.findMany({
@@ -103,133 +104,145 @@ export const getMeetings = async (user?: {
         { organizerId: user.id },
         {
           participants: {
-            contains: user.email ?? "unlikely-string-to-avoid-error",
+            contains: user.email ?? 'unlikely-string-to-avoid-error',
           },
         },
       ],
     },
     orderBy: {
-      date: "asc",
+      date: 'asc',
     },
-  });
-  return meetings.map(formatMeeting);
-};
+  })
+  return meetings.map(formatMeeting)
+}
 
 export const getMeetingById = async (
   id: string,
 ): Promise<Meeting | undefined> => {
   const meeting = await prisma.meeting.findUnique({
     where: { id },
-  });
-  return meeting ? formatMeeting(meeting) : undefined;
-};
+  })
+  return meeting ? formatMeeting(meeting) : undefined
+}
 
 export const createMeeting = async (
-  data: Omit<Meeting, "id">,
+  data: Omit<Meeting, 'id'>,
 ): Promise<Meeting> => {
   try {
-    // Ensure date is a proper Date object
-    const meetingDate =
-      data.date instanceof Date ? data.date : new Date(data.date);
-    const newStart = meetingDate;
-    const newEnd = new Date(meetingDate.getTime() + data.duration * 60 * 1000);
+    // 1. Get the least busy credential first. This will throw an error if all are at capacity.
+    const credential = await getBalancedZoomCredential()
 
-    // Find all meetings on the same day
-    const startOfDay = new Date(newStart);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(newStart);
-    endOfDay.setHours(23, 59, 59, 999);
+    // 2. Check for overlaps on the specific credential that will be used.
+    const meetingDate =
+      data.date instanceof Date ? data.date : new Date(data.date)
+    const newStart = meetingDate
+    const newEnd = new Date(meetingDate.getTime() + data.duration * 60 * 1000)
+
+    const startOfDay = new Date(newStart)
+    startOfDay.setHours(0, 0, 0, 0)
+    const endOfDay = new Date(newStart)
+    endOfDay.setHours(23, 59, 59, 999)
+
     const meetingsOnDay = await prisma.meeting.findMany({
       where: {
+        // Only check meetings on the same credential
+        zoomCredentialId: credential.id,
         date: {
           gte: startOfDay,
           lte: endOfDay,
         },
       },
-    });
+    })
 
-    // Check for overlap
     const overlapCount = meetingsOnDay.reduce((count, m) => {
-      const existingStart = new Date(m.date);
+      const existingStart = new Date(m.date)
       const existingEnd = new Date(
         existingStart.getTime() + m.duration * 60 * 1000,
-      );
+      )
       return newStart < existingEnd && newEnd > existingStart
         ? count + 1
-        : count;
-    }, 0);
+        : count
+    }, 0)
+
     if (overlapCount >= 2) {
       throw new Error(
-        "A maximum of 2 meetings can run simultaneously in the same timeslot.",
-      );
+        `The selected Zoom account (Client ID: ${credential.clientId}) is already at its maximum capacity of 2 concurrent meetings for this timeslot.`,
+      )
     }
 
-    // Create Zoom meeting first with detailed settings based on API requirements
-    // Format start_time sebagai string lokal Asia/Jakarta
-    const startTimeJakarta = format(meetingDate, "yyyy-MM-dd'T'HH:mm:ss");
-    const zoomMeetingData = await createZoomMeeting({
-      topic: data.title,
-      start_time: startTimeJakarta, // Kirim string lokal
-      duration: data.duration,
-      agenda: data.description,
-      password: data.password || "rahasia", // Use provided password or default
-      type: 2, // Scheduled meeting (2 = scheduled)
-      timezone: "Asia/Jakarta",
-      settings: {
-        host_video: true,
-        participant_video: true,
-        join_before_host: true,
-        mute_upon_entry: true,
-        waiting_room: false,
-        auto_recording: "cloud",
-        approval_type: 2,
-        audio: "both",
+    // 3. Create the Zoom meeting using the selected credential
+    const startTimeJakarta = format(meetingDate, "yyyy-MM-dd'T'HH:mm:ss")
+    const zoomMeetingData = await createZoomMeeting(
+      {
+        topic: data.title,
+        start_time: startTimeJakarta,
+        duration: data.duration,
+        agenda: data.description,
+        password: data.password || 'rahasia',
+        type: 2,
+        timezone: 'Asia/Jakarta',
+        settings: {
+          host_video: true,
+          participant_video: true,
+          join_before_host: true,
+          mute_upon_entry: true,
+          waiting_room: false,
+          auto_recording: 'cloud',
+          approval_type: 2,
+          audio: 'both',
+        },
       },
-    });
+      credential, // Pass the chosen credential
+    )
 
-    // Create meeting in our database with Zoom info
+    // 4. Create the meeting in our database
     const meeting = await prisma.meeting.create({
       data: {
         title: data.title,
         date: meetingDate,
         duration: data.duration,
         participants: Array.isArray(data.participants)
-          ? data.participants.join(", ")
+          ? data.participants.join(', ')
           : data.participants,
-        description: data.description || "",
+        description: data.description || '',
         organizerId: data.organizerId,
         zoomMeetingId: zoomMeetingData.zoomMeetingId,
         zoomJoinUrl: zoomMeetingData.zoomJoinUrl,
         zoomStartUrl: zoomMeetingData.zoomStartUrl,
         zoomPassword: zoomMeetingData.zoomPassword,
+        zoomCredentialId: zoomMeetingData.credentialId, // Link the meeting to the credential
       },
-    });
+    })
 
-    return formatMeeting(meeting);
+    return formatMeeting(meeting)
   } catch (error) {
-    console.error("Failed to create meeting with Zoom integration:", error);
-    throw new Error("Failed to create meeting with Zoom integration");
+    console.error('Failed to create meeting:', error)
+    if (error instanceof Error) {
+      // Re-throw the original error to be handled by the API route
+      throw error
+    }
+    throw new Error('An unknown error occurred during meeting creation.')
   }
-};
+}
 
 export const updateMeeting = async (
   id: string,
-  data: Partial<Omit<Meeting, "id">>,
+  data: Partial<Omit<Meeting, 'id'>>,
 ): Promise<Meeting> => {
   try {
-    const currentMeeting = await prisma.meeting.findUnique({ where: { id } });
+    const currentMeeting = await prisma.meeting.findUnique({ where: { id } })
     if (!currentMeeting) {
-      throw new Error("Meeting not found");
+      throw new Error('Meeting not found')
     }
 
-    let zoomData = {};
+    let zoomData = {}
 
     if (currentMeeting.zoomMeetingId) {
       const meetingDate = data.date
         ? data.date instanceof Date
           ? data.date
           : new Date(data.date)
-        : currentMeeting.date;
+        : currentMeeting.date
 
       const updatedZoomMeeting = await updateZoomMeeting(
         currentMeeting.zoomMeetingId,
@@ -240,20 +253,20 @@ export const updateMeeting = async (
           description:
             data.description !== undefined
               ? data.description
-              : currentMeeting.description || "",
+              : currentMeeting.description || '',
           password:
             data.password !== undefined
               ? data.password
-              : currentMeeting.zoomPassword || "",
+              : currentMeeting.zoomPassword || '',
         },
-      );
+      )
 
       zoomData = {
         zoomMeetingId: updatedZoomMeeting.zoomMeetingId,
         zoomJoinUrl: updatedZoomMeeting.zoomJoinUrl,
         zoomStartUrl: updatedZoomMeeting.zoomStartUrl,
         zoomPassword: updatedZoomMeeting.zoomPassword,
-      };
+      }
     }
 
     const meeting = await prisma.meeting.update({
@@ -269,7 +282,7 @@ export const updateMeeting = async (
         ...(data.duration && { duration: data.duration }),
         ...(data.participants && {
           participants: Array.isArray(data.participants)
-            ? data.participants.join(", ")
+            ? data.participants.join(', ')
             : data.participants,
         }),
         ...(data.description !== undefined && {
@@ -279,62 +292,70 @@ export const updateMeeting = async (
         ...(data.organizerId && { organizerId: data.organizerId }),
         ...zoomData,
       },
-    });
+    })
 
-    return formatMeeting(meeting);
+    return formatMeeting(meeting)
   } catch (error) {
-    console.error("Failed to update meeting with Zoom integration:", error);
-    throw new Error("Failed to update meeting with Zoom integration");
+    console.error('Failed to update meeting with Zoom integration:', error)
+    throw new Error('Failed to update meeting with Zoom integration')
   }
-};
+}
 
 export const deleteMeeting = async (
   id: string,
 ): Promise<{ success: boolean }> => {
-  try {
-    // Get the meeting first to delete from Zoom
-    const meeting = await prisma.meeting.findUnique({ where: { id } });
+  // Get the meeting first to find its associated Zoom ID
+  const meeting = await prisma.meeting.findUnique({ where: { id } })
 
-    if (meeting && meeting.zoomMeetingId) {
-      // Delete from Zoom
-      await deleteZoomMeeting(meeting.zoomMeetingId);
+  // If the meeting has a Zoom ID, we must delete it from Zoom first.
+  if (meeting && meeting.zoomMeetingId) {
+    try {
+      // Attempt to delete from Zoom. If this fails, it will throw an error
+      // and the function will exit, preventing the local DB deletion.
+      await deleteZoomMeeting(meeting.zoomMeetingId)
+    } catch (error) {
+      console.error(
+        `Failed to delete Zoom meeting ${meeting.zoomMeetingId}:`,
+        error,
+      )
+      // Re-throw the error to be handled by the API route, and indicate failure.
+      throw new Error(
+        `Failed to delete the meeting from Zoom. Local database record was not deleted.`,
+      )
     }
-
-    // Delete from our database
-    await prisma.meeting.delete({
-      where: { id },
-    });
-
-    return { success: true };
-  } catch (error) {
-    console.error("Error deleting meeting:", error);
-    return { success: false };
   }
-};
+
+  // If there was no Zoom meeting or the Zoom deletion was successful, delete from our database.
+  await prisma.meeting.delete({
+    where: { id },
+  })
+
+  return { success: true }
+}
 
 export const deleteDbMeeting = async (id: string): Promise<void> => {
   try {
-    await prisma.meeting.delete({ where: { id } });
+    await prisma.meeting.delete({ where: { id } })
   } catch (error) {
-    console.error(`Failed to delete meeting ${id} from database:`, error);
-    throw new Error("Database deletion failed.");
+    console.error(`Failed to delete meeting ${id} from database:`, error)
+    throw new Error('Database deletion failed.')
   }
-};
+}
 
 export const getUsers = async (): Promise<User[]> => {
-  const users = await prisma.user.findMany();
-  return users.map(formatUser);
-};
+  const users = await prisma.user.findMany()
+  return users.map(formatUser)
+}
 
 export const createUser = async (data: {
-  name: string;
-  email: string;
-  role: "admin" | "member";
-  password?: string;
+  name: string
+  email: string
+  role: 'admin' | 'member'
+  password?: string
 }): Promise<User> => {
-  if (!data.password) throw new Error("Password is required.");
+  if (!data.password) throw new Error('Password is required.')
 
-  const passwordHash = await bcrypt.hash(data.password, 10);
+  const passwordHash = await bcrypt.hash(data.password, 10)
 
   try {
     const user = await prisma.user.create({
@@ -344,29 +365,29 @@ export const createUser = async (data: {
         role: data.role,
         passwordHash,
       },
-    });
+    })
 
-    return formatUser(user);
+    return formatUser(user)
   } catch {
-    throw new Error("A user with this email already exists.");
+    throw new Error('A user with this email already exists.')
   }
-};
+}
 
 export const updateUserRole = async (
   id: string,
-  role: "admin" | "member",
+  role: 'admin' | 'member',
 ): Promise<User> => {
   try {
     const user = await prisma.user.update({
       where: { id },
       data: { role },
-    });
+    })
 
-    return formatUser(user);
+    return formatUser(user)
   } catch {
-    throw new Error("User not found");
+    throw new Error('User not found')
   }
-};
+}
 
 export const deleteUserById = async (
   id: string,
@@ -374,20 +395,20 @@ export const deleteUserById = async (
   try {
     await prisma.user.delete({
       where: { id },
-    });
-    return { success: true };
+    })
+    return { success: true }
   } catch {
-    return { success: false };
+    return { success: false }
   }
-};
+}
 
 export const getUserByEmail = async (email: string): Promise<User | null> => {
   const user = await prisma.user.findUnique({
     where: { email },
-  });
+  })
 
-  return user ? formatUser(user) : null;
-};
+  return user ? formatUser(user) : null
+}
 
 export const updateAuthUser = async (
   id: string,
@@ -397,13 +418,13 @@ export const updateAuthUser = async (
     const user = await prisma.user.update({
       where: { id },
       data: { name: data.name },
-    });
+    })
 
-    return formatUser(user);
+    return formatUser(user)
   } catch {
-    throw new Error("User not found");
+    throw new Error('User not found')
   }
-};
+}
 
 export const verifyUserCredentials = async (
   email: string,
@@ -411,12 +432,12 @@ export const verifyUserCredentials = async (
 ): Promise<User | null> => {
   const user = await prisma.user.findUnique({
     where: { email },
-  });
+  })
 
-  if (!user || !user.passwordHash) return null;
+  if (!user || !user.passwordHash) return null
 
-  const passwordsMatch = await bcrypt.compare(pass, user.passwordHash);
-  if (!passwordsMatch) return null;
+  const passwordsMatch = await bcrypt.compare(pass, user.passwordHash)
+  if (!passwordsMatch) return null
 
-  return formatUser(user);
-};
+  return formatUser(user)
+}
