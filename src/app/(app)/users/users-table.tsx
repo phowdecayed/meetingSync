@@ -66,6 +66,8 @@ import {
   PlusCircle,
   ChevronLeft,
   ChevronRight,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Label } from '@/components/ui/label'
@@ -121,6 +123,7 @@ export function UsersTable({
   const [userToDelete, setUserToDelete] = useState<User | null>(null)
   const [isAddUserOpen, setIsAddUserOpen] = useState(false)
   const [isCreatingUser, setIsCreatingUser] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const addUserForm = useForm<z.infer<typeof addUserSchema>>({
     resolver: zodResolver(addUserSchema),
@@ -178,7 +181,6 @@ export function UsersTable({
 
       if (!response.ok) throw new Error('Failed to update user role')
 
-      // Optimistically update UI or refetch
       router.refresh()
       toast({
         title: 'Success',
@@ -394,7 +396,16 @@ export function UsersTable({
       </div>
 
       {/* Dialogs */}
-      <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+      <Dialog
+        open={isAddUserOpen}
+        onOpenChange={(isOpen) => {
+          setIsAddUserOpen(isOpen)
+          if (!isOpen) {
+            addUserForm.reset()
+            setShowPassword(false)
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New User</DialogTitle>
@@ -434,9 +445,28 @@ export function UsersTable({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          {...field}
+                        />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-gray-500"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -463,7 +493,11 @@ export function UsersTable({
                 )}
               />
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsAddUserOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddUserOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isCreatingUser}>

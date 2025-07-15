@@ -16,7 +16,14 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Loader2, UserCheck, Users, Calendar } from 'lucide-react'
+import {
+  Loader2,
+  UserCheck,
+  Users,
+  Calendar,
+  Eye,
+  EyeOff,
+} from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -90,6 +97,11 @@ export default function ProfilePage() {
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [isMeetingsLoading, setIsMeetingsLoading] = useState(true)
   const { toast } = useToast()
+
+  // Password visibility states
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -389,9 +401,31 @@ export default function ProfilePage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Current Password</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
+                            <div className="relative">
+                              <FormControl>
+                                <Input
+                                  type={
+                                    showCurrentPassword ? 'text' : 'password'
+                                  }
+                                  {...field}
+                                />
+                              </FormControl>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-gray-500"
+                                onClick={() =>
+                                  setShowCurrentPassword(!showCurrentPassword)
+                                }
+                              >
+                                {showCurrentPassword ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -402,9 +436,29 @@ export default function ProfilePage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>New Password</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
+                            <div className="relative">
+                              <FormControl>
+                                <Input
+                                  type={showNewPassword ? 'text' : 'password'}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-gray-500"
+                                onClick={() =>
+                                  setShowNewPassword(!showNewPassword)
+                                }
+                              >
+                                {showNewPassword ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -415,9 +469,31 @@ export default function ProfilePage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Confirm New Password</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
+                            <div className="relative">
+                              <FormControl>
+                                <Input
+                                  type={
+                                    showConfirmPassword ? 'text' : 'password'
+                                  }
+                                  {...field}
+                                />
+                              </FormControl>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-gray-500"
+                                onClick={() =>
+                                  setShowConfirmPassword(!showConfirmPassword)
+                                }
+                              >
+                                {showConfirmPassword ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
