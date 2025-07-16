@@ -85,7 +85,7 @@ export function ZoomMeetingDetails({
   const { data: session } = useSession()
   const { toast } = useToast()
   const [hostKey, setHostKey] = useState<string | null>(null)
-  const [detailedMeeting, setDetailedMeeting] = 
+  const [detailedMeeting, setDetailedMeeting] =
     useState<ZoomMeetingDetail | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showHostKey, setShowHostKey] = useState(false)
@@ -158,9 +158,7 @@ export function ZoomMeetingDetails({
             if (!res.ok) {
               // Try to get error message from body
               return res.json().then((err) => {
-                throw new Error(
-                  err.error || 'Failed to fetch meeting summary',
-                )
+                throw new Error(err.error || 'Failed to fetch meeting summary')
               })
             }
             return res.json()
@@ -266,7 +264,7 @@ export function ZoomMeetingDetails({
                 <h4 className="text-sm font-medium">Organizer</h4>
                 <p className="text-sm text-gray-500">
                   {detailedMeeting?.organizer?.name || 'Loading...'} (
-                  {detailedMeeting?.organizer?.email || '...'}) 
+                  {detailedMeeting?.organizer?.email || '...'})
                 </p>
               </div>
             </div>
