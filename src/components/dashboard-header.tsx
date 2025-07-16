@@ -12,12 +12,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { LogOut, PlusCircle, Settings, User } from 'lucide-react'
+import { LogOut, PlusCircle, Settings, User, Rocket } from 'lucide-react'
 import Link from 'next/link'
+import { useTourStore } from '@/store/use-tour-store'
 
 export function DashboardHeader() {
   const { data: session } = useSession()
   const user = session?.user
+  const { startTour } = useTourStore()
 
   const handleLogout = () => {
     signOut({ callbackUrl: '/login' })
@@ -37,19 +39,25 @@ export function DashboardHeader() {
 
       <div className="flex w-full items-center justify-end gap-4">
         <Link href="/meetings/new" passHref>
-          <Button>
+          <Button id="new-meeting-button">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Meeting
           </Button>
         </Link>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+            <Button
+              variant="ghost"
+              className="relative h-10 w-10 rounded-full"
+              data-testid="user-avatar-button"
+            >
               <Avatar className="h-10 w-10">
                 <AvatarImage
                   src={
                     user?.name
-                      ? `https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name)}`
+                      ? `https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(
+                          user.name,
+                        )}`
                       : undefined
                   }
                   alt={user?.name ?? ''}
@@ -68,6 +76,11 @@ export function DashboardHeader() {
                 </p>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={startTour}>
+              <Rocket className="mr-2 h-4 w-4" />
+              <span>Start Tour</span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <Link href="/profile" passHref>
               <DropdownMenuItem>

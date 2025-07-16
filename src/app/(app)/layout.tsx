@@ -5,6 +5,7 @@ import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar'
 import { DashboardHeader } from '@/components/dashboard-header'
 import { SidebarNav } from '@/components/sidebar-nav'
 import { Loader2 } from 'lucide-react'
+import { TourProvider } from '@/components/tour-provider'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { status } = useSession({ required: true })
@@ -19,13 +20,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon">
+      <Sidebar collapsible="icon" aria-label="Sidebar">
         <SidebarNav />
       </Sidebar>
       <SidebarInset>
         <DashboardHeader />
-        <main className="p-4 md:p-6 lg:p-8">{children}</main>
+        <main className="p-4 md:p-6 lg:p-8" role="main">
+          {children}
+        </main>
       </SidebarInset>
+      <TourProvider />
     </SidebarProvider>
   )
 }
