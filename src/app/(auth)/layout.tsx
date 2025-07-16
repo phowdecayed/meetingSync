@@ -1,13 +1,27 @@
-import prisma from '@/lib/prisma'
+'use client'
 
-export default async function AuthLayout({
+import { useSettingsStore } from '@/store/use-settings-store'
+import { useEffect, useState } from 'react'
+
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const settings = await prisma.settings.findFirst()
-  const appName = settings?.appName
-  const appDescription = settings?.appDescription
+  const { appName, appDescription, isLoading } = useSettingsStore()
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (isLoading || !isClient) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center">
+        {/* Optional: Add a loader here */}
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen w-full">

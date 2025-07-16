@@ -24,10 +24,11 @@ import {
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { signIn } from 'next-auth/react'
 import { createUser } from '@/lib/data'
+import { useSettingsStore } from '@/store/use-settings-store'
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -47,24 +48,8 @@ export function LoginForm() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [allowRegistration, setAllowRegistration] = useState(true)
-  const [appName, setAppName] = useState('MeetingSync')
+  const { appName, isAllowRegistration } = useSettingsStore()
   const searchParams = useSearchParams()
-
-  useEffect(() => {
-    async function fetchSettings() {
-      try {
-        const res = await fetch('/api/settings')
-        if (!res.ok) throw new Error('Gagal mengambil pengaturan')
-        const data = await res.json()
-        setAllowRegistration(data.allowRegistration)
-        setAppName(data.appName || 'MeetingSync')
-      } catch {
-        setAllowRegistration(false) // fallback: tetap tampilkan jika gagal
-      }
-    }
-    fetchSettings()
-  }, [])
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -166,7 +151,7 @@ export function LoginForm() {
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-muted-foreground text-sm">
-          {!allowRegistration ? null : (
+          {!isAllowRegistration ? null : (
             <>
               Belum punya akun?{' '}
               <Link
@@ -188,22 +173,7 @@ export function RegisterForm() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [appName, setAppName] = useState('MeetingSync')
-
-  useEffect(() => {
-    async function fetchSettings() {
-      try {
-        const res = await fetch('/api/settings')
-        if (res.ok) {
-          const data = await res.json()
-          setAppName(data.appName || 'MeetingSync')
-        }
-      } catch (error) {
-        console.error('Failed to fetch app name', error)
-      }
-    }
-    fetchSettings()
-  }, [])
+  const { appName } = useSettingsStore()
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),

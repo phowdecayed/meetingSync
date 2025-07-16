@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { ThemeProvider } from '@/components/theme-provider'
 import NextAuthSessionProvider from '@/components/auth/session-provider'
 import prisma from '@/lib/prisma'
+import SettingsStoreInitializer from '@/components/settings-store-initializer'
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await prisma.settings.findFirst()
@@ -14,11 +15,12 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const settings = await prisma.settings.findFirst()
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -35,6 +37,14 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
+        <SettingsStoreInitializer
+          appName={settings?.appName ?? 'MeetingSync'}
+          appDescription={
+            settings?.appDescription ??
+            'Efficiently manage and schedule your Zoom meetings.'
+          }
+          isAllowRegistration={settings?.allowRegistration ?? true}
+        />
         <NextAuthSessionProvider>
           <ThemeProvider
             attribute="class"

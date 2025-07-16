@@ -4,29 +4,22 @@ import React, { useEffect, useState } from 'react'
 import Joyride, { Step, STATUS, CallBackProps } from 'react-joyride'
 import { useTourStore } from '@/store/use-tour-store'
 import { useTheme } from 'next-themes'
+import { useSettingsStore } from '@/store/use-settings-store'
 
 export function TourProvider() {
   const { run, stepIndex, steps, handleJoyrideCallback, setSteps } =
     useTourStore()
   const { theme } = useTheme()
+  const { appName } = useSettingsStore()
   const [isMounted, setIsMounted] = useState(false)
   const [runDelayed, setRunDelayed] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
+  }, [])
 
-    async function fetchSettingsAndSetSteps() {
-      let appName = ''
-      try {
-        const res = await fetch('/api/settings')
-        if (res.ok) {
-          const data = await res.json()
-          appName = data.appName || appName
-        }
-      } catch (error) {
-        console.error('Failed to fetch app name for tour', error)
-      }
-
+  useEffect(() => {
+    if (appName) {
       const tourSteps: Step[] = [
         {
           target: 'main[role="main"]',
@@ -53,9 +46,7 @@ export function TourProvider() {
       ]
       setSteps(tourSteps)
     }
-
-    fetchSettingsAndSetSteps()
-  }, [setSteps])
+  }, [appName, setSteps])
 
   useEffect(() => {
     if (run && isMounted) {

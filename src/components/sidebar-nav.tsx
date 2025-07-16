@@ -15,6 +15,7 @@ import { useSession } from 'next-auth/react'
 import { ThemeToggle } from './theme-toggle'
 import { Separator } from '@radix-ui/react-separator'
 import { useEffect, useState } from 'react'
+import { useSettingsStore } from '@/store/use-settings-store'
 
 const allMenuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -34,21 +35,10 @@ export function SidebarNav() {
   const pathname = usePathname()
   const { data: session } = useSession()
   const user = session?.user
-  const [appName, setAppName] = useState('')
+  const { appName } = useSettingsStore()
   const [appVersion, setAppVersion] = useState('')
 
   useEffect(() => {
-    async function fetchSettings() {
-      try {
-        const res = await fetch('/api/settings')
-        if (res.ok) {
-          const data = await res.json()
-          setAppName(data.appName)
-        }
-      } catch (error) {
-        console.error('Failed to fetch app name', error)
-      }
-    }
     async function fetchVersion() {
       try {
         const res = await fetch('/api/version') // Assuming you create this
@@ -60,7 +50,6 @@ export function SidebarNav() {
         // It's okay if this fails, not critical
       }
     }
-    fetchSettings()
     fetchVersion()
   }, [])
 
