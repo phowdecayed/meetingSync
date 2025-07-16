@@ -214,7 +214,21 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
           description: 'Meeting updated successfully.',
         })
       } else {
-        await addMeeting(meetingData)
+        await addMeeting({
+          ...meetingData,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+          isZoomMeeting: false,
+          zoomMeetingId: null,
+          zoomJoinUrl: null,
+          zoomStartUrl: null,
+          zoomPassword: meetingData.password || null,
+          organizerId: user.id,
+          zoomCredentialId: null,
+          meetingRoomId: null,
+          description: meetingData.description || null, // Ensure description is string | null
+        })
         toast({
           title: 'Success',
           description: 'Meeting created successfully.',

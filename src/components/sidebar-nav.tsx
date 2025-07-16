@@ -10,7 +10,15 @@ import {
   SidebarContent,
   SidebarFooter,
 } from '@/components/ui/sidebar'
-import { Home, Settings, Users, Video, Calendar, User } from 'lucide-react'
+import {
+  Home,
+  Settings,
+  Users,
+  Video,
+  Calendar,
+  User,
+  Building2,
+} from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { ThemeToggle } from './theme-toggle'
 import { Separator } from '@radix-ui/react-separator'
@@ -28,7 +36,18 @@ const allMenuItems = [
   },
   { href: '/profile', label: 'My Profile', icon: User },
   { href: '/users', label: 'User Management', icon: Users, roles: ['admin'] },
-  { href: '/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
+  {
+    href: '/meeting-rooms',
+    label: 'Meeting Rooms Management',
+    icon: Building2,
+    roles: ['admin'],
+  },
+  {
+    href: '/settings',
+    label: 'Settings',
+    icon: Settings,
+    roles: ['admin'],
+  },
 ]
 
 export function SidebarNav() {
@@ -41,13 +60,13 @@ export function SidebarNav() {
   useEffect(() => {
     async function fetchVersion() {
       try {
-        const res = await fetch('/api/version') // Assuming you create this
+        const res = await fetch('/api/version')
         if (res.ok) {
           const data = await res.json()
           setAppVersion(data.version)
         }
       } catch {
-        // It's okay if this fails, not critical
+        // It's okay if this fails
       }
     }
     fetchVersion()
@@ -91,11 +110,7 @@ export function SidebarNav() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href} passHref>
                 <SidebarMenuButton
-                  isActive={
-                    item.href === '/profile'
-                      ? pathname === item.href
-                      : (pathname?.startsWith(item.href) ?? false)
-                  }
+                  isActive={pathname?.startsWith(item.href)}
                   className="flex flex-row items-center text-center"
                   tooltip={{ children: item.label, side: 'right' }}
                 >

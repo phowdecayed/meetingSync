@@ -7,55 +7,21 @@ import {
   getBalancedZoomCredential,
 } from './zoom'
 import { format } from 'date-fns'
-import { Prisma } from '@prisma/client'
+import {
+  Prisma,
+  Meeting as PrismaMeeting,
+  User as PrismaUser,
+  MeetingRoom,
+} from '@prisma/client'
 
 // --- SHARED TYPES & UTILS ---
-export type Meeting = {
-  id: string
-  title: string
-  date: Date
-  duration: number // in minutes
+export type Meeting = Omit<PrismaMeeting, 'participants' | 'meetingType'> & {
   participants: string[]
-  description?: string
-  password?: string // Password for Zoom meeting
-  organizerId: string
   meetingType: 'internal' | 'external'
-  zoomMeetingId?: string
-  zoomJoinUrl?: string
-  zoomStartUrl?: string
-  zoomPassword?: string
 }
 
-export type User = {
-  id: string
-  name: string
-  email: string
+export type User = Omit<PrismaUser, 'role'> & {
   role: 'admin' | 'member'
-}
-
-// Tipe dari skema Prisma
-type PrismaMeeting = {
-  id: string
-  title: string
-  date: Date
-  duration: number
-  participants: string
-  description: string | null
-  organizerId: string
-  meetingType: string
-  zoomMeetingId: string | null
-  zoomJoinUrl: string | null
-  zoomStartUrl: string | null
-  zoomPassword: string | null
-}
-
-type PrismaUser = {
-  id: string
-  email: string
-  name: string
-  role: string
-  passwordHash: string | null
-  createdAt: Date
 }
 
 // Add password for user creation and verification
@@ -65,22 +31,15 @@ export type FullUser = User & { password?: string }
 const formatMeeting = (meeting: PrismaMeeting): Meeting => {
   return {
     ...meeting,
-    participants: meeting.participants.split(',').map((p: string) => p.trim()),
-    description: meeting.description || undefined,
+    participants: meeting.participants.split(',').map((p) => p.trim()),
     meetingType: meeting.meetingType as 'internal' | 'external',
-    zoomMeetingId: meeting.zoomMeetingId || undefined,
-    zoomJoinUrl: meeting.zoomJoinUrl || undefined,
-    zoomStartUrl: meeting.zoomStartUrl || undefined,
-    zoomPassword: meeting.zoomPassword || undefined,
   }
 }
 
 // Helper function to format User data
 export const formatUser = (user: PrismaUser): User => {
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
+    ...user,
     role: user.role as 'admin' | 'member',
   }
 }
@@ -134,6 +93,41 @@ export const getMeetingById = async (
   return meeting ? formatMeeting(meeting) : undefined
 }
 
+export const getMeetingRooms = async (): Promise<MeetingRoom[]> => {
+  const rooms = await prisma.meetingRoom.findMany({
+    orderBy: {
+      name: 'asc',
+    },
+  })
+  return rooms
+}
+
+export const createMeetingRoom = async (
+  data: Omit<MeetingRoom, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>,
+): Promise<MeetingRoom> => {
+  const room = await prisma.meetingRoom.create({
+    data,
+  })
+  return room
+}
+
+export const updateMeetingRoom = async (
+  id: string,
+  data: Partial<Omit<MeetingRoom, 'id'>>,
+): Promise<MeetingRoom> => {
+  const room = await prisma.meetingRoom.update({
+    where: { id },
+    data,
+  })
+  return room
+}
+
+export const deleteMeetingRoom = async (id: string): Promise<void> => {
+  await prisma.meetingRoom.delete({
+    where: { id },
+  })
+}
+
 export const createMeeting = async (
   data: Omit<Meeting, 'id'>,
 ): Promise<Meeting> => {
@@ -170,18 +164,15 @@ export const createMeeting = async (
       },
     })
 
-    const overlapCount = meetingsOnDay.reduce(
-      (count: number, m: PrismaMeeting) => {
-        const existingStart = new Date(m.date)
-        const existingEnd = new Date(
-          existingStart.getTime() + m.duration * 60 * 1000,
-        )
-        return newStart < existingEnd && newEnd > existingStart
-          ? count + 1
-          : count
-      },
-      0,
-    )
+    const overlapCount = meetingsOnDay.reduce((count, m) => {
+      const existingStart = new Date(m.date)
+      const existingEnd = new Date(
+        existingStart.getTime() + m.duration * 60 * 1000,
+      )
+      return newStart < existingEnd && newEnd > existingStart
+        ? count + 1
+        : count
+    }, 0)
 
     if (overlapCount >= 2) {
       throw new Error(
@@ -196,8 +187,8 @@ export const createMeeting = async (
         topic: data.title,
         start_time: startTimeJakarta,
         duration: data.duration,
-        agenda: data.description,
-        password: data.password || 'rahasia',
+        agenda: data.description ?? undefined,
+        password: data.zoomPassword ?? undefined,
         type: 2,
         timezone: 'Asia/Jakarta',
         settings: {
@@ -217,15 +208,8 @@ export const createMeeting = async (
     // 4. Create the meeting in our database
     const meeting = await prisma.meeting.create({
       data: {
-        title: data.title,
-        date: meetingDate,
-        duration: data.duration,
-        participants: Array.isArray(data.participants)
-          ? data.participants.join(', ')
-          : data.participants,
-        description: data.description || '',
-        organizerId: data.organizerId,
-        meetingType: data.meetingType, // <-- ADDED THIS LINE
+        ...data,
+        participants: data.participants.join(', '),
         zoomMeetingId: zoomMeetingData.zoomMeetingId,
         zoomJoinUrl: zoomMeetingData.zoomJoinUrl,
         zoomStartUrl: zoomMeetingData.zoomStartUrl,
@@ -271,13 +255,10 @@ export const updateMeeting = async (
           date: meetingDate,
           duration: data.duration || currentMeeting.duration,
           description:
-            data.description !== undefined
+            (data.description !== undefined
               ? data.description
-              : currentMeeting.description || '',
-          password:
-            data.password !== undefined
-              ? data.password
-              : currentMeeting.zoomPassword || '',
+              : currentMeeting.description) ?? undefined,
+          password: data.zoomPassword ?? undefined,
         },
       )
 
@@ -292,25 +273,8 @@ export const updateMeeting = async (
     const meeting = await prisma.meeting.update({
       where: { id },
       data: {
-        ...(data.title && { title: data.title }),
-        ...(data.date && {
-          date:
-            data.date instanceof Date
-              ? data.date
-              : new Date(data.date as string),
-        }),
-        ...(data.duration && { duration: data.duration }),
-        ...(data.participants && {
-          participants: Array.isArray(data.participants)
-            ? data.participants.join(', ')
-            : data.participants,
-        }),
-        ...(data.description !== undefined && {
-          description: data.description,
-        }),
-        ...(data.password !== undefined && { password: data.password }),
-        ...(data.organizerId && { organizerId: data.organizerId }),
-        ...(data.meetingType && { meetingType: data.meetingType }), // <-- ADDED THIS LINE
+        ...data,
+        participants: data.participants?.join(', '),
         ...zoomData,
       },
     })
@@ -395,12 +359,7 @@ export const getUsers = async (options?: {
   ])
 
   return {
-    users: users.map((user: PrismaUser) => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role as 'admin' | 'member',
-    })),
+    users: users.map(formatUser),
     total,
   }
 }
@@ -414,12 +373,7 @@ export const getUsersByIds = async (ids: string[]): Promise<User[]> => {
       },
     },
   })
-  return users.map((user: PrismaUser) => ({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role as 'admin' | 'member',
-  }))
+  return users.map(formatUser)
 }
 
 export const createUser = async (data: {
@@ -442,7 +396,7 @@ export const createUser = async (data: {
       },
     })
 
-    return formatUser({ ...user, createdAt: new Date() })
+    return formatUser(user)
   } catch {
     throw new Error('A user with this email already exists.')
   }
@@ -458,7 +412,7 @@ export const updateUserRole = async (
       data: { role },
     })
 
-    return formatUser({ ...user, createdAt: new Date() })
+    return formatUser(user)
   } catch {
     throw new Error('User not found')
   }
@@ -482,7 +436,7 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
     where: { email },
   })
 
-  return user ? formatUser({ ...user, createdAt: new Date() }) : null
+  return user ? formatUser(user) : null
 }
 
 export const updateAuthUser = async (
@@ -495,7 +449,7 @@ export const updateAuthUser = async (
       data: { name: data.name },
     })
 
-    return formatUser({ ...user, createdAt: new Date() })
+    return formatUser(user)
   } catch {
     throw new Error('User not found')
   }
@@ -521,9 +475,7 @@ export const getAdminDashboardStats = async () => {
     take: 4,
   })
 
-  const userIds = mostActiveUsersData.map(
-    (u: { organizerId: string }) => u.organizerId,
-  )
+  const userIds = mostActiveUsersData.map((u) => u.organizerId)
   const users = await prisma.user.findMany({
     where: {
       id: {
@@ -531,14 +483,12 @@ export const getAdminDashboardStats = async () => {
       },
     },
   })
-  const userMap = new Map(users.map((u: PrismaUser) => [u.id, u]))
+  const userMap = new Map(users.map((u) => [u.id, u]))
 
-  const mostActiveUsers = mostActiveUsersData.map(
-    (u: { organizerId: string; _count: { organizerId: number } }) => ({
-      ...(userMap.get(u.organizerId) as User),
-      meetingCount: u._count.organizerId,
-    }),
-  )
+  const mostActiveUsers = mostActiveUsersData.map((u) => ({
+    ...(userMap.get(u.organizerId) as User),
+    meetingCount: u._count.organizerId,
+  }))
 
   const nextSevenDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
@@ -587,5 +537,21 @@ export const verifyUserCredentials = async (
   const passwordsMatch = await bcrypt.compare(pass, user.passwordHash)
   if (!passwordsMatch) return null
 
-  return formatUser({ ...user, createdAt: new Date() })
+  return formatUser(user)
+}
+
+export const changeUserPassword = async (
+  userId: string,
+  newPass: string,
+): Promise<boolean> => {
+  const newPasswordHash = await bcrypt.hash(newPass, 10)
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newPasswordHash },
+    })
+    return true
+  } catch {
+    return false
+  }
 }
