@@ -38,7 +38,7 @@ const allMenuItems = [
   { href: '/users', label: 'User Management', icon: Users, roles: ['admin'] },
   {
     href: '/meeting-rooms',
-    label: 'Meeting Rooms Management',
+    label: 'Meeting Rooms',
     icon: Building2,
     roles: ['admin'],
   },
