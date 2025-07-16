@@ -1,26 +1,33 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { Loader2 } from 'lucide-react'
+import PublicCalendar from '@/components/public-calendar'
 
-// This page acts as a loading/redirect hub.
-// The middleware in `middleware.ts` handles the actual redirection logic
-// based on authentication state.
 export default function HomePage() {
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
+  const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      router.replace('/dashboard')
+    if (status !== 'loading') {
+      if (session) {
+        router.replace('/dashboard')
+      } else {
+        setIsReady(true)
+      }
     }
-  }, [status, router])
+  }, [session, status, router])
 
-  return (
-    <div className="flex h-screen w-full items-center justify-center">
-      <Loader2 className="text-primary h-8 w-8 animate-spin" />
-    </div>
-  )
+  if (!isReady) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <Loader2 className="text-primary h-12 w-12 animate-spin" />
+      </div>
+    )
+  }
+
+  return <PublicCalendar />
 }

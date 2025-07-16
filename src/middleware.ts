@@ -36,7 +36,9 @@ export default auth((req) => {
   }
 })
 
-// Match all routes except for API, Next.js static files, Next.js image optimization files, and favicon.
+// Match all routes except for the root, public API, Next.js static files, etc.
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    '/((?!api/public/meetings|login|register|_next/static|_next/image|favicon.ico|$).*)',
+  ],
 }
