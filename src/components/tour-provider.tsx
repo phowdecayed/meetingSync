@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import Joyride, { Step } from 'react-joyride'
+import Joyride, { Step, STATUS, CallBackProps } from 'react-joyride'
 import { useTourStore } from '@/store/use-tour-store'
 import { useTheme } from 'next-themes'
 
@@ -11,11 +11,13 @@ const tourSteps: Step[] = [
     content:
       'Selamat datang di MeetingSync! Ini adalah dasbor utama Anda tempat Anda dapat melihat ringkasan aktivitas Anda.',
     disableBeacon: true,
+    placement: 'center',
   },
   {
-    target: '[aria-label="Sidebar"]',
+    target: 'div[data-slot="sidebar"]',
     content:
       'Gunakan bilah sisi untuk menavigasi di antara berbagai bagian aplikasi, seperti rapat, jadwal Anda, dan pengaturan.',
+    placement: 'right',
   },
   {
     target: '#new-meeting-button',
@@ -33,11 +35,33 @@ export function TourProvider() {
   const { run, stepIndex, handleJoyrideCallback, setSteps } = useTourStore()
   const { theme } = useTheme()
   const [isMounted, setIsMounted] = React.useState(false)
+  const [runDelayed, setRunDelayed] = React.useState(false)
 
   useEffect(() => {
     setIsMounted(true)
     setSteps(tourSteps)
   }, [setSteps])
+
+  useEffect(() => {
+    if (run && isMounted) {
+      // When the store wants to run the tour, wait a bit for the UI to settle
+      const timer = setTimeout(() => {
+        setRunDelayed(true)
+      }, 500) // A generous 500ms delay
+
+      return () => clearTimeout(timer)
+    }
+  }, [run, isMounted])
+
+  const handleLocalCallback = (data: CallBackProps) => {
+    const { status } = data
+    handleJoyrideCallback(data) // Pass data to the store's handler
+
+    // When the tour is over, reset our local state
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+      setRunDelayed(false)
+    }
+  }
 
   if (!isMounted) {
     return null
@@ -45,10 +69,10 @@ export function TourProvider() {
 
   return (
     <Joyride
-      run={run}
+      run={runDelayed}
       stepIndex={stepIndex}
       steps={tourSteps}
-      callback={handleJoyrideCallback}
+      callback={handleLocalCallback}
       continuous
       showProgress
       showSkipButton
