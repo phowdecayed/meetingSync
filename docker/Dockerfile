@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 # Use npm ci for faster, more reliable builds in CI/CD environments
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 COPY . .
 
