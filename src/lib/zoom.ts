@@ -505,55 +505,6 @@ export async function getZoomMeeting(
   }
 }
 
-// Function to get meeting UUID from numeric meeting ID
-export async function getZoomMeetingUUID(
-  meetingId: string | number,
-): Promise<string> {
-  try {
-    const numericMeetingId = meetingId.toString()
-    console.log('getZoomMeetingUUID called with meetingId:', numericMeetingId)
-
-    const credential = await findCredentialForMeeting(numericMeetingId)
-    const { apiClient } = await getZoomApiClient({
-      ...credential,
-      _count: { meetings: 0 },
-    })
-
-    // Approach 3: Try the instances endpoint (original approach)
-    console.log(
-      'Using Zoom Headers:',
-      JSON.stringify(apiClient.defaults.headers.common, null, 2),
-    )
-    console.log('Trying to get UUID from instances...')
-    const instancesResponse = await apiClient.get<{
-      meetings: { uuid: string }[]
-    }>(`/past_meetings/${numericMeetingId}/instances`)
-    const meetings = instancesResponse.data.meetings
-
-    console.log(
-      'Instances response:',
-      JSON.stringify(instancesResponse.data, null, 2),
-    )
-
-    if (meetings && Array.isArray(meetings) && meetings.length > 0) {
-      console.log('Found UUID from instances:', meetings[0].uuid)
-      return meetings[0].uuid
-    }
-
-    throw new Error('Could not find any meeting instances or UUID')
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error)) {
-      console.error(
-        'Failed to get Zoom meeting UUID:',
-        error.response?.data || error,
-      )
-    } else {
-      console.error('An unexpected error occurred:', error)
-    }
-    throw new Error('Failed to get Zoom meeting UUID')
-  }
-}
-
 // Fungsi untuk double-encode UUID sesuai aturan Zoom
 export function encodeMeetingUUID(uuid: string) {
   if (uuid.startsWith('/') || uuid.includes('//')) {
@@ -581,30 +532,21 @@ export interface ZoomMeetingSummary {
   summary_content: string
 }
 
+// Interface for past meeting instances
+interface PastMeetingInstance {
+  uuid: string
+  start_time: string
+}
+
 // Fungsi untuk mengambil meeting summary dari Zoom API
 export async function getZoomMeetingSummary(
-  meetingIdentifier: string,
-): Promise<ZoomMeetingSummary> {
+  numericMeetingId: string,
+): Promise<ZoomMeetingSummary[]> {
   try {
     console.log(
-      'getZoomMeetingSummary called with identifier:',
-      meetingIdentifier,
+      'getZoomMeetingSummary called with numericMeetingId:',
+      numericMeetingId,
     )
-
-    // Check if the identifier is a numeric ID or UUID
-    let meetingUUID = meetingIdentifier
-    const numericMeetingId = meetingIdentifier
-
-    // If it looks like a numeric ID (no special characters), get the UUID first
-    if (/^\d+$/.test(meetingIdentifier)) {
-      console.log('Identifier is numeric, getting UUID from meeting ID')
-      meetingUUID = await getZoomMeetingUUID(meetingIdentifier)
-      console.log('Got UUID from meeting ID:', meetingUUID)
-    } else {
-      // If we have a UUID, we need to find the numeric ID to find the credential
-      // This block is problematic if we only have a UUID. The schema would need to store it.
-      // Assuming for now the identifier will be the numeric ID.
-    }
 
     const credential = await findCredentialForMeeting(numericMeetingId)
     const { apiClient } = await getZoomApiClient({
@@ -612,19 +554,62 @@ export async function getZoomMeetingSummary(
       _count: { meetings: 0 },
     })
 
-    const encodedUUID = encodeMeetingUUID(meetingUUID)
-    console.log('Encoded UUID:', encodedUUID)
+    // 1. Get all past meeting instances (UUIDs)
+    const instancesResponse = await apiClient.get<{
+      meetings: PastMeetingInstance[]
+    }>(`/past_meetings/${numericMeetingId}/instances`)
+
+    const pastInstances = instancesResponse.data.meetings
+
+    if (!pastInstances || pastInstances.length === 0) {
+      console.log(
+        'No past meeting instances found for meeting ID:',
+        numericMeetingId,
+      )
+      return []
+    }
+
     console.log(
-      'Making API call to:',
-      `/meetings/${encodedUUID}/meeting_summary`,
+      `Found ${pastInstances.length} past instances for meeting ID ${numericMeetingId}.`,
     )
 
-    const response = await apiClient.get<ZoomMeetingSummary>(
-      `/meetings/${encodedUUID}/meeting_summary`,
+    // 2. Fetch summary for each UUID
+    const summaryPromises = pastInstances.map(async (instance) => {
+      try {
+        const encodedUUID = encodeMeetingUUID(instance.uuid)
+        console.log(
+          `Fetching summary for UUID: ${instance.uuid} (Encoded: ${encodedUUID})`,
+        )
+        const summaryResponse = await apiClient.get<ZoomMeetingSummary>(
+          `/meetings/${encodedUUID}/meeting_summary`,
+        )
+        return summaryResponse.data
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          console.warn(
+            `No summary found for meeting instance UUID: ${instance.uuid}`,
+          )
+          return null
+        }
+        console.error(`Failed to get summary for UUID ${instance.uuid}:`, error)
+        return null
+      }
+    })
+
+    const summaries = (await Promise.all(summaryPromises)).filter(
+      (summary): summary is ZoomMeetingSummary => summary !== null,
     )
-    return response.data
+
+    console.log(`Successfully fetched ${summaries.length} summaries.`)
+    return summaries
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
+      if (error.response?.status === 404) {
+        console.log(
+          `Meeting with ID ${numericMeetingId} not found in past meetings.`,
+        )
+        return []
+      }
       console.error(
         'Failed to get Zoom meeting summary:',
         error.response?.data || error,
