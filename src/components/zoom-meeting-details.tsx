@@ -50,6 +50,15 @@ interface ZoomMeetingDetailsProps {
   onClose: () => void
 }
 
+interface MeetingSummary {
+  summary_title: string
+  summary_content: string
+  summary_created_time: string
+  summary_last_modified_time: string
+  summary_last_modified_user_email?: string
+  is_combined_summary?: boolean
+}
+
 // Function to determine meeting status
 function getMeetingStatus(
   startTime: string,
@@ -76,17 +85,13 @@ export function ZoomMeetingDetails({
   const { data: session } = useSession()
   const { toast } = useToast()
   const [hostKey, setHostKey] = useState<string | null>(null)
-  const [detailedMeeting, setDetailedMeeting] =
+  const [detailedMeeting, setDetailedMeeting] = 
     useState<ZoomMeetingDetail | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showHostKey, setShowHostKey] = useState(false)
-  const [meetingSummary, setMeetingSummary] = useState<null | {
-    summary_title: string
-    summary_content: string
-    summary_created_time: string
-    summary_last_modified_time: string
-    summary_last_modified_user_email: string
-  }>(null)
+  const [meetingSummary, setMeetingSummary] = useState<null | MeetingSummary>(
+    null,
+  )
   const [loadingSummary, setLoadingSummary] = useState(false)
   const [activeTab, setActiveTab] = useState<'detail' | 'summary'>('detail')
 
@@ -145,24 +150,33 @@ export function ZoomMeetingDetails({
       const status = getMeetingStatus(meeting.start_time, meeting.duration)
       if (status === 'past') {
         setLoadingSummary(true)
-        fetch(`/api/zoom-meetings/${meeting.id}/instances`)
-          .then((res) =>
-            res.ok ? res.json() : Promise.reject('Failed to fetch instances'),
-          )
-          .then((data) => {
-            const meetingUUID = data.meetings?.[0]?.uuid
-            return fetch(
-              `/api/zoom-meetings/${meeting.id}/meeting_summary${meetingUUID ? `?uuid=${meetingUUID}` : ''}`,
-            )
+        fetch(`/api/zoom-meetings/${meeting.id}/meeting_summary`)
+          .then((res) => {
+            if (res.status === 404) {
+              return null // No summary found, not an error
+            }
+            if (!res.ok) {
+              // Try to get error message from body
+              return res.json().then((err) => {
+                throw new Error(
+                  err.error || 'Failed to fetch meeting summary',
+                )
+              })
+            }
+            return res.json()
           })
-          .then((res) =>
-            res.ok ? res.json() : Promise.reject('Failed to fetch summary'),
-          )
           .then((data) => {
-            if (data.summary_title) setMeetingSummary(data)
+            if (data && data.summary_title) {
+              setMeetingSummary(data)
+            }
           })
-          .catch((err) => console.error('Error fetching meeting summary:', err))
-          .finally(() => setLoadingSummary(false))
+          .catch((err) => {
+            console.error('Error fetching meeting summary:', err)
+            setMeetingSummary(null) // Ensure summary is null on error
+          })
+          .finally(() => {
+            setLoadingSummary(false)
+          })
       }
     } else {
       // Reset state when the dialog is closed
@@ -252,7 +266,7 @@ export function ZoomMeetingDetails({
                 <h4 className="text-sm font-medium">Organizer</h4>
                 <p className="text-sm text-gray-500">
                   {detailedMeeting?.organizer?.name || 'Loading...'} (
-                  {detailedMeeting?.organizer?.email || '...'})
+                  {detailedMeeting?.organizer?.email || '...'}) 
                 </p>
               </div>
             </div>
@@ -411,11 +425,17 @@ export function ZoomMeetingDetails({
                   </Button>
                 </div>
                 <div className="text-xs text-gray-400">
-                  Last updated:{' '}
-                  {new Date(
-                    meetingSummary.summary_last_modified_time,
-                  ).toLocaleString('id-ID')}{' '}
-                  by {meetingSummary.summary_last_modified_user_email}
+                  {meetingSummary.is_combined_summary ? (
+                    'This is a combined summary from multiple meeting instances.'
+                  ) : (
+                    <>
+                      Last updated:{' '}
+                      {new Date(
+                        meetingSummary.summary_last_modified_time,
+                      ).toLocaleString('id-ID')}{' '}
+                      by {meetingSummary.summary_last_modified_user_email}
+                    </>
+                  )}
                 </div>
                 <div className="prose prose-sm max-w-none">
                   <ReactMarkdown>
