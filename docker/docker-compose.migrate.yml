@@ -10,5 +10,9 @@ services:
       - TZ=Asia/Jakarta
     command: sh -c 'npx prisma migrate deploy'
     depends_on:
+      - app
+  app:
+    container_name: bpkad-zoom-app
+    depends_on:
       db:
         condition: service_healthy
