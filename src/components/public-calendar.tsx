@@ -22,6 +22,7 @@ type PublicMeeting = {
   status: MeetingStatus
   meetingId?: string | null
   meetingType: 'internal' | 'external'
+  meetingRoom: string | null
 }
 
 function EventDetail({
@@ -52,7 +53,7 @@ function EventCard({
     return `${id.slice(0, 3)} ${id.slice(3, 7)} ${id.slice(7)}`
   }
 
-  const { status, meetingType, meetingId } = event.extendedProps
+  const { status, meetingType, meetingId, meetingRoom } = event.extendedProps
 
   const getStatusVariant = (): 'default' | 'secondary' | 'outline' => {
     switch (status) {
@@ -100,6 +101,7 @@ function EventCard({
           label="Penanggung Jawab"
           value={event.extendedProps.organizerName}
         />
+        {meetingRoom && <EventDetail label="Ruang Rapat" value={meetingRoom} />}
         {meetingType === 'external' && (
           <EventDetail label="Meeting ID" value={formatMeetingId(meetingId)} />
         )}
@@ -145,6 +147,7 @@ export default function PublicCalendar() {
           meetingId: meeting.meetingId,
           description: meeting.description,
           meetingType: meeting.meetingType,
+          meetingRoom: meeting.meetingRoom,
         },
       })),
     [meetings],

@@ -24,7 +24,8 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import ReactMarkdown from 'react-markdown'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { UnifiedMeeting } from '@/types/meeting'
 
 interface ZoomMeetingDetail {
   id: number
@@ -45,7 +46,7 @@ interface ZoomMeetingDetail {
 }
 
 interface ZoomMeetingDetailsProps {
-  meeting?: ZoomMeetingDetail | null
+  meeting?: UnifiedMeeting | null
   isOpen: boolean
   onClose: () => void
 }
@@ -95,7 +96,7 @@ export function ZoomMeetingDetails({
   const [loadingSummary, setLoadingSummary] = useState(false)
   const [activeTab, setActiveTab] = useState<'detail' | 'summary'>('detail')
 
-  const fetchHostKey = useCallback((zoomMeetingId: number) => {
+  const fetchHostKey = useCallback((zoomMeetingId: string) => {
     fetch(`/api/zoom-settings/host-key?zoomMeetingId=${zoomMeetingId}`)
       .then((response) => {
         if (!response.ok) {
@@ -127,11 +128,7 @@ export function ZoomMeetingDetails({
         .then((data) => {
           setDetailedMeeting({
             ...meeting,
-            description: data.description,
-            organizer: data.organizer,
-            isOrganizer: data.isOrganizer,
-            participants: data.participants,
-            password: data.password || meeting.password,
+            ...data,
           })
 
           // If user is the organizer or an admin, fetch the host key for this specific meeting
@@ -142,12 +139,12 @@ export function ZoomMeetingDetails({
         .catch((error) => {
           console.error('Error fetching meeting details:', error)
           // Fallback to the basic meeting data if the detailed fetch fails
-          setDetailedMeeting(meeting)
+          setDetailedMeeting(meeting as unknown as ZoomMeetingDetail)
         })
 
       // Reset and fetch meeting summary for past meetings
       setMeetingSummary(null)
-      const status = getMeetingStatus(meeting.start_time, meeting.duration)
+      const status = getMeetingStatus(meeting.start, meeting.duration || 0)
       if (status === 'past') {
         setLoadingSummary(true)
         fetch(`/api/zoom-meetings/${meeting.id}/meeting_summary`)
@@ -185,17 +182,19 @@ export function ZoomMeetingDetails({
   }, [isOpen, meeting, session?.user?.role, fetchHostKey]) // Depend on meeting.id to prevent re-renders
   const copyToClipboard = (text: string, label: string): void => {
     navigator.clipboard.writeText(text).then(
-      () =>
+      () => {
         toast({
           title: 'Copied!',
           description: `${label} copied to clipboard.`,
-        }),
-      () =>
+        })
+      },
+      () => {
         toast({
           variant: 'destructive',
           title: 'Failed to copy',
           description: `Could not copy ${label}.`,
-        }),
+        })
+      },
     )
   }
 
@@ -203,7 +202,7 @@ export function ZoomMeetingDetails({
     if (!activeMeeting) return
     const invitation =
       `bpkad@jabarprov.go.id is inviting you to a scheduled Zoom meeting.\n\n` +
-      `Penanggung Jawab:\n${activeMeeting.organizer?.name} (${activeMeeting.organizer?.email})\n\n` +
+      `Penanggung Jawab:\n${activeMeeting.organizer?.name}\n\n` +
       `Topic: ${activeMeeting.topic}\n` +
       (activeMeeting.description
         ? `Description : ${activeMeeting.description}\n`
@@ -215,13 +214,13 @@ export function ZoomMeetingDetails({
     copyToClipboard(invitation, 'Meeting Invitation')
   }
 
-  const activeMeeting = detailedMeeting || meeting
+  const activeMeeting = detailedMeeting
   if (!activeMeeting) return null
 
   const meetingDate = new Date(activeMeeting.start_time)
   const status = getMeetingStatus(
     activeMeeting.start_time,
-    activeMeeting.duration,
+    activeMeeting.duration || 0,
   )
 
   return (
@@ -263,8 +262,7 @@ export function ZoomMeetingDetails({
               <div>
                 <h4 className="text-sm font-medium">Organizer</h4>
                 <p className="text-sm text-gray-500">
-                  {detailedMeeting?.organizer?.name || 'Loading...'} (
-                  {detailedMeeting?.organizer?.email || '...'})
+                  {detailedMeeting?.organizer?.name || 'Loading...'}
                 </p>
               </div>
             </div>

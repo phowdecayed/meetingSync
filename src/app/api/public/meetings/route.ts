@@ -1,72 +1,50 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { addMinutes } from 'date-fns'
 
 type MeetingStatus = 'Akan Datang' | 'Sedang Berlangsung' | 'Selesai'
 
-// Simplified public meeting type
-export type PublicMeeting = {
-  id: string
-  title: string
-  description: string | null
-  start: Date
-  end: Date
-  organizerName: string
-  meetingId?: string | null
-  status: MeetingStatus
-  meetingType: 'internal' | 'external'
-}
-
-// Helper to determine the meeting status
-function getMeetingStatus(start: Date, duration: number): MeetingStatus {
+function getMeetingStatus(start: Date, end: Date): MeetingStatus {
   const now = new Date()
-  const meetingEnd = addMinutes(start, duration)
-
   if (now < start) return 'Akan Datang'
-  if (now >= start && now <= meetingEnd) return 'Sedang Berlangsung'
+  if (now >= start && now <= end) return 'Sedang Berlangsung'
   return 'Selesai'
 }
 
 export async function GET() {
   try {
-    const now = new Date()
-
     const meetings = await prisma.meeting.findMany({
-      where: {
-        // Fetch meetings from the last hour and all upcoming
-        date: {
-          gte: new Date(now.getTime() - 60 * 60 * 1000), // 1 hour ago
-        },
+      include: {
+        organizer: true,
+        meetingRoom: true,
       },
       orderBy: {
         date: 'asc',
       },
-      include: {
-        organizer: {
-          select: {
-            name: true,
-          },
-        },
-      },
     })
 
-    const publicMeetings: PublicMeeting[] = meetings.map((meeting) => ({
-      id: meeting.id,
-      title: meeting.title,
-      description: meeting.description,
-      start: meeting.date,
-      end: addMinutes(meeting.date, meeting.duration),
-      organizerName: meeting.organizer?.name || 'Unknown Organizer',
-      status: getMeetingStatus(meeting.date, meeting.duration),
-      meetingId: meeting.zoomMeetingId,
-      meetingType: meeting.meetingType as 'internal' | 'external',
-    }))
-
+    const publicMeetings = meetings.map((meeting) => {
+      const start = new Date(meeting.date)
+      const end = new Date(start.getTime() + meeting.duration * 60 * 1000)
+      return {
+        id: meeting.id,
+        title: meeting.title,
+        description: meeting.description,
+        start: start.toISOString(),
+        end: end.toISOString(),
+        organizerName: meeting.organizer?.name || 'Unknown Organizer',
+        status: getMeetingStatus(start, end),
+        meetingId: meeting.zoomMeetingId,
+        meetingType: meeting.meetingType,
+        meetingRoom: meeting.meetingRoom
+          ? `${meeting.meetingRoom.name} - ${meeting.meetingRoom.location}`
+          : null,
+      }
+    })
     return NextResponse.json(publicMeetings)
   } catch (error) {
-    console.error('Error fetching public meetings:', error)
+    console.error('Failed to fetch public meetings:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch public meetings' },
+      { error: 'Failed to fetch meetings' },
       { status: 500 },
     )
   }

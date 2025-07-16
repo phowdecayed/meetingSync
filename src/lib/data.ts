@@ -14,9 +14,11 @@ import {
   MeetingRoom,
 } from '@prisma/client'
 
+export type { MeetingRoom }
+
 // --- SHARED TYPES & UTILS ---
 export type Meeting = Omit<PrismaMeeting, 'participants' | 'meetingType'> & {
-  participants: string[]
+  participants: string
   meetingType: 'internal' | 'external'
 }
 
@@ -31,7 +33,7 @@ export type FullUser = User & { password?: string }
 const formatMeeting = (meeting: PrismaMeeting): Meeting => {
   return {
     ...meeting,
-    participants: meeting.participants.split(',').map((p) => p.trim()),
+    participants: meeting.participants,
     meetingType: meeting.meetingType as 'internal' | 'external',
   }
 }
@@ -77,6 +79,10 @@ export const getMeetings = async (
 
   const meetings = await prisma.meeting.findMany({
     where: whereConditions,
+    include: {
+      meetingRoom: true,
+      organizer: true,
+    },
     orderBy: {
       date: 'asc',
     },
@@ -132,89 +138,95 @@ export const createMeeting = async (
   data: Omit<Meeting, 'id'>,
 ): Promise<Meeting> => {
   try {
-    // 1. Get the least busy credential first.
-    const credential = await getBalancedZoomCredential()
+    let zoomMeetingData = null
+    if (data.isZoomMeeting) {
+      // 1. Get the least busy credential first.
+      const credential = await getBalancedZoomCredential()
 
-    // If no credential is available (all are at capacity), stop the process.
-    if (!credential) {
-      throw new Error(
-        'CAPACITY_FULL:All Zoom accounts are at maximum capacity (2 meetings). Please wait or add more credentials.',
+      // If no credential is available (all are at capacity), stop the process.
+      if (!credential) {
+        throw new Error(
+          'CAPACITY_FULL:All Zoom accounts are at maximum capacity (2 meetings). Please wait or add more credentials.',
+        )
+      }
+
+      // 2. Check for overlaps on the specific credential that will be used.
+      const meetingDate =
+        data.date instanceof Date ? data.date : new Date(data.date)
+      const newStart = meetingDate
+      const newEnd = new Date(meetingDate.getTime() + data.duration * 60 * 1000)
+
+      const startOfDay = new Date(newStart)
+      startOfDay.setHours(0, 0, 0, 0)
+      const endOfDay = new Date(newStart)
+      endOfDay.setHours(23, 59, 59, 999)
+
+      const meetingsOnDay = await prisma.meeting.findMany({
+        where: {
+          // Only check meetings on the same credential
+          zoomCredentialId: credential.id,
+          date: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+        },
+      })
+
+      const overlapCount = meetingsOnDay.reduce((count, m) => {
+        const existingStart = new Date(m.date)
+        const existingEnd = new Date(
+          existingStart.getTime() + m.duration * 60 * 1000,
+        )
+        return newStart < existingEnd && newEnd > existingStart
+          ? count + 1
+          : count
+      }, 0)
+
+      if (overlapCount >= 2) {
+        throw new Error(
+          `The selected Zoom account (Client ID: ${credential.clientId}) is already at its maximum capacity of 2 concurrent meetings for this timeslot.`,
+        )
+      }
+
+      // 3. Create the Zoom meeting using the selected credential
+      const startTimeJakarta = format(meetingDate, "yyyy-MM-dd'T'HH:mm:ss")
+      zoomMeetingData = await createZoomMeeting(
+        {
+          topic: data.title,
+          start_time: startTimeJakarta,
+          duration: data.duration,
+          agenda: data.description ?? undefined,
+          password: data.zoomPassword ?? undefined,
+          type: 2,
+          timezone: 'Asia/Jakarta',
+          settings: {
+            host_video: true,
+            participant_video: true,
+            join_before_host: true,
+            mute_upon_entry: true,
+            waiting_room: false,
+            auto_recording: 'cloud',
+            approval_type: 2,
+            audio: 'both',
+          },
+        },
+        credential, // Pass the chosen credential
       )
     }
 
-    // 2. Check for overlaps on the specific credential that will be used.
-    const meetingDate =
-      data.date instanceof Date ? data.date : new Date(data.date)
-    const newStart = meetingDate
-    const newEnd = new Date(meetingDate.getTime() + data.duration * 60 * 1000)
-
-    const startOfDay = new Date(newStart)
-    startOfDay.setHours(0, 0, 0, 0)
-    const endOfDay = new Date(newStart)
-    endOfDay.setHours(23, 59, 59, 999)
-
-    const meetingsOnDay = await prisma.meeting.findMany({
-      where: {
-        // Only check meetings on the same credential
-        zoomCredentialId: credential.id,
-        date: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-      },
-    })
-
-    const overlapCount = meetingsOnDay.reduce((count, m) => {
-      const existingStart = new Date(m.date)
-      const existingEnd = new Date(
-        existingStart.getTime() + m.duration * 60 * 1000,
-      )
-      return newStart < existingEnd && newEnd > existingStart
-        ? count + 1
-        : count
-    }, 0)
-
-    if (overlapCount >= 2) {
-      throw new Error(
-        `The selected Zoom account (Client ID: ${credential.clientId}) is already at its maximum capacity of 2 concurrent meetings for this timeslot.`,
-      )
+    const { ...restOfData } = data as Omit<Meeting, 'id'> & {
+      time?: string
     }
-
-    // 3. Create the Zoom meeting using the selected credential
-    const startTimeJakarta = format(meetingDate, "yyyy-MM-dd'T'HH:mm:ss")
-    const zoomMeetingData = await createZoomMeeting(
-      {
-        topic: data.title,
-        start_time: startTimeJakarta,
-        duration: data.duration,
-        agenda: data.description ?? undefined,
-        password: data.zoomPassword ?? undefined,
-        type: 2,
-        timezone: 'Asia/Jakarta',
-        settings: {
-          host_video: true,
-          participant_video: true,
-          join_before_host: true,
-          mute_upon_entry: true,
-          waiting_room: false,
-          auto_recording: 'cloud',
-          approval_type: 2,
-          audio: 'both',
-        },
-      },
-      credential, // Pass the chosen credential
-    )
-
     // 4. Create the meeting in our database
     const meeting = await prisma.meeting.create({
       data: {
-        ...data,
-        participants: data.participants.join(', '),
-        zoomMeetingId: zoomMeetingData.zoomMeetingId,
-        zoomJoinUrl: zoomMeetingData.zoomJoinUrl,
-        zoomStartUrl: zoomMeetingData.zoomStartUrl,
-        zoomPassword: zoomMeetingData.zoomPassword,
-        zoomCredentialId: zoomMeetingData.credentialId, // Link the meeting to the credential
+        ...restOfData,
+        participants: data.participants,
+        zoomMeetingId: zoomMeetingData?.zoomMeetingId,
+        zoomJoinUrl: zoomMeetingData?.zoomJoinUrl,
+        zoomStartUrl: zoomMeetingData?.zoomStartUrl,
+        zoomPassword: zoomMeetingData?.zoomPassword,
+        zoomCredentialId: zoomMeetingData?.credentialId, // Link the meeting to the credential
       },
     })
 
@@ -241,32 +253,77 @@ export const updateMeeting = async (
 
     let zoomData = {}
 
-    if (currentMeeting.zoomMeetingId) {
+    // Case 1: Meeting is being converted to a Zoom meeting
+    if (data.isZoomMeeting && !currentMeeting.isZoomMeeting) {
       const meetingDate = data.date
         ? data.date instanceof Date
           ? data.date
           : new Date(data.date)
         : currentMeeting.date
-
-      const updatedZoomMeeting = await updateZoomMeeting(
-        currentMeeting.zoomMeetingId,
+      const credential = await getBalancedZoomCredential()
+      if (!credential) {
+        throw new Error(
+          'CAPACITY_FULL: All Zoom accounts are at maximum capacity.',
+        )
+      }
+      const createdZoomMeeting = await createZoomMeeting(
         {
-          title: data.title || currentMeeting.title,
-          date: meetingDate,
+          topic: data.title || currentMeeting.title,
+          start_time: format(meetingDate, "yyyy-MM-dd'T'HH:mm:ss"),
           duration: data.duration || currentMeeting.duration,
-          description:
-            (data.description !== undefined
-              ? data.description
-              : currentMeeting.description) ?? undefined,
+          agenda: data.description ?? undefined,
           password: data.zoomPassword ?? undefined,
         },
+        credential,
       )
-
       zoomData = {
-        zoomMeetingId: updatedZoomMeeting.zoomMeetingId,
-        zoomJoinUrl: updatedZoomMeeting.zoomJoinUrl,
-        zoomStartUrl: updatedZoomMeeting.zoomStartUrl,
-        zoomPassword: updatedZoomMeeting.zoomPassword,
+        zoomMeetingId: createdZoomMeeting.zoomMeetingId,
+        zoomJoinUrl: createdZoomMeeting.zoomJoinUrl,
+        zoomStartUrl: createdZoomMeeting.zoomStartUrl,
+        zoomPassword: createdZoomMeeting.zoomPassword,
+        zoomCredentialId: createdZoomMeeting.credentialId,
+      }
+    }
+    // Case 2: Meeting is no longer a Zoom meeting
+    else if (data.isZoomMeeting === false && currentMeeting.isZoomMeeting) {
+      if (currentMeeting.zoomMeetingId) {
+        await deleteZoomMeeting(currentMeeting.zoomMeetingId)
+      }
+      zoomData = {
+        zoomMeetingId: null,
+        zoomJoinUrl: null,
+        zoomStartUrl: null,
+        zoomPassword: null,
+        zoomCredentialId: null,
+      }
+    }
+    // Case 3: A Zoom meeting is being updated
+    else if (data.isZoomMeeting && currentMeeting.isZoomMeeting) {
+      if (currentMeeting.zoomMeetingId) {
+        const meetingDate = data.date
+          ? data.date instanceof Date
+            ? data.date
+            : new Date(data.date)
+          : currentMeeting.date
+        const updatedZoomMeeting = await updateZoomMeeting(
+          currentMeeting.zoomMeetingId,
+          {
+            title: data.title || currentMeeting.title,
+            date: meetingDate,
+            duration: data.duration || currentMeeting.duration,
+            description:
+              (data.description !== undefined
+                ? data.description
+                : currentMeeting.description) ?? undefined,
+            password: data.zoomPassword ?? undefined,
+          },
+        )
+        zoomData = {
+          zoomMeetingId: updatedZoomMeeting.zoomMeetingId,
+          zoomJoinUrl: updatedZoomMeeting.zoomJoinUrl,
+          zoomStartUrl: updatedZoomMeeting.zoomStartUrl,
+          zoomPassword: updatedZoomMeeting.zoomPassword,
+        }
       }
     }
 
@@ -274,7 +331,7 @@ export const updateMeeting = async (
       where: { id },
       data: {
         ...data,
-        participants: data.participants?.join(', '),
+        participants: data.participants,
         ...zoomData,
       },
     })

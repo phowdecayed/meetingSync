@@ -10,10 +10,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { Meeting } from '@/lib/data'
 import { format } from 'date-fns'
 import {
-  Building2,
   Calendar,
   Clock,
   Users,
@@ -23,37 +21,38 @@ import {
   Copy,
   Eye,
   EyeOff,
+  Building2,
+  Clipboard,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
-import { MeetingRoom } from '@prisma/client'
+import { Meeting } from '@/lib/data'
 
-interface MeetingDetailsDialogProps {
-  meeting: Meeting | null
+interface UnifiedMeetingDetailsProps {
+  meeting: (Meeting & { start?: string }) | null
   isOpen: boolean
   onClose: () => void
 }
 
-export function MeetingDetailsDialog({
+export function UnifiedMeetingDetails({
   meeting,
   isOpen,
   onClose,
-}: MeetingDetailsDialogProps) {
+}: UnifiedMeetingDetailsProps) {
   const { toast } = useToast()
   const { data: session } = useSession()
   const [hostKey, setHostKey] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showHostKey, setShowHostKey] = useState(false)
-  const [meetingRoom, setMeetingRoom] = useState<MeetingRoom | null>(null)
 
-  // Determine if the current user is the organizer
   const isOrganizer = meeting && session?.user?.id === meeting.organizerId
 
   useEffect(() => {
-    // Fetch host key only if user is the organizer
-    if (isOpen && isOrganizer) {
-      fetch('/api/zoom-settings/host-key')
+    if (isOpen && isOrganizer && meeting?.isZoomMeeting) {
+      fetch(
+        `/api/zoom-settings/host-key?zoomMeetingId=${meeting.zoomMeetingId}`,
+      )
         .then((response) => response.json())
         .then((data) => {
           if (data.hostKey) {
@@ -67,44 +66,17 @@ export function MeetingDetailsDialog({
     } else {
       setHostKey(null)
     }
-
-    if (isOpen && meeting?.meetingRoomId) {
-      fetch(`/api/meeting-rooms/${meeting.meetingRoomId}`)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data) {
-            setMeetingRoom(data)
-          }
-        })
-        .catch((error) => {
-          console.error('Error fetching meeting room:', error)
-          setMeetingRoom(null)
-        })
-    } else {
-      setMeetingRoom(null)
-    }
   }, [isOpen, isOrganizer, meeting])
 
   if (!meeting) return null
 
-  // Determine if the meeting is in the past
+  const meetingDateStr = meeting.start || meeting.date
   const now = new Date()
-  const meetingDate = new Date(meeting.date)
+  const meetingDate = new Date(meetingDateStr)
   const meetingEndTime = new Date(
-    meetingDate.getTime() + meeting.duration * 60 * 1000,
+    meetingDate.getTime() + (meeting.duration || 0) * 60 * 1000,
   )
   const isPastMeeting = now > meetingEndTime
-
-  const handleJoinMeeting = () => {
-    if (meeting.zoomPassword) {
-      // Show toast with password information
-      toast({
-        title: 'Meeting Password',
-        description: `Password: ${meeting.zoomPassword}`,
-        duration: 10000, // Show for 10 seconds to give user time to read and copy
-      })
-    }
-  }
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text).then(
@@ -122,6 +94,42 @@ export function MeetingDetailsDialog({
         })
       },
     )
+  }
+
+  const safeFormatDate = (
+    date: string | Date | undefined,
+    formatString: string,
+  ) => {
+    if (!date) {
+      return 'No date provided'
+    }
+    try {
+      const dateToFormat = typeof date === 'string' ? new Date(date) : date
+      return format(dateToFormat, formatString)
+    } catch {
+      console.error('Invalid date provided to format:', date)
+      return 'Invalid date'
+    }
+  }
+
+  const copyInvitation = () => {
+    if (!meeting) return
+    let invitation = `You are invited to a meeting.\n\n`
+    invitation += `Topic: ${meeting.title}\n`
+    invitation += `Time: ${safeFormatDate(meetingDateStr, 'PPpp')}\n`
+    if (meeting.description) {
+      invitation += `Description: ${meeting.description}\n`
+    }
+    if (meeting.isZoomMeeting && meeting.zoomJoinUrl) {
+      invitation += `Join Zoom Meeting: ${meeting.zoomJoinUrl}\n`
+      if (meeting.zoomPassword) {
+        invitation += `Passcode: ${meeting.zoomPassword}\n`
+      }
+    }
+    if (meeting.meetingRoomId) {
+      invitation += `Location: ${meeting.meetingRoomId}\n`
+    }
+    copyToClipboard(invitation, 'Meeting Invitation')
   }
 
   return (
@@ -146,27 +154,24 @@ export function MeetingDetailsDialog({
             <div>
               <h4 className="font-semibold">Date & Time</h4>
               <p className="text-muted-foreground">
-                {format(new Date(meeting.date), 'PPPP p')}
+                {safeFormatDate(meetingDateStr, 'PPPP p')}
               </p>
             </div>
           </div>
+
           <div className="flex items-start gap-4">
             <Clock className="text-muted-foreground mt-1 h-5 w-5" />
             <div>
-              <h4 className="font-semibold">Duration</h4>
-              <p className="text-muted-foreground">
-                {meeting.duration} minutes
-              </p>
+              <h4 className="font-semibold">Duration (minutes)</h4>
+              <p className="text-muted-foreground">{meeting.duration}</p>
             </div>
           </div>
-          {meetingRoom && (
+          {meeting.meetingRoomId && (
             <div className="flex items-start gap-4">
               <Building2 className="text-muted-foreground mt-1 h-5 w-5" />
               <div>
                 <h4 className="font-semibold">Meeting Room</h4>
-                <p className="text-muted-foreground">
-                  {meetingRoom.name} - {meetingRoom.location}
-                </p>
+                <p className="text-muted-foreground">{meeting.meetingRoomId}</p>
               </div>
             </div>
           )}
@@ -202,7 +207,7 @@ export function MeetingDetailsDialog({
               </div>
             </div>
           </div>
-          {meeting.zoomJoinUrl ? (
+          {meeting.isZoomMeeting && meeting.zoomJoinUrl && (
             <div className="flex items-start gap-4">
               <LinkIcon className="text-muted-foreground mt-1 h-5 w-5" />
               <div>
@@ -237,19 +242,7 @@ export function MeetingDetailsDialog({
                 )}
               </div>
             </div>
-          ) : (
-            <div className="flex items-start gap-4">
-              <LinkIcon className="text-muted-foreground mt-1 h-5 w-5" />
-              <div>
-                <h4 className="font-semibold">Zoom Meeting Link</h4>
-                <p className="text-muted-foreground text-sm">
-                  Zoom meeting link not available. Please check back later.
-                </p>
-              </div>
-            </div>
           )}
-
-          {/* Only show host key to the organizer */}
           {isOrganizer && hostKey && (
             <div className="flex items-start gap-4">
               <User className="text-muted-foreground mt-1 h-5 w-5" />
@@ -280,7 +273,7 @@ export function MeetingDetailsDialog({
                   </div>
                 </h4>
                 <p className="text-muted-foreground font-mono text-sm">
-                  {showHostKey ? hostKey : '••••••••'}
+                  {showHostKey ? hostKey : '••••••'}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs italic">
                   Gunakan Host Key untuk claim Host
@@ -293,28 +286,21 @@ export function MeetingDetailsDialog({
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
-          {meeting.zoomJoinUrl &&
-            (isPastMeeting ? (
-              <Button
-                variant="outline"
-                disabled
-                className="cursor-not-allowed opacity-60"
-                title="Meeting has ended"
+          <Button onClick={copyInvitation}>
+            <Clipboard className="mr-2 h-4 w-4" />
+            Copy Invitation
+          </Button>
+          {meeting.isZoomMeeting && meeting.zoomJoinUrl && !isPastMeeting && (
+            <Button asChild>
+              <a
+                href={meeting.zoomJoinUrl}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                Meeting Ended
-              </Button>
-            ) : (
-              <Button asChild>
-                <a
-                  href={meeting.zoomJoinUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={handleJoinMeeting}
-                >
-                  Join Meeting
-                </a>
-              </Button>
-            ))}
+                Join Meeting
+              </a>
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

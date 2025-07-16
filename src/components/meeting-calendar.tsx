@@ -124,12 +124,16 @@ export function MeetingCalendar({ meetings }: MeetingCalendarProps) {
                                   Participants
                                 </h4>
                                 <div className="mt-2 flex flex-wrap gap-2">
-                                  {meeting.participants.length > 0 ? (
-                                    meeting.participants.map((p) => (
-                                      <Badge key={p} variant="secondary">
-                                        {p}
-                                      </Badge>
-                                    ))
+                                  {meeting.participants &&
+                                  typeof meeting.participants === 'string' &&
+                                  meeting.participants.length > 0 ? (
+                                    meeting.participants
+                                      .split(',')
+                                      .map((p: string) => (
+                                        <Badge key={p} variant="secondary">
+                                          {p.trim()}
+                                        </Badge>
+                                      ))
                                   ) : (
                                     <p className="text-muted-foreground text-sm">
                                       No participants other than the organizer.

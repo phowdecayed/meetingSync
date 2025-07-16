@@ -28,8 +28,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { meetingSchema } from '@/lib/validators/meeting'
-import { Meeting, User } from '@/lib/data'
+import { Meeting, User, MeetingRoom } from '@/lib/data'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { useMeetingStore } from '@/store/use-meeting-store'
@@ -60,6 +68,20 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
   const { addMeeting, updateMeeting } = useMeetingStore()
   const { data: session } = useSession()
   const user = session?.user
+  const [meetingRooms, setMeetingRooms] = useState<MeetingRoom[]>([])
+
+  useEffect(() => {
+    async function fetchMeetingRooms() {
+      try {
+        const res = await fetch('/api/meeting-rooms')
+        const data = await res.json()
+        setMeetingRooms(data)
+      } catch {
+        // ignore
+      }
+    }
+    fetchMeetingRooms()
+  }, [])
 
   const isEditMode = !!existingMeeting
 
@@ -78,8 +100,10 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                   .map((p: string) => p.trim())
               : [],
           description: existingMeeting.description || '',
-          password: existingMeeting.zoomPassword || 'BPKADJabar',
+          zoomPassword: existingMeeting.zoomPassword || 'BPKADJabar',
           meetingType: existingMeeting.meetingType || 'internal',
+          isZoomMeeting: existingMeeting.isZoomMeeting,
+          meetingRoomId: existingMeeting.meetingRoomId,
         }
       : {
           title: '',
@@ -88,8 +112,10 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
           duration: 30,
           participants: [],
           description: '',
-          password: 'BPKADJabar',
+          zoomPassword: 'BPKADJabar',
           meetingType: 'internal',
+          isZoomMeeting: true,
+          meetingRoomId: null,
         }
 
   const form = useForm<z.infer<typeof meetingSchema>>({
@@ -97,13 +123,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       z.infer<typeof meetingSchema>
     >,
     defaultValues: {
-      title: defaultValues.title,
-      date: defaultValues.date,
-      time: defaultValues.time,
-      duration: defaultValues.duration,
-      participants: defaultValues.participants,
-      description: defaultValues.description,
-      password: defaultValues.password,
+      ...defaultValues,
       meetingType: defaultValues.meetingType as 'internal' | 'external',
     },
   })
@@ -133,6 +153,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
   const watchedDate = form.watch('date')
   const watchedTime = form.watch('time')
   const watchedDuration = form.watch('duration')
+  const isZoomMeeting = form.watch('isZoomMeeting')
 
   // Check for overlap
   useEffect(() => {
@@ -204,6 +225,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
       ...values,
       date: combinedDateTime,
       organizerId: user.id,
+      participants: values.participants.join(', '),
     }
 
     try {
@@ -219,14 +241,14 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
           createdAt: new Date(),
           updatedAt: new Date(),
           deletedAt: null,
-          isZoomMeeting: false,
+          isZoomMeeting: meetingData.isZoomMeeting,
           zoomMeetingId: null,
           zoomJoinUrl: null,
           zoomStartUrl: null,
-          zoomPassword: meetingData.password || null,
+          zoomPassword: meetingData.zoomPassword || null,
           organizerId: user.id,
           zoomCredentialId: null,
-          meetingRoomId: null,
+          meetingRoomId: meetingData.meetingRoomId ?? null,
           description: meetingData.description || null, // Ensure description is string | null
         })
         toast({
@@ -445,10 +467,60 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
               <AccordionItem value="item-3">
                 <AccordionTrigger>
                   <h3 className="text-lg font-medium">
-                    Additional Details (Optional)
+                    Location & Details (Optional)
                   </h3>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-8 pt-6">
+                  <FormField
+                    control={form.control}
+                    name="isZoomMeeting"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel>Create Zoom Meeting</FormLabel>
+                          <FormDescription>
+                            A Zoom meeting link will be generated.
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="meetingRoomId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Meeting Room</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value ?? undefined}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a meeting room" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {meetingRooms.map((room) => (
+                              <SelectItem key={room.id} value={room.id}>
+                                {room.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Choose a physical location for the meeting.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="description"
@@ -465,26 +537,28 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Zoom Meeting Password</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Enter password for Zoom meeting"
-                            {...field}
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Only required if this will be a Zoom meeting.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {isZoomMeeting && (
+                    <FormField
+                      control={form.control}
+                      name="zoomPassword"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Zoom Meeting Password</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Enter password for Zoom meeting"
+                              {...field}
+                              value={field.value || ''}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Only required if this will be a Zoom meeting.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

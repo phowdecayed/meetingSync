@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MeetingCalendar } from '@/components/meeting-calendar'
 import { type Meeting } from '@/lib/data'
 import { format } from 'date-fns'
-import { Clock, User, Eye } from 'lucide-react'
+import { Clock, User, Eye, Building2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { MeetingDetailsDialog } from './meeting-details-dialog'
 import { Button } from './ui/button'
@@ -86,9 +86,17 @@ export function ScheduleView({ meetings }: { meetings: Meeting[] }) {
                     <div className="text-muted-foreground flex items-center text-sm">
                       <User className="mr-2 h-4 w-4" />
                       <span className="truncate">
-                        {meeting.participants.join(', ')}
+                        {typeof meeting.participants === 'string'
+                          ? meeting.participants
+                          : ''}
                       </span>
                     </div>
+                    {meeting.meetingRoomId && (
+                      <div className="text-muted-foreground flex items-center text-sm">
+                        <Building2 className="mr-2 h-4 w-4" />
+                        <span>Offline Meeting</span>
+                      </div>
+                    )}
                   </CardContent>
                   <CardFooter>
                     <Button

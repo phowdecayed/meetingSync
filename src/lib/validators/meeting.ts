@@ -18,10 +18,12 @@ export const meetingSchema = z.object({
     )
     .default([]),
   description: z.string().optional(),
-  password: z
+  zoomPassword: z
     .string()
     .min(1, { message: 'Password is required for Zoom meetings.' })
     .max(10, { message: 'Password cannot be longer than 10 characters.' })
     .optional(),
   meetingType: z.enum(['internal', 'external']).default('internal'),
+  isZoomMeeting: z.boolean().default(true),
+  meetingRoomId: z.string().optional().nullable(),
 })
