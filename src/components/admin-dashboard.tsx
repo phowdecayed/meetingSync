@@ -126,31 +126,40 @@ export async function AdminDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {stats.mostActiveUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage
-                        src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name)}`}
-                      />
-                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-muted-foreground text-sm">
-                        {user.email}
-                      </p>
+              {stats.mostActiveUsers.map(
+                (user: {
+                  id: string
+                  name: string
+                  email: string
+                  meetingCount: number
+                }) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage
+                          src={`https://xsgames.co/randomusers/avatar.php?g=pixel&name=${encodeURIComponent(user.name)}`}
+                        />
+                        <AvatarFallback>
+                          {getInitials(user.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-muted-foreground text-sm">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold">{user.meetingCount}</p>
+                      <p className="text-muted-foreground text-xs">rapat</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold">{user.meetingCount}</p>
-                    <p className="text-muted-foreground text-xs">rapat</p>
-                  </div>
-                </div>
-              ))}
+                ),
+              )}
             </CardContent>
           </Card>
         </div>

@@ -167,15 +167,18 @@ export const createMeeting = async (
       },
     })
 
-    const overlapCount = meetingsOnDay.reduce((count, m) => {
-      const existingStart = new Date(m.date)
-      const existingEnd = new Date(
-        existingStart.getTime() + m.duration * 60 * 1000,
-      )
-      return newStart < existingEnd && newEnd > existingStart
-        ? count + 1
-        : count
-    }, 0)
+    const overlapCount = meetingsOnDay.reduce(
+      (count: number, m: PrismaMeeting) => {
+        const existingStart = new Date(m.date)
+        const existingEnd = new Date(
+          existingStart.getTime() + m.duration * 60 * 1000,
+        )
+        return newStart < existingEnd && newEnd > existingStart
+          ? count + 1
+          : count
+      },
+      0,
+    )
 
     if (overlapCount >= 2) {
       throw new Error(
@@ -387,7 +390,7 @@ export const getUsers = async (options?: {
   ])
 
   return {
-    users: users.map((user) => ({
+    users: users.map((user: PrismaUser) => ({
       id: user.id,
       name: user.name,
       email: user.email,
@@ -406,7 +409,7 @@ export const getUsersByIds = async (ids: string[]): Promise<User[]> => {
       },
     },
   })
-  return users.map((user) => ({
+  return users.map((user: PrismaUser) => ({
     id: user.id,
     name: user.name,
     email: user.email,
@@ -513,7 +516,9 @@ export const getAdminDashboardStats = async () => {
     take: 4,
   })
 
-  const userIds = mostActiveUsersData.map((u) => u.organizerId)
+  const userIds = mostActiveUsersData.map(
+    (u: { organizerId: string }) => u.organizerId,
+  )
   const users = await prisma.user.findMany({
     where: {
       id: {
@@ -521,12 +526,14 @@ export const getAdminDashboardStats = async () => {
       },
     },
   })
-  const userMap = new Map(users.map((u) => [u.id, u]))
+  const userMap = new Map(users.map((u: PrismaUser) => [u.id, u]))
 
-  const mostActiveUsers = mostActiveUsersData.map((u) => ({
-    ...(userMap.get(u.organizerId) as User),
-    meetingCount: u._count.organizerId,
-  }))
+  const mostActiveUsers = mostActiveUsersData.map(
+    (u: { organizerId: string; _count: { organizerId: number } }) => ({
+      ...(userMap.get(u.organizerId) as User),
+      meetingCount: u._count.organizerId,
+    }),
+  )
 
   const nextSevenDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()

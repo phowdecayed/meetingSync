@@ -35,7 +35,7 @@ export async function GET(
 
     const isOrganizer = meeting.organizerId === session.user.id
     const participants = meeting.participants
-      ? meeting.participants.split(',').map((p) => p.trim())
+      ? meeting.participants.split(',').map((p: string) => p.trim())
       : []
 
     return NextResponse.json({
