@@ -21,6 +21,7 @@ type PublicMeeting = {
   organizerName: string
   status: MeetingStatus
   meetingId?: string | null
+  meetingType: 'internal' | 'external'
 }
 
 function EventDetail({
@@ -51,7 +52,7 @@ function EventCard({
     return `${id.slice(0, 3)} ${id.slice(3, 7)} ${id.slice(7)}`
   }
 
-  const status: MeetingStatus = event.extendedProps.status
+  const { status, meetingType, meetingId } = event.extendedProps
 
   const getStatusVariant = (): 'default' | 'secondary' | 'outline' => {
     switch (status) {
@@ -76,13 +77,19 @@ function EventCard({
             : 'bg-white/80 hover:bg-gray-50/90'
       } backdrop-blur-sm`}
     >
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-2">
         <p className="text-primary flex-1 truncate text-base font-bold">
           {event.title}
         </p>
-        <Badge variant={getStatusVariant()} className="ml-4">
-          {status}
-        </Badge>
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <Badge
+            variant={meetingType === 'internal' ? 'destructive' : 'secondary'}
+            className="capitalize"
+          >
+            {meetingType}
+          </Badge>
+          <Badge variant={getStatusVariant()}>{status}</Badge>
+        </div>
       </div>
       <div className="border-border mt-2 space-y-1 border-l-2 pl-3">
         <EventDetail
@@ -93,11 +100,9 @@ function EventCard({
           label="Penanggung Jawab"
           value={event.extendedProps.organizerName}
         />
-        <EventDetail label="Jenis Rapat" value="Zoom" />
-        <EventDetail
-          label="Meeting ID"
-          value={formatMeetingId(event.extendedProps.meetingId)}
-        />
+        {meetingType === 'external' && (
+          <EventDetail label="Meeting ID" value={formatMeetingId(meetingId)} />
+        )}
       </div>
     </div>
   )
@@ -139,6 +144,7 @@ export default function PublicCalendar() {
           status: meeting.status,
           meetingId: meeting.meetingId,
           description: meeting.description,
+          meetingType: meeting.meetingType,
         },
       })),
     [meetings],

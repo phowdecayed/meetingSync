@@ -14,6 +14,7 @@ export type PublicMeeting = {
   organizerName: string
   meetingId?: string | null
   status: MeetingStatus
+  meetingType: 'internal' | 'external'
 }
 
 // Helper to determine the meeting status
@@ -58,6 +59,7 @@ export async function GET() {
       organizerName: meeting.organizer?.name || 'Unknown Organizer',
       status: getMeetingStatus(meeting.date, meeting.duration),
       meetingId: meeting.zoomMeetingId,
+      meetingType: meeting.meetingType as 'internal' | 'external',
     }))
 
     return NextResponse.json(publicMeetings)

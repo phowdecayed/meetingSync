@@ -19,6 +19,7 @@ export type Meeting = {
   description?: string
   password?: string // Password for Zoom meeting
   organizerId: string
+  meetingType: 'internal' | 'external'
   zoomMeetingId?: string
   zoomJoinUrl?: string
   zoomStartUrl?: string
@@ -41,6 +42,7 @@ type PrismaMeeting = {
   participants: string
   description: string | null
   organizerId: string
+  meetingType: string
   zoomMeetingId: string | null
   zoomJoinUrl: string | null
   zoomStartUrl: string | null
@@ -65,6 +67,7 @@ const formatMeeting = (meeting: PrismaMeeting): Meeting => {
     ...meeting,
     participants: meeting.participants.split(',').map((p: string) => p.trim()),
     description: meeting.description || undefined,
+    meetingType: meeting.meetingType as 'internal' | 'external',
     zoomMeetingId: meeting.zoomMeetingId || undefined,
     zoomJoinUrl: meeting.zoomJoinUrl || undefined,
     zoomStartUrl: meeting.zoomStartUrl || undefined,
@@ -222,6 +225,7 @@ export const createMeeting = async (
           : data.participants,
         description: data.description || '',
         organizerId: data.organizerId,
+        meetingType: data.meetingType, // <-- ADDED THIS LINE
         zoomMeetingId: zoomMeetingData.zoomMeetingId,
         zoomJoinUrl: zoomMeetingData.zoomJoinUrl,
         zoomStartUrl: zoomMeetingData.zoomStartUrl,
@@ -306,6 +310,7 @@ export const updateMeeting = async (
         }),
         ...(data.password !== undefined && { password: data.password }),
         ...(data.organizerId && { organizerId: data.organizerId }),
+        ...(data.meetingType && { meetingType: data.meetingType }), // <-- ADDED THIS LINE
         ...zoomData,
       },
     })
