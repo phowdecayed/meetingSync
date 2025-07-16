@@ -3,10 +3,15 @@ import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { ThemeProvider } from '@/components/theme-provider'
 import NextAuthSessionProvider from '@/components/auth/session-provider'
+import prisma from '@/lib/prisma'
 
-export const metadata: Metadata = {
-  title: 'MeetingSync',
-  description: 'Efficiently manage and schedule your Zoom meetings.',
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await prisma.settings.findFirst()
+
+  return {
+    title: settings?.appName,
+    description: settings?.appDescription,
+  }
 }
 
 export default function RootLayout({

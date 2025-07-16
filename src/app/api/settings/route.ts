@@ -14,19 +14,30 @@ export async function GET() {
         data: {
           allowRegistration: true,
           defaultRole: 'member',
+          appName: 'MeetingSync',
+          appDescription: 'Efficiently manage and schedule your Zoom meetings.',
         },
       })
     }
 
     // Admin gets all settings, but we don't want to expose the password hash
     if (session?.user?.role === 'admin') {
-      const { id, allowRegistration, defaultRole } = settings
-      return NextResponse.json({ id, allowRegistration, defaultRole })
+      const { id, allowRegistration, defaultRole, appName, appDescription } =
+        settings
+      return NextResponse.json({
+        id,
+        allowRegistration,
+        defaultRole,
+        appName,
+        appDescription,
+      })
     }
 
     // Public only gets safe settings
     return NextResponse.json({
       allowRegistration: settings.allowRegistration,
+      appName: settings.appName,
+      appDescription: settings.appDescription,
     })
   } catch (error) {
     console.error('Error fetching settings:', error)
@@ -47,7 +58,13 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json()
-    const { allowRegistration, defaultRole, defaultResetPassword } = body
+    const {
+      allowRegistration,
+      defaultRole,
+      defaultResetPassword,
+      appName,
+      appDescription,
+    } = body
 
     const settings = await prisma.settings.findFirst()
     if (!settings) {
@@ -58,6 +75,8 @@ export async function PUT(request: Request) {
       allowRegistration?: boolean
       defaultRole?: string
       defaultResetPassword?: string
+      appName?: string
+      appDescription?: string
     } = {}
 
     if (typeof allowRegistration === 'boolean') {
@@ -65,6 +84,12 @@ export async function PUT(request: Request) {
     }
     if (typeof defaultRole === 'string') {
       dataToUpdate.defaultRole = defaultRole
+    }
+    if (typeof appName === 'string') {
+      dataToUpdate.appName = appName
+    }
+    if (typeof appDescription === 'string') {
+      dataToUpdate.appDescription = appDescription
     }
     if (typeof defaultResetPassword === 'string' && defaultResetPassword) {
       if (defaultResetPassword.length < 8) {
@@ -88,6 +113,8 @@ export async function PUT(request: Request) {
       id: updated.id,
       allowRegistration: updated.allowRegistration,
       defaultRole: updated.defaultRole,
+      appName: updated.appName,
+      appDescription: updated.appDescription,
     })
   } catch (error) {
     console.error('Error updating settings:', error)

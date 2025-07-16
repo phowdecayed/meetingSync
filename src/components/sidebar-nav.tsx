@@ -14,7 +14,7 @@ import { Home, Settings, Users, Video, Calendar, User } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { ThemeToggle } from './theme-toggle'
 import { Separator } from '@radix-ui/react-separator'
-import packageJson from '../../package.json'
+import { useEffect, useState } from 'react'
 
 const allMenuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -34,6 +34,35 @@ export function SidebarNav() {
   const pathname = usePathname()
   const { data: session } = useSession()
   const user = session?.user
+  const [appName, setAppName] = useState('')
+  const [appVersion, setAppVersion] = useState('')
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const res = await fetch('/api/settings')
+        if (res.ok) {
+          const data = await res.json()
+          setAppName(data.appName)
+        }
+      } catch (error) {
+        console.error('Failed to fetch app name', error)
+      }
+    }
+    async function fetchVersion() {
+      try {
+        const res = await fetch('/api/version') // Assuming you create this
+        if (res.ok) {
+          const data = await res.json()
+          setAppVersion(data.version)
+        }
+      } catch {
+        // It's okay if this fails, not critical
+      }
+    }
+    fetchSettings()
+    fetchVersion()
+  }, [])
 
   const menuItems = allMenuItems.filter((item) => {
     if (!item.roles) return true
@@ -61,7 +90,7 @@ export function SidebarNav() {
           </svg>
           <div className="group-data-[collapsible=icon]:hidden">
             <h2 className="font-headline text-center text-2xl font-semibold">
-              MeetingSync
+              {appName}
             </h2>
           </div>
         </div>
@@ -93,9 +122,11 @@ export function SidebarNav() {
       </SidebarContent>
       <SidebarFooter className="items-center">
         <ThemeToggle />
-        <p className="text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
-          v{packageJson.version}
-        </p>
+        {appVersion && (
+          <p className="text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
+            v{appVersion}
+          </p>
+        )}
         <div className="flex items-center justify-center gap-2">
           <p className="text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
             &copy; 2025 Pranata Komputer BPKAD.

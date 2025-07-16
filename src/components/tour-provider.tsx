@@ -1,45 +1,60 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import Joyride, { Step, STATUS, CallBackProps } from 'react-joyride'
 import { useTourStore } from '@/store/use-tour-store'
 import { useTheme } from 'next-themes'
 
-const tourSteps: Step[] = [
-  {
-    target: 'main[role="main"]',
-    content:
-      'Selamat datang di MeetingSync! Ini adalah dasbor utama Anda tempat Anda dapat melihat ringkasan aktivitas Anda.',
-    disableBeacon: true,
-    placement: 'center',
-  },
-  {
-    target: 'div[data-slot="sidebar"]',
-    content:
-      'Gunakan bilah sisi untuk menavigasi di antara berbagai bagian aplikasi, seperti rapat, jadwal Anda, dan pengaturan.',
-    placement: 'right',
-  },
-  {
-    target: '#new-meeting-button',
-    content:
-      'Anda dapat dengan cepat menjadwalkan pertemuan baru dari mana saja menggunakan tombol ini.',
-  },
-  {
-    target: 'button[data-testid="user-avatar-button"]',
-    content:
-      'Akses profil Anda, keluar, atau mulai tur ini lagi dari menu pengguna.',
-  },
-]
-
 export function TourProvider() {
-  const { run, stepIndex, handleJoyrideCallback, setSteps } = useTourStore()
+  const { run, stepIndex, steps, handleJoyrideCallback, setSteps } =
+    useTourStore()
   const { theme } = useTheme()
-  const [isMounted, setIsMounted] = React.useState(false)
-  const [runDelayed, setRunDelayed] = React.useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+  const [runDelayed, setRunDelayed] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
-    setSteps(tourSteps)
+
+    async function fetchSettingsAndSetSteps() {
+      let appName = ''
+      try {
+        const res = await fetch('/api/settings')
+        if (res.ok) {
+          const data = await res.json()
+          appName = data.appName || appName
+        }
+      } catch (error) {
+        console.error('Failed to fetch app name for tour', error)
+      }
+
+      const tourSteps: Step[] = [
+        {
+          target: 'main[role="main"]',
+          content: `Selamat datang di ${appName}! Ini adalah dasbor utama Anda tempat Anda dapat melihat ringkasan aktivitas Anda.`,
+          disableBeacon: true,
+          placement: 'center',
+        },
+        {
+          target: 'div[data-slot="sidebar"]',
+          content:
+            'Gunakan bilah sisi untuk menavigasi di antara berbagai bagian aplikasi, seperti rapat, jadwal Anda, dan pengaturan.',
+          placement: 'right',
+        },
+        {
+          target: '#new-meeting-button',
+          content:
+            'Anda dapat dengan cepat menjadwalkan pertemuan baru dari mana saja menggunakan tombol ini.',
+        },
+        {
+          target: 'button[data-testid="user-avatar-button"]',
+          content:
+            'Akses profil Anda, keluar, atau mulai tur ini lagi dari menu pengguna.',
+        },
+      ]
+      setSteps(tourSteps)
+    }
+
+    fetchSettingsAndSetSteps()
   }, [setSteps])
 
   useEffect(() => {
@@ -58,7 +73,7 @@ export function TourProvider() {
     handleJoyrideCallback(data) // Pass data to the store's handler
 
     // When the tour is over, reset our local state
-    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       setRunDelayed(false)
     }
   }
@@ -71,7 +86,7 @@ export function TourProvider() {
     <Joyride
       run={runDelayed}
       stepIndex={stepIndex}
-      steps={tourSteps}
+      steps={steps}
       callback={handleLocalCallback}
       continuous
       showProgress

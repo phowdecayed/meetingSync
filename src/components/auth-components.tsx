@@ -48,6 +48,7 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [allowRegistration, setAllowRegistration] = useState(true)
+  const [appName, setAppName] = useState('MeetingSync')
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export function LoginForm() {
         if (!res.ok) throw new Error('Gagal mengambil pengaturan')
         const data = await res.json()
         setAllowRegistration(data.allowRegistration)
+        setAppName(data.appName || 'MeetingSync')
       } catch {
         setAllowRegistration(false) // fallback: tetap tampilkan jika gagal
       }
@@ -105,7 +107,7 @@ export function LoginForm() {
         <CardTitle className="font-headline text-3xl font-bold">
           Welcome Back!
         </CardTitle>
-        <CardDescription>Sign in to continue to MeetingSync</CardDescription>
+        <CardDescription>Sign in to continue to {appName}</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -186,6 +188,22 @@ export function RegisterForm() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [appName, setAppName] = useState('MeetingSync')
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const res = await fetch('/api/settings')
+        if (res.ok) {
+          const data = await res.json()
+          setAppName(data.appName || 'MeetingSync')
+        }
+      } catch (error) {
+        console.error('Failed to fetch app name', error)
+      }
+    }
+    fetchSettings()
+  }, [])
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -241,7 +259,7 @@ export function RegisterForm() {
         <CardTitle className="font-headline text-3xl font-bold">
           Create an Account
         </CardTitle>
-        <CardDescription>Get started with MeetingSync today!</CardDescription>
+        <CardDescription>Get started with {appName} today!</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>

@@ -24,6 +24,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { ZoomSettings } from '@/components/zoom-settings'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
 
 export default function SettingsPage() {
   const { data: session, status } = useSession()
@@ -37,6 +38,8 @@ export default function SettingsPage() {
   const [defaultRole, setDefaultRole] = useState<'member' | 'admin'>('member')
   const [defaultResetPassword, setDefaultResetPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [appName, setAppName] = useState('')
+  const [appDescription, setAppDescription] = useState('')
 
   useEffect(() => {
     async function fetchSettings() {
@@ -47,6 +50,11 @@ export default function SettingsPage() {
         const data = await res.json()
         setAllowRegistration(data.allowRegistration)
         setDefaultRole(data.defaultRole)
+        setAppName(data.appName || 'MeetingSync')
+        setAppDescription(
+          data.appDescription ||
+            'Efficiently manage and schedule your Zoom meetings.',
+        )
         // We don't fetch the password, it's write-only for security
       } catch {
         toast({
@@ -67,10 +75,14 @@ export default function SettingsPage() {
       const payload: {
         allowRegistration: boolean
         defaultRole: 'member' | 'admin'
+        appName: string
+        appDescription: string
         defaultResetPassword?: string
       } = {
         allowRegistration,
         defaultRole,
+        appName,
+        appDescription,
       }
       if (defaultResetPassword) {
         payload.defaultResetPassword = defaultResetPassword
@@ -155,6 +167,26 @@ export default function SettingsPage() {
                 </div>
               ) : (
                 <>
+                  <div className="max-w-sm space-y-2">
+                    <Label htmlFor="app-name">Nama Aplikasi</Label>
+                    <Input
+                      id="app-name"
+                      value={appName}
+                      onChange={(e) => setAppName(e.target.value)}
+                      disabled={saving}
+                      placeholder="e.g. MeetingSync"
+                    />
+                  </div>
+                  <div className="grid w-full gap-1.5">
+                    <Label htmlFor="app-description">Deskripsi Aplikasi</Label>
+                    <Textarea
+                      id="app-description"
+                      value={appDescription}
+                      onChange={(e) => setAppDescription(e.target.value)}
+                      disabled={saving}
+                      placeholder="Describe your application"
+                    />
+                  </div>
                   <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
                     <Label
                       htmlFor="allow-registration"

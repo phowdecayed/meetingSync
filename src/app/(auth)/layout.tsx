@@ -1,8 +1,14 @@
-export default function AuthLayout({
+import prisma from '@/lib/prisma'
+
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const settings = await prisma.settings.findFirst()
+  const appName = settings?.appName
+  const appDescription = settings?.appDescription
+
   return (
     <div className="flex min-h-screen w-full">
       <div
@@ -29,9 +35,9 @@ export default function AuthLayout({
             <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
             <circle cx="12" cy="13" r="3"></circle>
           </svg>
-          <h1 className="font-headline text-4xl font-bold">MeetingSync</h1>
+          <h1 className="font-headline text-4xl font-bold">{appName}</h1>
           <p className="text-primary-foreground/80 mt-4 text-lg">
-            Streamline your scheduling, one meeting at a time.
+            {appDescription}
           </p>
         </div>
       </div>
