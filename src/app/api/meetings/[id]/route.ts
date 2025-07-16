@@ -5,8 +5,9 @@ import { getZoomMeetingSummary } from '@/lib/zoom'
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id: meetingId } = await params
   try {
     const session = await auth()
     if (!session?.user) {
@@ -16,7 +17,6 @@ export async function PATCH(
       )
     }
 
-    const meetingId = params.id
     if (!meetingId) {
       return NextResponse.json(
         { error: 'Meeting ID is required' },
@@ -52,8 +52,9 @@ export async function PATCH(
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id: meetingId } = await params
   if (!request.url.endsWith('/meeting_summary')) {
     return new Response(null, { status: 404 })
   }
@@ -67,7 +68,6 @@ export async function GET(
       )
     }
 
-    const meetingId = params.id
     if (!meetingId) {
       return NextResponse.json(
         { error: 'Meeting ID is required' },

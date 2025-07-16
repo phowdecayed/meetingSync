@@ -10,10 +10,10 @@ const routeContextSchema = z.object({
 
 export async function GET(
   req: Request,
-  context: z.infer<typeof routeContextSchema>,
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { params } = routeContextSchema.parse(context)
+    const { params } = routeContextSchema.parse(await context)
     const meetingId = params.id
 
     if (!meetingId) {

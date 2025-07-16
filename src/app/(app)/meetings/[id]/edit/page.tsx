@@ -3,12 +3,13 @@ import { getMeetingById, getUsers } from '@/lib/data'
 import { notFound } from 'next/navigation'
 
 type EditMeetingPageProps = {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function EditMeetingPage({
-  params: { id },
+  params,
 }: EditMeetingPageProps) {
+  const { id } = await params
   const [meeting, allUsers] = await Promise.all([
     getMeetingById(id),
     getUsers(),

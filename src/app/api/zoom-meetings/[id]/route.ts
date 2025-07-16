@@ -6,15 +6,14 @@ import axios from 'axios'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id: zoomMeetingId } = await params
   try {
     const session = await auth()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const { id: zoomMeetingId } = params
 
     if (!zoomMeetingId) {
       return NextResponse.json({ error: 'Missing meeting ID' }, { status: 400 })
@@ -61,15 +60,14 @@ export async function GET(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id: zoomMeetingId } = await params
   try {
     const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const { id: zoomMeetingId } = params
 
     if (!zoomMeetingId) {
       return NextResponse.json({ error: 'Missing meeting ID' }, { status: 400 })

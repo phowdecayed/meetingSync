@@ -11,15 +11,15 @@ import { getZoomApiClient, findCredentialForMeeting } from '@/lib/zoom'
  */
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id: meetingId } = await params
   try {
     const session = await auth()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const meetingId = params.id
     if (!meetingId) {
       return NextResponse.json({ error: 'Missing meeting ID' }, { status: 400 })
     }

@@ -4,15 +4,15 @@ import prisma from '@/lib/prisma'
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id: userIdToReset } = await params
   try {
     const session = await auth()
     if (session?.user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const userIdToReset = params.id
     if (userIdToReset === session.user.id) {
       return NextResponse.json(
         { error: 'Admin cannot reset their own password here.' },
