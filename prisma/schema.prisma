@@ -11,41 +11,44 @@ datasource db {
 }
 
 model User {
-  id    String @id @default(cuid())
-  email String @unique
-  name  String
-  role  String // "admin" or "member"
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  role         String // "admin" or "member"
   passwordHash String?
-  meetings   Meeting[] @relation("OrganizerMeetings")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime? @updatedAt
-  deletedAt  DateTime?
+  meetings     Meeting[] @relation("OrganizerMeetings")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime? @updatedAt
+  deletedAt    DateTime?
 }
 
 model Meeting {
-  id                String           @id @default(cuid())
-  title             String
-  date              DateTime
-  duration          Int
-  participants      String // Comma-separated list of emails
-  description       String?
-  organizer         User             @relation("OrganizerMeetings", fields: [organizerId], references: [id])
-  organizerId       String
+  id               String           @id @default(cuid())
+  title            String
+  date             DateTime
+  duration         Int
+  participants     String // Comma-separated list of emails
+  description      String?
+  organizer        User             @relation("OrganizerMeetings", fields: [organizerId], references: [id])
+  organizerId      String
   // Meeting Type
-  meetingType              String @default("external") //Internal or External Meeting
+  meetingType      String           @default("external") //Internal or External Meeting
   // Zoom or Offline Meeting
-  isZoomMeeting            Boolean @default(false)
+  isZoomMeeting    Boolean          @default(false)
   // Zoom Meeting Information
-  zoomMeetingId     String?          @unique
-  zoomJoinUrl       String?
-  zoomStartUrl      String?
-  zoomPassword      String?
+  zoomMeetingId    String?          @unique
+  zoomJoinUrl      String?
+  zoomStartUrl     String?
+  zoomPassword     String?
   // Relation to the Zoom account used for this meeting
-  zoomCredential    ZoomCredentials? @relation("CredentialMeetings", fields: [zoomCredentialId], references: [id])
-  zoomCredentialId  String?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime?        @updatedAt
-  deletedAt         DateTime?
+  zoomCredential   ZoomCredentials? @relation("CredentialMeetings", fields: [zoomCredentialId], references: [id])
+  zoomCredentialId String?
+  // Relation to the MeetingRoom
+  meetingRoom      MeetingRoom?     @relation("RoomMeetings", fields: [meetingRoomId], references: [id])
+  meetingRoomId    String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime?        @updatedAt
+  deletedAt        DateTime?
 }
 
 model ZoomCredentials {
@@ -56,28 +59,29 @@ model ZoomCredentials {
   hostKey      String? // Host key for claiming host in Zoom meetings
   meetings     Meeting[] @relation("CredentialMeetings")
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime?  @updatedAt
+  updatedAt    DateTime? @updatedAt
   deletedAt    DateTime?
 }
 
 model Settings {
-  id              String   @id @default(cuid())
-  allowRegistration Boolean @default(true)
-  defaultRole     String   @default("member")
+  id                   String   @id @default(cuid())
+  allowRegistration    Boolean  @default(true)
+  defaultRole          String   @default("member")
   defaultResetPassword String?
-  appName         String   @default("MeetingSync")
-  appDescription  String? @default("Efficiently manage and schedule your Zoom meetings.")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime? @updatedAt
-  deletedAt       DateTime?
+  appName              String   @default("MeetingSync")
+  appDescription       String?  @default("Efficiently manage and schedule your Zoom meetings.")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime? @updatedAt
+  deletedAt            DateTime?
 }
 
-model MeetingRoom{
-  id              String   @id @default(cuid())
-  name            String
-  capacity        Int
-  location        String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime? @updatedAt
-  deletedAt       DateTime?
+model MeetingRoom {
+  id        String    @id @default(cuid())
+  name      String
+  capacity  Int
+  location  String
+  meetings  Meeting[] @relation("RoomMeetings")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+  deletedAt DateTime?
 }
