@@ -17,6 +17,9 @@ model User {
   role  String // "admin" or "member"
   passwordHash String?
   meetings   Meeting[] @relation("OrganizerMeetings")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime? @updatedAt
+  deletedAt  DateTime?
 }
 
 model Meeting {
@@ -36,6 +39,9 @@ model Meeting {
   // Relation to the Zoom account used for this meeting
   zoomCredential    ZoomCredentials? @relation("CredentialMeetings", fields: [zoomCredentialId], references: [id])
   zoomCredentialId  String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime?        @updatedAt
+  deletedAt         DateTime?
 }
 
 model ZoomCredentials {
@@ -44,9 +50,10 @@ model ZoomCredentials {
   clientSecret String // S2S OAuth App Client Secret
   accountId    String // Account ID used for authentication, not to be confused with User ID for API operations
   hostKey      String? // Host key for claiming host in Zoom meetings
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
   meetings     Meeting[] @relation("CredentialMeetings")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime?  @updatedAt
+  deletedAt    DateTime?
 }
 
 model Settings {
@@ -54,5 +61,7 @@ model Settings {
   allowRegistration Boolean @default(true)
   defaultRole     String   @default("member")
   defaultResetPassword String?
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime? @updatedAt
+  deletedAt       DateTime?
 }
