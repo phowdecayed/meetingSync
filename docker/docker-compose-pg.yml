@@ -24,7 +24,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    container_name: bpkad-zoom-app-app
+    container_name: bpkad-zoom-app
     restart: unless-stopped
     ports:
       - '3000:3000'
