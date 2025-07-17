@@ -13,9 +13,10 @@ export default async function AllMeetingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-headline text-3xl font-bold">My Meetings</h1>
+        <h1 className="font-headline text-3xl font-bold">Semua Meeting</h1>
         <p className="text-muted-foreground">
-          Browse and manage all of your past and upcoming meetings.
+          Kelola semua meeting Anda - Zoom, offline, dan hybrid dalam satu
+          tempat.
         </p>
       </div>
       <MeetingsViewTabs />

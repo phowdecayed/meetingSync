@@ -33,7 +33,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -205,9 +204,9 @@ export function UnifiedScheduleView() {
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>My Schedule</CardTitle>
+          <CardTitle>Jadwal Saya</CardTitle>
           <CardDescription>
-            View all your upcoming meetings and appointments.
+            Lihat semua meeting dan janji temu yang akan datang.
           </CardDescription>
         </div>
         <Button
@@ -237,7 +236,7 @@ export function UnifiedScheduleView() {
               <div className="relative flex-1">
                 <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
                 <Input
-                  placeholder="Search meetings by topic..."
+                  placeholder="Cari meeting berdasarkan topik..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-8"
@@ -246,13 +245,13 @@ export function UnifiedScheduleView() {
               <div className="flex gap-4">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
+                    <SelectValue placeholder="Filter berdasarkan status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="upcoming">Upcoming</SelectItem>
-                    <SelectItem value="ongoing">Ongoing</SelectItem>
-                    <SelectItem value="past">Past</SelectItem>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                    <SelectItem value="upcoming">Akan Datang</SelectItem>
+                    <SelectItem value="ongoing">Sedang Berlangsung</SelectItem>
+                    <SelectItem value="past">Selesai</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select
@@ -277,10 +276,10 @@ export function UnifiedScheduleView() {
               </div>
             ) : paginatedMeetings.length === 0 ? (
               <div className="text-muted-foreground py-8 text-center">
-                No meetings match your criteria.
+                Tidak ada meeting yang sesuai dengan kriteria pencarian.
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {paginatedMeetings.map((meeting) => {
                   const status = getMeetingStatus(meeting.start, meeting.end)
                   const canDelete =
@@ -288,51 +287,149 @@ export function UnifiedScheduleView() {
                       (meeting.source === 'zoom' &&
                         session?.user?.role === 'admin')) &&
                     status === 'upcoming'
+
+                  const statusColors = {
+                    upcoming: 'bg-blue-50 border-blue-200 text-blue-800',
+                    ongoing: 'bg-green-50 border-green-200 text-green-800',
+                    past: 'bg-gray-50 border-gray-200 text-gray-600',
+                  }
+
+                  const statusLabels = {
+                    upcoming: 'Akan Datang',
+                    ongoing: 'Sedang Berlangsung',
+                    past: 'Selesai',
+                  }
+
                   return (
-                    <Card key={meeting.id} className="flex flex-col">
-                      <CardHeader>
-                        <CardTitle className="text-lg">
-                          {meeting.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="flex-grow space-y-3">
-                        <div className="text-muted-foreground flex items-center text-sm">
-                          <Clock className="mr-2 h-4 w-4" />
-                          <span>
-                            {new Date(meeting.start).toLocaleTimeString()} (
-                            {meeting.duration} min)
-                          </span>
-                        </div>
-                        <div className="text-muted-foreground flex items-center text-sm">
-                          <User className="mr-2 h-4 w-4" />
-                          <span className="truncate">
-                            {meeting.participants?.join(', ')}
-                          </span>
-                        </div>
-                        {meeting.meetingRoom && (
-                          <div className="text-muted-foreground flex items-center text-sm">
-                            <Building2 className="mr-2 h-4 w-4" />
-                            <span>{meeting.meetingRoom}</span>
+                    <Card
+                      key={meeting.id}
+                      className="border-l-4 border-l-blue-500 transition-shadow duration-200 hover:shadow-md"
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="mb-1 text-lg font-semibold text-gray-900">
+                                  {meeting.title}
+                                </h3>
+                                <span
+                                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[status]}`}
+                                >
+                                  {statusLabels[status]}
+                                </span>
+                              </div>
+                              <div className="ml-4 flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openMeetingDetails(meeting)}
+                                  className="h-8 px-3"
+                                >
+                                  <Eye className="mr-1 h-3 w-3" />
+                                  Detail
+                                </Button>
+                                {canDelete && (
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() =>
+                                      confirmDeleteMeeting(meeting)
+                                    }
+                                    className="h-8 px-3"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-3">
+                              <div className="flex items-center text-gray-600">
+                                <Clock className="mr-2 h-4 w-4 text-blue-500" />
+                                <div>
+                                  <div className="font-medium">
+                                    {new Date(meeting.start).toLocaleDateString(
+                                      'id-ID',
+                                      {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                      },
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {new Date(meeting.start).toLocaleTimeString(
+                                      'id-ID',
+                                      {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      },
+                                    )}{' '}
+                                    -{' '}
+                                    {new Date(meeting.end).toLocaleTimeString(
+                                      'id-ID',
+                                      {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      },
+                                    )}{' '}
+                                    ({meeting.duration} menit)
+                                  </div>
+                                </div>
+                              </div>
+
+                              {meeting.participants &&
+                                meeting.participants.length > 0 && (
+                                  <div className="flex items-center text-gray-600">
+                                    <User className="mr-2 h-4 w-4 text-green-500" />
+                                    <div>
+                                      <div className="font-medium">Peserta</div>
+                                      <div className="truncate text-xs text-gray-500">
+                                        {meeting.participants
+                                          .slice(0, 2)
+                                          .join(', ')}
+                                        {meeting.participants.length > 2 &&
+                                          ` +${meeting.participants.length - 2} lainnya`}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                              {meeting.meetingRoom && (
+                                <div className="flex items-center text-gray-600">
+                                  <Building2 className="mr-2 h-4 w-4 text-purple-500" />
+                                  <div>
+                                    <div className="font-medium">Lokasi</div>
+                                    <div className="text-xs text-gray-500">
+                                      {meeting.meetingRoom}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {meeting.source && (
+                                <div className="flex items-center text-gray-600">
+                                  <div
+                                    className={`mr-2 h-2 w-2 rounded-full ${
+                                      meeting.source === 'zoom'
+                                        ? 'bg-blue-500'
+                                        : 'bg-gray-500'
+                                    }`}
+                                  />
+                                  <div>
+                                    <div className="font-medium">Sumber</div>
+                                    <div className="text-xs text-gray-500 capitalize">
+                                      {meeting.source}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
+                        </div>
                       </CardContent>
-                      <CardFooter className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openMeetingDetails(meeting)}
-                        >
-                          <Eye className="mr-2 h-4 w-4" /> Details
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => confirmDeleteMeeting(meeting)}
-                          disabled={!canDelete}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </CardFooter>
                     </Card>
                   )
                 })}

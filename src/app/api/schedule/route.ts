@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { getMeetings } from '@/lib/data'
 import { listZoomMeetings } from '@/lib/zoom'
 import { addMinutes } from 'date-fns'
+import prisma from '@/lib/prisma'
 
 type MeetingStatus = 'Akan Datang' | 'Sedang Berlangsung' | 'Selesai'
 
@@ -14,7 +14,33 @@ function getMeetingStatus(start: Date, end: Date): MeetingStatus {
 
 export async function GET() {
   try {
-    const localMeetings = await getMeetings()
+    // Always get all meetings like public calendar to ensure consistency
+    const meetings = await prisma.meeting.findMany({
+      include: {
+        organizer: true,
+        meetingRoom: true,
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    })
+
+    const localMeetings = meetings.map((meeting) => ({
+      id: meeting.id,
+      title: meeting.title,
+      description: meeting.description,
+      date: meeting.date,
+      duration: meeting.duration,
+      organizerId: meeting.organizer?.name || 'Unknown Organizer',
+      zoomMeetingId: meeting.zoomMeetingId,
+      meetingType: meeting.meetingType as 'internal' | 'external',
+      meetingRoomId: meeting.meetingRoom
+        ? `${meeting.meetingRoom.name} - ${meeting.meetingRoom.location}`
+        : null,
+      isZoomMeeting: meeting.isZoomMeeting,
+      participants: meeting.participants,
+    }))
+
     const zoomMeetings = await listZoomMeetings()
 
     const formattedLocalMeetings = localMeetings.map((meeting) => {
@@ -33,6 +59,9 @@ export async function GET() {
         meetingType: meeting.meetingType,
         meetingRoom: meeting.meetingRoomId || null,
         isZoomMeeting: meeting.isZoomMeeting,
+        participants: meeting.participants
+          ? meeting.participants.split(',').map((p) => p.trim())
+          : [],
         source: 'local',
       }
     })
