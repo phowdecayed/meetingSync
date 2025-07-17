@@ -5,13 +5,26 @@ import { ThemeProvider } from '@/components/theme-provider'
 import NextAuthSessionProvider from '@/components/auth/session-provider'
 import prisma from '@/lib/prisma'
 import SettingsStoreInitializer from '@/components/settings-store-initializer'
+import { Settings } from '@prisma/client'
+
+async function getSettings(): Promise<Settings | null> {
+  try {
+    const settings = await prisma.settings.findFirst()
+    return settings
+  } catch (error) {
+    console.error('Failed to fetch settings, using default values:', error)
+    return null
+  }
+}
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await prisma.settings.findFirst()
+  const settings = await getSettings()
 
   return {
-    title: settings?.appName,
-    description: settings?.appDescription,
+    title: settings?.appName ?? 'MeetingSync',
+    description:
+      settings?.appDescription ??
+      'Efficiently manage and schedule your Zoom meetings.',
   }
 }
 
@@ -20,7 +33,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const settings = await prisma.settings.findFirst()
+  const settings = await getSettings()
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

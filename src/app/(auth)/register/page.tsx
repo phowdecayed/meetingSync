@@ -1,15 +1,5 @@
-import dynamic from 'next/dynamic'
+import { RegisterForm } from '@/components/auth-components'
 
-const RegisterPage = dynamic(
-  () => import('@/components/auth-components/RegisterPage'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-screen items-center justify-center">
-        <span>Memuat...</span>
-      </div>
-    ),
-  },
-)
-
-export default RegisterPage
+export default function RegisterPage() {
+  return <RegisterForm />
+}
