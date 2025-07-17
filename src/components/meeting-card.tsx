@@ -259,7 +259,7 @@ const MeetingCard = memo(function MeetingCard({
                 <MapPin className="text-muted-foreground h-3 w-3 flex-shrink-0" />
                 <span
                   className={cn(
-                    'text-muted-foreground truncate',
+                    'text-muted-foreground break-words',
                     compact ? 'text-xs' : 'text-sm',
                   )}
                 >
