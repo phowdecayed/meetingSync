@@ -7,7 +7,7 @@ Aplikasi untuk melakukan pemesanan meeting room dan integrasi Zoom di BPKAD Jaba
 - **Otentikasi Pengguna**: Sistem login untuk pengguna dan admin menggunakan NextAuth.js.
 - **Penjadwalan Meeting**: Buat, lihat, perbarui, dan hapus jadwal meeting.
 - **Integrasi Zoom**: Secara otomatis membuat meeting Zoom saat jadwal baru dibuat.
-- **Tampilan Kalender**: Visualisasikan jadwal meeting dalam format kalender interaktif menggunakan FullCalendar.
+- **Tampilan Kalender**: Visualisasikan jadwal meeting dalam format kalender interaktif dengan layout kustom modern dan integrasi FullCalendar untuk tampilan jadwal.
 - **Manajemen Pengguna**: Admin dapat mengelola pengguna.
 - **Dasbor**: Tampilan ringkas statistik meeting menggunakan Recharts.
 - **Desain Responsif**: Antarmuka yang dioptimalkan untuk desktop dan perangkat mobile.

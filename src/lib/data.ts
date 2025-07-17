@@ -225,9 +225,10 @@ export const createMeeting = async (
     }
 
     // Extract time field and exclude it from the data passed to Prisma
-    const { time: _time, ...restOfData } = data as Omit<Meeting, 'id'> & {
+    const { time, ...restOfData } = data as Omit<Meeting, 'id'> & {
       time?: string
     }
+    // time field is extracted but not used in Prisma create
     // 4. Create the meeting in our database
     const meeting = await prisma.meeting.create({
       data: {

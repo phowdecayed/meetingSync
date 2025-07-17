@@ -1,278 +1,484 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import FullCalendar from '@fullcalendar/react'
-import listPlugin from '@fullcalendar/list'
-import { EventContentArg } from '@fullcalendar/core'
-import { Loader2, Maximize, Minimize, RefreshCw } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react'
+import { startOfWeek, endOfWeek } from 'date-fns'
 import { id } from 'date-fns/locale'
-import { Button } from '@/components/ui/button'
-import { useTheme } from 'next-themes'
-import { Badge } from '@/components/ui/badge'
+import { Loader2 } from 'lucide-react'
+import { CalendarHeader } from '@/components/calendar-header'
+import { CalendarFilters } from '@/components/calendar-filters'
+import { CalendarGrid } from '@/components/calendar-grid'
+import {
+  enhanceMeetings,
+  defaultLayoutConfig,
+  filterMeetingsBySearch,
+} from '@/lib/calendar-utils'
+import type {
+  PublicMeeting,
+  MeetingType,
+  MeetingStatus,
+  FilterState,
+  LayoutConfig,
+  LoadingState,
+  CalendarError,
+  PerformanceMetrics,
+} from '@/types/public-calendar'
 
-type MeetingStatus = 'Akan Datang' | 'Sedang Berlangsung' | 'Selesai'
-
-type PublicMeeting = {
-  id: string
-  title: string
-  description: string | null
-  start: string
-  end: string
-  organizerName: string
-  status: MeetingStatus
-  meetingId?: string | null
-  meetingType: 'internal' | 'external'
-  meetingRoom: string | null
-}
-
-function EventDetail({
-  label,
-  value,
+// Memoized error display component
+const ErrorDisplay = memo(function ErrorDisplay({
+  error,
+  onRetry,
 }: {
-  label: string
-  value?: string | null
+  error: CalendarError
+  onRetry: () => void
 }) {
-  if (!value) return null
   return (
-    <div className="text-xs">
-      <span className="font-semibold">{label}:</span>
-      <span className="text-muted-foreground ml-2">{value}</span>
-    </div>
-  )
-}
-
-function EventCard({
-  event,
-  isDark,
-}: {
-  event: EventContentArg['event']
-  isDark: boolean
-}) {
-  const formatMeetingId = (id: string) => {
-    if (!id || id.length !== 11) return id
-    return `${id.slice(0, 3)} ${id.slice(3, 7)} ${id.slice(7)}`
-  }
-
-  const { status, meetingType, meetingId, meetingRoom } = event.extendedProps
-
-  const getStatusVariant = (): 'default' | 'secondary' | 'outline' => {
-    switch (status) {
-      case 'Sedang Berlangsung':
-        return 'default'
-      case 'Akan Datang':
-        return 'secondary'
-      case 'Selesai':
-        return 'outline'
-      default:
-        return 'outline'
-    }
-  }
-
-  return (
-    <div
-      className={`h-full w-full rounded-lg p-4 shadow-md transition-all duration-300 ease-in-out ${
-        status === 'Sedang Berlangsung'
-          ? 'border-l-4 border-green-500 bg-green-500/20'
-          : isDark
-            ? 'bg-gray-800/60 hover:bg-gray-700/80'
-            : 'bg-white/80 hover:bg-gray-50/90'
-      } backdrop-blur-sm`}
+    <div 
+      className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/50 dark:to-indigo-900/60"
+      role="alert"
+      aria-live="assertive"
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-primary flex-1 truncate text-base font-bold">
-          {event.title}
-        </p>
-        <div className="flex flex-shrink-0 items-center gap-2">
-          <Badge
-            variant={meetingType === 'internal' ? 'destructive' : 'secondary'}
-            className="capitalize"
+      <div className="flex flex-col items-center gap-4 text-center">
+        <div className="bg-destructive/10 rounded-full p-6" aria-hidden="true">
+          <Loader2 className="text-destructive h-12 w-12" />
+        </div>
+        <div className="space-y-2">
+          <h3 
+            className="text-foreground text-lg font-semibold"
+            id="error-title"
           >
-            {meetingType}
-          </Badge>
-          <Badge variant={getStatusVariant()}>{status}</Badge>
+            Gagal Memuat Data
+          </h3>
+          <p 
+            className="text-muted-foreground max-w-md"
+            id="error-message"
+          >
+            {error.message}
+          </p>
+          <button
+            onClick={onRetry}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 mt-4 rounded-md px-4 py-2 text-sm font-medium transition-colors"
+            aria-describedby="error-title error-message"
+            type="button"
+          >
+            Coba Lagi
+          </button>
         </div>
       </div>
-      <div className="border-border mt-2 space-y-1 border-l-2 pl-3">
-        <EventDetail
-          label="Agenda Rapat"
-          value={event.extendedProps.description}
+    </div>
+  )
+})
+
+// Memoized loading display component
+const LoadingDisplay = memo(function LoadingDisplay() {
+  return (
+    <div 
+      className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/50 dark:to-indigo-900/60"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 
+          className="text-primary h-12 w-12 animate-spin" 
+          aria-hidden="true"
         />
-        <EventDetail
-          label="Penanggung Jawab"
-          value={event.extendedProps.organizerName}
-        />
-        {meetingRoom && <EventDetail label="Ruang Rapat" value={meetingRoom} />}
-        {meetingType === 'external' && (
-          <EventDetail label="Meeting ID" value={formatMeetingId(meetingId)} />
-        )}
+        <p 
+          className="text-muted-foreground text-lg font-medium"
+          id="loading-message"
+        >
+          Memuat kalender rapat...
+        </p>
       </div>
     </div>
   )
-}
+})
 
-export default function PublicCalendar() {
+const PublicCalendar = memo(function PublicCalendar() {
+  // Core state
   const [meetings, setMeetings] = useState<PublicMeeting[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState<LoadingState>('loading')
+  const [error, setError] = useState<CalendarError | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
-  const calendarRef = useRef<FullCalendar>(null)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
-  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [currentDate, setCurrentDate] = useState(new Date())
 
-  const fetchMeetings = useCallback(async (showLoader = true) => {
-    if (showLoader) setIsRefreshing(true)
+  // Accessibility state
+  const [announceMessage, setAnnounceMessage] = useState('')
+  const [focusedElementId, setFocusedElementId] = useState<string | null>(null)
+  
+  // Accessibility refs
+  const skipLinkRef = useRef<HTMLAnchorElement>(null)
+  const mainContentRef = useRef<HTMLDivElement>(null)
+  const filtersRef = useRef<HTMLDivElement>(null)
+
+  // Accessibility announcement function
+  const announceToScreenReader = useCallback((message: string) => {
+    setAnnounceMessage(message)
+    // Clear the message after a short delay to allow screen readers to announce it
+    setTimeout(() => setAnnounceMessage(''), 1000)
+  }, [])
+
+  // Keyboard navigation handlers
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Skip to main content (Alt + M)
+    if (event.altKey && event.key === 'm') {
+      event.preventDefault()
+      mainContentRef.current?.focus()
+      announceToScreenReader('Navigated to main content')
+    }
+    
+    // Skip to filters (Alt + F)
+    if (event.altKey && event.key === 'f') {
+      event.preventDefault()
+      filtersRef.current?.focus()
+      announceToScreenReader('Navigated to filters')
+    }
+
+    // Escape key to clear focus and return to main navigation
+    if (event.key === 'Escape') {
+      if (document.activeElement && document.activeElement !== document.body) {
+        (document.activeElement as HTMLElement).blur()
+        announceToScreenReader('Focus cleared')
+      }
+    }
+  }, [announceToScreenReader])
+
+  // Set up keyboard event listeners
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
+
+  // Filter state
+  const [filterState, setFilterState] = useState<FilterState>({
+    search: '',
+    types: [],
+    statuses: [],
+    dateRange: 'week',
+  })
+
+  // Layout configuration
+  const [layoutConfig] = useState<LayoutConfig>(defaultLayoutConfig)
+
+  // Performance monitoring
+  const performanceRef = useRef<PerformanceMetrics>({
+    renderTime: 0,
+    filterTime: 0,
+    dataSize: 0,
+    lastUpdate: Date.now(),
+  })
+
+  // Performance measurement hook
+  const measurePerformance = useCallback((operation: string, fn: () => void) => {
+    const start = performance.now()
+    fn()
+    const end = performance.now()
+    const duration = end - start
+
+    // Log performance for large datasets or slow operations
+    if (duration > 100 || meetings.length > 500) {
+      console.log(`[Performance] ${operation}: ${duration.toFixed(2)}ms (${meetings.length} meetings)`)
+    }
+
+    // Update performance metrics
+    performanceRef.current = {
+      ...performanceRef.current,
+      renderTime: operation === 'render' ? duration : performanceRef.current.renderTime,
+      filterTime: operation === 'filter' ? duration : performanceRef.current.filterTime,
+      dataSize: meetings.length,
+      lastUpdate: Date.now(),
+    }
+  }, [meetings.length])
+
+  // Data fetching
+  const fetchMeetings = useCallback(async (showLoader: boolean = true) => {
+    if (showLoader) {
+      setLoading('loading')
+    } else {
+      setLoading('refreshing')
+    }
+
+    setError(null)
+
     try {
       const response = await fetch('/api/public/meetings')
-      if (!response.ok) throw new Error('Failed to fetch meetings')
-      const data = await response.json()
-      setMeetings(data)
-      setLastRefresh(new Date())
-    } catch (error) {
-      console.error('Failed to fetch meetings:', error)
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch meetings`)
+      }
+
+      const rawData = await response.json()
+
+      // Enhance meetings with calculated fields
+      const enhancedMeetings = enhanceMeetings(rawData)
+      setMeetings(enhancedMeetings)
+    } catch (err) {
+      const error: CalendarError = {
+        type: err instanceof TypeError ? 'network' : 'unknown',
+        message: err instanceof Error ? err.message : 'Unknown error occurred',
+        timestamp: new Date(),
+      }
+      setError(error)
+      console.error('Failed to fetch meetings:', err)
     } finally {
-      setLoading(false)
-      setIsRefreshing(false)
+      setLoading('idle')
     }
   }, [])
 
-  // Initial fetch
+  // Initial data fetch
   useEffect(() => {
-    fetchMeetings()
+    fetchMeetings(true)
   }, [fetchMeetings])
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchMeetings(false) // Don't show loader for auto-refresh
-    }, 30000) // 30 seconds
+      fetchMeetings(false)
+    }, 30000)
 
     return () => clearInterval(interval)
   }, [fetchMeetings])
 
-  const handleManualRefresh = () => {
-    fetchMeetings(true) // Show loader for manual refresh
-  }
-
-  const calendarEvents = useMemo(
-    () =>
-      meetings.map((meeting) => ({
-        id: meeting.id,
-        title: meeting.title,
-        start: new Date(meeting.start),
-        end: new Date(meeting.end),
-        extendedProps: {
-          organizerName: meeting.organizerName,
-          status: meeting.status,
-          meetingId: meeting.meetingId,
-          description: meeting.description,
-          meetingType: meeting.meetingType,
-          meetingRoom: meeting.meetingRoom,
-        },
-      })),
-    [meetings],
-  )
-
-  const toggleFullscreen = () => {
+  // Fullscreen handling
+  const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen()
+      document.documentElement.requestFullscreen().catch(console.error)
       setIsFullscreen(true)
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen()
-        setIsFullscreen(false)
-      }
+      document.exitFullscreen().catch(console.error)
+      setIsFullscreen(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement)
     }
+
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () =>
       document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
 
-  if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <Loader2 className="text-primary h-12 w-12 animate-spin" />
-      </div>
-    )
+  // Date navigation handlers
+  const handleDateChange = useCallback((newDate: Date) => {
+    setCurrentDate(newDate)
+  }, [])
+
+  const handleRefresh = useCallback(() => {
+    fetchMeetings(true)
+  }, [fetchMeetings])
+
+  // Filter handlers
+  const handleSearchChange = useCallback((search: string) => {
+    setFilterState((prev) => ({ ...prev, search }))
+  }, [])
+
+  const handleTypeFilter = useCallback((types: MeetingType[]) => {
+    setFilterState((prev) => ({ ...prev, types }))
+  }, [])
+
+  const handleStatusFilter = useCallback((statuses: MeetingStatus[]) => {
+    setFilterState((prev) => ({ ...prev, statuses }))
+  }, [])
+
+  const handleClearFilters = useCallback(() => {
+    setFilterState({
+      search: '',
+      types: [],
+      statuses: [],
+      dateRange: 'week',
+    })
+  }, [])
+
+  // Optimized filtering with performance measurement
+  const filteredMeetings = useMemo(() => {
+    const startTime = performance.now()
+    
+    let filtered = meetings
+
+    // Early return for empty datasets
+    if (meetings.length === 0) {
+      return filtered
+    }
+
+    // Apply search filter (most selective first)
+    if (filterState.search.trim()) {
+      filtered = filterMeetingsBySearch(filtered, filterState.search)
+    }
+
+    // Apply type filter
+    if (filterState.types.length > 0) {
+      filtered = filtered.filter((meeting) =>
+        filterState.types.includes(meeting.meetingType),
+      )
+    }
+
+    // Apply status filter
+    if (filterState.statuses.length > 0) {
+      filtered = filtered.filter((meeting) =>
+        filterState.statuses.includes(meeting.status),
+      )
+    }
+
+    // Apply date range filter based on current week (pre-calculate dates)
+    const weekStart = startOfWeek(currentDate, { locale: id })
+    const weekEnd = endOfWeek(currentDate, { locale: id })
+    const weekStartTime = weekStart.getTime()
+    const weekEndTime = weekEnd.getTime()
+
+    filtered = filtered.filter((meeting) => {
+      const meetingTime = new Date(meeting.start).getTime()
+      return meetingTime >= weekStartTime && meetingTime <= weekEndTime
+    })
+
+    // Performance logging
+    const endTime = performance.now()
+    const duration = endTime - startTime
+    
+    if (duration > 50 || meetings.length > 200) {
+      console.log(`[Filter Performance] ${duration.toFixed(2)}ms for ${meetings.length} → ${filtered.length} meetings`)
+    }
+
+    return filtered
+  }, [meetings, filterState, currentDate])
+
+  // Loading state
+  if (loading === 'loading') {
+    return <LoadingDisplay />
+  }
+
+  // Error state
+  if (error && meetings.length === 0) {
+    return <ErrorDisplay error={error} onRetry={() => fetchMeetings(true)} />
   }
 
   return (
-    <div className="relative h-screen w-full bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 p-4 dark:from-gray-900 dark:via-blue-900/50 dark:to-indigo-900/60">
-      <div className="absolute top-4 right-4 z-20 flex gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleManualRefresh}
-          disabled={isRefreshing}
-          className="bg-white/50 backdrop-blur-sm dark:bg-gray-800/50"
-          title="Refresh data"
-        >
-          <RefreshCw
-            className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`}
-          />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={toggleFullscreen}
-          className="bg-white/50 backdrop-blur-sm dark:bg-gray-800/50"
-          title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-        >
-          {isFullscreen ? (
-            <Minimize className="h-5 w-5" />
-          ) : (
-            <Maximize className="h-5 w-5" />
-          )}
-        </Button>
-      </div>
-      <div className="h-full w-full overflow-hidden rounded-2xl bg-white/30 shadow-2xl backdrop-blur-xl dark:bg-gray-800/30">
-        <FullCalendar
-          ref={calendarRef}
-          plugins={[listPlugin]}
-          initialView="listWeek"
-          headerToolbar={{
-            left: 'prev,next today',
-            center: 'title',
-            right: '', // Remove view-switching buttons
+    <div className="relative h-screen w-full bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/50 dark:to-indigo-900/60">
+      {/* Skip Links */}
+      <div className="sr-only focus-within:not-sr-only">
+        <a
+          ref={skipLinkRef}
+          href="#main-content"
+          className="absolute left-4 top-4 z-50 rounded bg-primary px-4 py-2 text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          onClick={(e) => {
+            e.preventDefault()
+            mainContentRef.current?.focus()
+            announceToScreenReader('Skipped to main content')
           }}
-          events={calendarEvents}
-          height="100%"
-          locale={id}
-          eventContent={(arg) => (
-            <EventCard event={arg.event} isDark={isDark} />
-          )}
-          themeSystem="standard"
-          viewClassNames={isDark ? 'fc-theme-dark' : 'fc-theme-standard'}
-        />
+        >
+          Skip to main content
+        </a>
+        <a
+          href="#filters"
+          className="absolute left-4 top-16 z-50 rounded bg-primary px-4 py-2 text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          onClick={(e) => {
+            e.preventDefault()
+            filtersRef.current?.focus()
+            announceToScreenReader('Skipped to filters')
+          }}
+        >
+          Skip to filters
+        </a>
       </div>
-      <style jsx global>{`
-        .fc-theme-dark .fc-list-day-cushion {
-          background-color: rgba(31, 41, 55, 0.5) !important;
-        }
-        .fc-theme-dark .fc-list-table {
-          color: #e5e7eb !important;
-        }
-        .fc-theme-dark .fc-list-event:hover td {
-          background-color: rgba(55, 65, 81, 0.7) !important;
-        }
-        .fc .fc-toolbar-title {
-          font-size: 1.5rem;
-          font-weight: 700;
-        }
-        .fc .fc-button {
-          text-transform: capitalize;
-        }
-        .fc-list-event-time {
-          font-weight: bold;
-        }
-      `}</style>
+
+      {/* Screen Reader Announcements */}
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+        role="status"
+      >
+        {announceMessage}
+      </div>
+
+      <div 
+        className="m-4 flex h-full flex-col overflow-hidden rounded-2xl bg-white/30 shadow-2xl backdrop-blur-xl dark:bg-gray-800/30"
+        role="application"
+        aria-label="Public Calendar Application"
+      >
+        {/* Calendar Header */}
+        <CalendarHeader
+          currentDate={currentDate}
+          onDateChange={handleDateChange}
+          onToggleFullscreen={toggleFullscreen}
+          onRefresh={handleRefresh}
+          isRefreshing={loading === 'refreshing'}
+          isFullscreen={isFullscreen}
+        />
+
+        {/* Main Content Area */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar with Filters */}
+          <aside 
+            className="bg-background/50 hidden w-80 flex-shrink-0 border-r backdrop-blur-sm lg:block"
+            aria-label="Calendar filters and search"
+            role="complementary"
+          >
+            <div 
+              className="h-full overflow-y-auto p-4"
+              ref={filtersRef}
+              tabIndex={-1}
+              id="filters"
+              aria-label="Filter controls"
+            >
+              <CalendarFilters
+                searchTerm={filterState.search}
+                onSearchChange={handleSearchChange}
+                selectedTypes={filterState.types}
+                onTypeFilter={handleTypeFilter}
+                selectedStatuses={filterState.statuses}
+                onStatusFilter={handleStatusFilter}
+                onClearFilters={handleClearFilters}
+              />
+            </div>
+          </aside>
+
+          {/* Main Calendar Grid */}
+          <main 
+            className="flex-1 overflow-y-auto"
+            role="main"
+            aria-label="Calendar meetings"
+          >
+            <div 
+              className="p-4 lg:p-6"
+              ref={mainContentRef}
+              tabIndex={-1}
+              id="main-content"
+            >
+              {/* Mobile Filters */}
+              <div 
+                className="mb-4 lg:hidden"
+                role="region"
+                aria-label="Mobile filter controls"
+              >
+                <CalendarFilters
+                  searchTerm={filterState.search}
+                  onSearchChange={handleSearchChange}
+                  selectedTypes={filterState.types}
+                  onTypeFilter={handleTypeFilter}
+                  selectedStatuses={filterState.statuses}
+                  onStatusFilter={handleStatusFilter}
+                  onClearFilters={handleClearFilters}
+                />
+              </div>
+
+              {/* Calendar Grid */}
+              <section 
+                aria-label={`Calendar showing ${filteredMeetings.length} meetings`}
+                role="region"
+              >
+                <CalendarGrid
+                  meetings={filteredMeetings}
+                  groupBy="date"
+                  loading={loading !== 'idle'}
+                  viewMode="grid"
+                  layoutConfig={layoutConfig}
+                />
+              </section>
+            </div>
+          </main>
+        </div>
+      </div>
     </div>
   )
-}
+})
+
+export default PublicCalendar
