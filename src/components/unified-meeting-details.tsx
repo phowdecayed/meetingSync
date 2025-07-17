@@ -29,8 +29,19 @@ import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { Meeting } from '@/lib/data'
 
+// Extended meeting type with additional fields from API
+interface ExtendedMeeting
+  extends Omit<Meeting, 'zoomMeetingId' | 'zoomJoinUrl' | 'zoomPassword'> {
+  start?: string
+  organizerName?: string
+  meetingRoom?: string | null
+  zoomJoinUrl?: string | null
+  zoomPassword?: string | null
+  zoomMeetingId?: string | null
+}
+
 interface UnifiedMeetingDetailsProps {
-  meeting: (Meeting & { start?: string }) | null
+  meeting: ExtendedMeeting | null
   isOpen: boolean
   onClose: () => void
 }
@@ -47,9 +58,11 @@ export function UnifiedMeetingDetails({
   const [showHostKey, setShowHostKey] = useState(false)
 
   const isOrganizer = meeting && session?.user?.id === meeting.organizerId
+  const isAdmin = session?.user?.role === 'admin'
+  const canViewHostKey = isOrganizer || isAdmin
 
   useEffect(() => {
-    if (isOpen && isOrganizer && meeting?.isZoomMeeting) {
+    if (isOpen && canViewHostKey && meeting?.isZoomMeeting) {
       fetch(
         `/api/zoom-settings/host-key?zoomMeetingId=${meeting.zoomMeetingId}`,
       )
@@ -66,7 +79,7 @@ export function UnifiedMeetingDetails({
     } else {
       setHostKey(null)
     }
-  }, [isOpen, isOrganizer, meeting])
+  }, [isOpen, canViewHostKey, meeting])
 
   if (!meeting) return null
 
@@ -114,21 +127,47 @@ export function UnifiedMeetingDetails({
 
   const copyInvitation = () => {
     if (!meeting) return
-    let invitation = `You are invited to a meeting.\n\n`
+
+    // Debug: Log meeting data to check fields
+    console.log('Meeting data for copy invitation:', meeting)
+    console.log('meetingRoomId:', meeting.meetingRoomId)
+    console.log('meetingRoom:', meeting.meetingRoom)
+
+    // Format Meeting ID with spaces (xxx xxxx xxxx)
+    const formatMeetingId = (id: string) => {
+      if (!id || id.length < 10) return id
+      return id.replace(/(\d{3})(\d{4})(\d{4})/, '$1 $2 $3')
+    }
+
+    let invitation = `bpkad@jabarprov.go.id is inviting you to a scheduled Zoom meeting.\n\n`
+    invitation += `Penanggung Jawab:\n${meeting.organizerName || 'Unknown Organizer'}\n\n`
     invitation += `Topic: ${meeting.title}\n`
-    invitation += `Time: ${safeFormatDate(meetingDateStr, 'PPpp')}\n`
+
     if (meeting.description) {
       invitation += `Description: ${meeting.description}\n`
     }
+
+    invitation += `Time: ${safeFormatDate(meetingDateStr, 'PPpp')}\n`
+
+    // Add Zoom details if it's a Zoom meeting
     if (meeting.isZoomMeeting && meeting.zoomJoinUrl) {
-      invitation += `Join Zoom Meeting: ${meeting.zoomJoinUrl}\n`
+      invitation += `Join Zoom Meeting\n${meeting.zoomJoinUrl}\n\n`
+
+      if (meeting.zoomMeetingId) {
+        invitation += `Meeting ID: ${formatMeetingId(meeting.zoomMeetingId)}\n`
+      }
+
       if (meeting.zoomPassword) {
         invitation += `Passcode: ${meeting.zoomPassword}\n`
       }
     }
-    if (meeting.meetingRoomId) {
-      invitation += `Location: ${meeting.meetingRoomId}\n`
+
+    // Add location for hybrid meetings - check both possible field names
+    const meetingLocation = meeting.meetingRoom || meeting.meetingRoomId
+    if (meetingLocation) {
+      invitation += `\nLokasi Meeting: ${meetingLocation}\n`
     }
+
     copyToClipboard(invitation, 'Meeting Invitation')
   }
 
@@ -166,12 +205,14 @@ export function UnifiedMeetingDetails({
               <p className="text-muted-foreground">{meeting.duration}</p>
             </div>
           </div>
-          {meeting.meetingRoomId && (
+          {(meeting.meetingRoom || meeting.meetingRoomId) && (
             <div className="flex items-start gap-4">
               <Building2 className="text-muted-foreground mt-1 h-5 w-5" />
               <div>
                 <h4 className="font-semibold">Meeting Room</h4>
-                <p className="text-muted-foreground">{meeting.meetingRoomId}</p>
+                <p className="text-muted-foreground">
+                  {meeting.meetingRoom || meeting.meetingRoomId}
+                </p>
               </div>
             </div>
           )}
@@ -221,29 +262,29 @@ export function UnifiedMeetingDetails({
                   {meeting.zoomJoinUrl}
                 </a>
                 {meeting.zoomPassword && (
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    Password:
-                    <span className="ml-1 font-mono">
+                  <div className="mt-1 flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">Password:</span>
+                    <span className="font-mono">
                       {showPassword ? meeting.zoomPassword : '••••••••'}
                     </span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="ml-1 h-6 px-2"
+                      className="h-6 w-6 p-0 hover:bg-gray-100"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
-                        <EyeOff className="h-3.5 w-3.5" />
+                        <EyeOff className="h-4 w-4" />
                       ) : (
-                        <Eye className="h-3.5 w-3.5" />
+                        <Eye className="h-4 w-4" />
                       )}
                     </Button>
-                  </p>
+                  </div>
                 )}
               </div>
             </div>
           )}
-          {isOrganizer && hostKey && (
+          {canViewHostKey && hostKey && (
             <div className="flex items-start gap-4">
               <User className="text-muted-foreground mt-1 h-5 w-5" />
               <div>

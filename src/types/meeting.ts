@@ -15,4 +15,9 @@ export type UnifiedMeeting = {
   source: 'local' | 'zoom'
   participants?: string[]
   duration?: number
+  // Zoom-specific fields for hybrid meetings
+  zoomJoinUrl?: string | null
+  zoomPassword?: string | null
+  zoomMeetingId?: string | null
+  organizerId?: string
 }

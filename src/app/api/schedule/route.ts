@@ -32,7 +32,10 @@ export async function GET() {
       date: meeting.date,
       duration: meeting.duration,
       organizerId: meeting.organizer?.name || 'Unknown Organizer',
+      organizerIdRaw: meeting.organizerId, // Keep the raw ID for comparison
       zoomMeetingId: meeting.zoomMeetingId,
+      zoomJoinUrl: meeting.zoomJoinUrl,
+      zoomPassword: meeting.zoomPassword,
       meetingType: meeting.meetingType as 'internal' | 'external',
       meetingRoomId: meeting.meetingRoom
         ? `${meeting.meetingRoom.name} - ${meeting.meetingRoom.location}`
@@ -63,6 +66,11 @@ export async function GET() {
           ? meeting.participants.split(',').map((p) => p.trim())
           : [],
         source: 'local',
+        // Add Zoom-specific fields for hybrid meetings
+        zoomJoinUrl: meeting.zoomJoinUrl || null,
+        zoomPassword: meeting.zoomPassword || null,
+        zoomMeetingId: meeting.zoomMeetingId || null,
+        organizerId: meeting.organizerIdRaw,
       }
     })
 
