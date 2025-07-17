@@ -100,12 +100,22 @@ export const getMeetingById = async (
 }
 
 export const getMeetingRooms = async (): Promise<MeetingRoom[]> => {
-  const rooms = await prisma.meetingRoom.findMany({
-    orderBy: {
-      name: 'asc',
-    },
-  })
-  return rooms
+  try {
+    const rooms = await prisma.meetingRoom.findMany({
+      orderBy: {
+        name: 'asc',
+      },
+    })
+    return rooms
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientInitializationError) {
+      console.error(
+        'Failed to connect to the database. Returning empty array for meeting rooms.',
+      )
+      return []
+    }
+    throw error
+  }
 }
 
 export const createMeetingRoom = async (
