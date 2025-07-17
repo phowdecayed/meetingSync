@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import listPlugin from '@fullcalendar/list'
 import { EventContentArg } from '@fullcalendar/core'
-import { Loader2, Maximize, Minimize } from 'lucide-react'
+import { Loader2, Maximize, Minimize, RefreshCw } from 'lucide-react'
 import { id } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
 import { useTheme } from 'next-themes'
@@ -117,22 +117,43 @@ export default function PublicCalendar() {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const calendarRef = useRef<FullCalendar>(null)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  useEffect(() => {
-    async function fetchMeetings() {
-      try {
-        const response = await fetch('/api/public/meetings')
-        if (!response.ok) throw new Error('Failed to fetch meetings')
-        const data = await response.json()
-        setMeetings(data)
-      } catch (error) {
-        console.error(error)
-      } finally {
-        setLoading(false)
-      }
+  const fetchMeetings = useCallback(async (showLoader = true) => {
+    if (showLoader) setIsRefreshing(true)
+    try {
+      const response = await fetch('/api/public/meetings')
+      if (!response.ok) throw new Error('Failed to fetch meetings')
+      const data = await response.json()
+      setMeetings(data)
+      setLastRefresh(new Date())
+    } catch (error) {
+      console.error('Failed to fetch meetings:', error)
+    } finally {
+      setLoading(false)
+      setIsRefreshing(false)
     }
-    fetchMeetings()
   }, [])
+
+  // Initial fetch
+  useEffect(() => {
+    fetchMeetings()
+  }, [fetchMeetings])
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchMeetings(false) // Don't show loader for auto-refresh
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [fetchMeetings])
+
+  const handleManualRefresh = () => {
+    fetchMeetings(true) // Show loader for manual refresh
+  }
 
   const calendarEvents = useMemo(
     () =>
@@ -188,8 +209,21 @@ export default function PublicCalendar() {
         <Button
           variant="outline"
           size="icon"
+          onClick={handleManualRefresh}
+          disabled={isRefreshing}
+          className="bg-white/50 backdrop-blur-sm dark:bg-gray-800/50"
+          title="Refresh data"
+        >
+          <RefreshCw
+            className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`}
+          />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
           onClick={toggleFullscreen}
           className="bg-white/50 backdrop-blur-sm dark:bg-gray-800/50"
+          title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
         >
           {isFullscreen ? (
             <Minimize className="h-5 w-5" />
