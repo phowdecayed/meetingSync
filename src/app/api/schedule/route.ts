@@ -74,25 +74,35 @@ export async function GET() {
       }
     })
 
-    const formattedZoomMeetings = zoomMeetings.meetings.map((meeting) => {
-      const start = new Date(meeting.start_time)
-      const end = addMinutes(start, meeting.duration)
-      return {
-        id: meeting.id.toString(),
-        title: meeting.topic,
-        description: meeting.agenda,
-        start: start.toISOString(),
-        end: end.toISOString(),
-        duration: meeting.duration,
-        organizerName: 'Zoom',
-        status: getMeetingStatus(start, end),
-        meetingId: meeting.id.toString(),
-        meetingType: 'external',
-        meetingRoom: null,
-        isZoomMeeting: true,
-        source: 'zoom',
-      }
-    })
+    // Get all Zoom meeting IDs that are already stored as local hybrid meetings
+    const localZoomMeetingIds = new Set(
+      localMeetings
+        .filter((meeting) => meeting.zoomMeetingId)
+        .map((meeting) => meeting.zoomMeetingId),
+    )
+
+    // Filter out Zoom meetings that already exist as local hybrid meetings
+    const formattedZoomMeetings = zoomMeetings.meetings
+      .filter((meeting) => !localZoomMeetingIds.has(meeting.id.toString()))
+      .map((meeting) => {
+        const start = new Date(meeting.start_time)
+        const end = addMinutes(start, meeting.duration)
+        return {
+          id: meeting.id.toString(),
+          title: meeting.topic,
+          description: meeting.agenda,
+          start: start.toISOString(),
+          end: end.toISOString(),
+          duration: meeting.duration,
+          organizerName: 'Zoom',
+          status: getMeetingStatus(start, end),
+          meetingId: meeting.id.toString(),
+          meetingType: 'external',
+          meetingRoom: null,
+          isZoomMeeting: true,
+          source: 'zoom',
+        }
+      })
 
     const allMeetings = [...formattedLocalMeetings, ...formattedZoomMeetings]
 
