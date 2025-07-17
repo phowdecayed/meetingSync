@@ -83,7 +83,7 @@ const CalendarFilters = memo(function CalendarFilters({
 
   return (
     <div 
-      className="space-y-4 rounded-lg bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:bg-gray-800/80"
+      className="space-y-4 rounded-lg bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:bg-gray-800/80 transition-all duration-300 ease-in-out hover:shadow-md"
       role="search"
       aria-label="Meeting search and filters"
     >
@@ -161,7 +161,11 @@ const CalendarFilters = memo(function CalendarFilters({
       {/* Filters Content */}
       <div
         id="mobile-filters-content"
-        className={`space-y-4 ${isFiltersExpanded ? 'block' : 'hidden'} md:block`}
+        className={`space-y-4 transition-all duration-300 ease-in-out md:block ${
+          isFiltersExpanded 
+            ? 'block opacity-100 max-h-96' 
+            : 'hidden opacity-0 max-h-0 overflow-hidden md:opacity-100 md:max-h-none md:overflow-visible'
+        }`}
         aria-hidden={!isFiltersExpanded}
       >
         {/* Meeting Type Filters */}

@@ -170,34 +170,52 @@ const CalendarGrid = memo(function CalendarGrid({
   // Render main content
   return (
     <div className="space-y-6">
-      {sortedGroupKeys.map((groupKey) => {
+      {sortedGroupKeys.map((groupKey, sectionIndex) => {
         const groupMeetings = groupedMeetings[groupKey]
         const groupDate = getGroupDate(groupKey, groupBy)
         const shouldUseCompactView =
           shouldShowCompactView('mobile') && viewMode !== 'grid'
 
         return (
-          <DateSection
+          <div
             key={groupKey}
-            date={groupDate}
-            meetingCount={groupMeetings.length}
-            collapsible={true}
-            defaultExpanded={true}
+            className="animate-in fade-in-0 slide-in-from-bottom-4"
+            style={{
+              animationDelay: `${sectionIndex * 100}ms`,
+              animationDuration: '500ms',
+              animationFillMode: 'both'
+            }}
           >
-            <div className={gridClasses}>
-              {groupMeetings.map((meeting) => (
-                <MeetingCard
-                  key={meeting.id}
-                  meeting={meeting}
-                  compact={
-                    shouldUseCompactView || layoutConfig.cardSize.compact
-                  }
-                  showDate={groupBy !== 'date'}
-                  viewMode={viewMode}
-                />
-              ))}
-            </div>
-          </DateSection>
+            <DateSection
+              date={groupDate}
+              meetingCount={groupMeetings.length}
+              collapsible={true}
+              defaultExpanded={true}
+            >
+              <div className={gridClasses}>
+                {groupMeetings.map((meeting, cardIndex) => (
+                  <div
+                    key={meeting.id}
+                    className="animate-in fade-in-0 slide-in-from-bottom-2"
+                    style={{
+                      animationDelay: `${(sectionIndex * 100) + (cardIndex * 50)}ms`,
+                      animationDuration: '400ms',
+                      animationFillMode: 'both'
+                    }}
+                  >
+                    <MeetingCard
+                      meeting={meeting}
+                      compact={
+                        shouldUseCompactView || layoutConfig.cardSize.compact
+                      }
+                      showDate={groupBy !== 'date'}
+                      viewMode={viewMode}
+                    />
+                  </div>
+                ))}
+              </div>
+            </DateSection>
+          </div>
         )
       })}
     </div>

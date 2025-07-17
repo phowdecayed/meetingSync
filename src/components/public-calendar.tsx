@@ -102,7 +102,10 @@ const PublicCalendar = memo(function PublicCalendar() {
 
   // Accessibility state
   const [announceMessage, setAnnounceMessage] = useState('')
-  const [focusedElementId, setFocusedElementId] = useState<string | null>(null)
+  
+  // Animation state
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
   
   // Accessibility refs
   const skipLinkRef = useRef<HTMLAnchorElement>(null)
@@ -166,27 +169,20 @@ const PublicCalendar = memo(function PublicCalendar() {
     lastUpdate: Date.now(),
   })
 
-  // Performance measurement hook
-  const measurePerformance = useCallback((operation: string, fn: () => void) => {
-    const start = performance.now()
-    fn()
-    const end = performance.now()
-    const duration = end - start
-
-    // Log performance for large datasets or slow operations
-    if (duration > 100 || meetings.length > 500) {
-      console.log(`[Performance] ${operation}: ${duration.toFixed(2)}ms (${meetings.length} meetings)`)
-    }
-
-    // Update performance metrics
-    performanceRef.current = {
-      ...performanceRef.current,
-      renderTime: operation === 'render' ? duration : performanceRef.current.renderTime,
-      filterTime: operation === 'filter' ? duration : performanceRef.current.filterTime,
-      dataSize: meetings.length,
-      lastUpdate: Date.now(),
-    }
-  }, [meetings.length])
+  // Enhanced date navigation with animations
+  const handleDateChangeWithAnimation = useCallback((newDate: Date, direction: 'left' | 'right') => {
+    setIsAnimating(true)
+    setSlideDirection(direction)
+    
+    // Trigger the date change after a brief delay for animation
+    setTimeout(() => {
+      setCurrentDate(newDate)
+      setTimeout(() => {
+        setIsAnimating(false)
+        setSlideDirection(null)
+      }, 300)
+    }, 150)
+  }, [])
 
   // Data fetching
   const fetchMeetings = useCallback(async (showLoader: boolean = true) => {
@@ -390,7 +386,9 @@ const PublicCalendar = memo(function PublicCalendar() {
       </div>
 
       <div 
-        className="m-4 flex h-full flex-col overflow-hidden rounded-2xl bg-white/30 shadow-2xl backdrop-blur-xl dark:bg-gray-800/30"
+        className={`m-4 flex h-full flex-col overflow-hidden rounded-2xl bg-white/30 shadow-2xl backdrop-blur-xl dark:bg-gray-800/30 transition-all duration-500 ease-in-out ${
+          isAnimating ? 'scale-[0.98] opacity-90' : 'scale-100 opacity-100'
+        }`}
         role="application"
         aria-label="Public Calendar Application"
       >
