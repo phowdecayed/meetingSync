@@ -1,6 +1,6 @@
 /**
  * Client-Side Settings Integration Service
- * 
+ *
  * Handles settings integration from the browser by communicating with API endpoints.
  * This service runs in the browser and provides real-time updates through polling.
  */
@@ -13,10 +13,13 @@ import {
   SettingsChangeEvent,
   ConflictNotification,
   CapacityUpdateEvent,
-  ZoomAccountChangeType
+  ZoomAccountChangeType,
 } from '@/types/conflict-detection'
 
-export class SettingsIntegrationServiceClient extends EventEmitter implements SettingsIntegrationService {
+export class SettingsIntegrationServiceClient
+  extends EventEmitter
+  implements SettingsIntegrationService
+{
   private static instance: SettingsIntegrationServiceClient
   private isInitialized = false
   private currentZoomAccounts: string[] = []
@@ -31,7 +34,8 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
 
   public static getInstance(): SettingsIntegrationServiceClient {
     if (!SettingsIntegrationServiceClient.instance) {
-      SettingsIntegrationServiceClient.instance = new SettingsIntegrationServiceClient()
+      SettingsIntegrationServiceClient.instance =
+        new SettingsIntegrationServiceClient()
     }
     return SettingsIntegrationServiceClient.instance
   }
@@ -47,20 +51,27 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
     try {
       // Get initial state of Zoom accounts
       const accounts = await zoomAccountServiceClient.getAvailableAccounts()
-      this.currentZoomAccounts = accounts.map(account => account.id)
+      this.currentZoomAccounts = accounts.map((account) => account.id)
 
       // Set up periodic monitoring for changes
       this.startPeriodicMonitoring()
 
       this.isInitialized = true
-      console.log(`Settings Integration Service (Client) initialized with ${accounts.length} Zoom accounts`)
+      console.log(
+        `Settings Integration Service (Client) initialized with ${accounts.length} Zoom accounts`,
+      )
     } catch (error) {
-      console.error('Failed to initialize Settings Integration Service (Client):', error)
-      
+      console.error(
+        'Failed to initialize Settings Integration Service (Client):',
+        error,
+      )
+
       // Initialize with empty state instead of throwing error
       this.currentZoomAccounts = []
       this.isInitialized = true
-      console.log('Settings Integration Service (Client) initialized with no Zoom accounts (graceful degradation)')
+      console.log(
+        'Settings Integration Service (Client) initialized with no Zoom accounts (graceful degradation)',
+      )
     }
   }
 
@@ -70,19 +81,24 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
   async handleZoomAccountChange(
     changeType: ZoomAccountChangeType,
     accountId: string,
-    accountData?: any
+    accountData?: any,
   ): Promise<void> {
     try {
       // Clear zoom account service cache to force refresh
       zoomAccountServiceClient.clearCache()
 
       // Get updated account list
-      const updatedAccounts = await zoomAccountServiceClient.getAvailableAccounts()
-      const newAccountIds = updatedAccounts.map(account => account.id)
+      const updatedAccounts =
+        await zoomAccountServiceClient.getAvailableAccounts()
+      const newAccountIds = updatedAccounts.map((account) => account.id)
 
       // Determine what changed
-      const addedAccounts = newAccountIds.filter(id => !this.currentZoomAccounts.includes(id))
-      const removedAccounts = this.currentZoomAccounts.filter(id => !newAccountIds.includes(id))
+      const addedAccounts = newAccountIds.filter(
+        (id) => !this.currentZoomAccounts.includes(id),
+      )
+      const removedAccounts = this.currentZoomAccounts.filter(
+        (id) => !newAccountIds.includes(id),
+      )
 
       // Update our tracking
       this.currentZoomAccounts = newAccountIds
@@ -95,7 +111,7 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
         newCapacity: newAccountIds.length * 2,
         addedAccounts,
         removedAccounts,
-        totalAccounts: newAccountIds.length
+        totalAccounts: newAccountIds.length,
       }
 
       // Emit capacity update event
@@ -111,7 +127,7 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
         changeType,
         affectedAccountId: accountId,
         newAccountData: accountData,
-        totalAccounts: newAccountIds.length
+        totalAccounts: newAccountIds.length,
       }
 
       this.emit('settings_changed', settingsEvent)
@@ -119,7 +135,7 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
       console.log(`Zoom account ${changeType}: ${accountId}`, {
         totalAccounts: newAccountIds.length,
         addedAccounts,
-        removedAccounts
+        removedAccounts,
       })
     } catch (error) {
       console.error('Error handling Zoom account change:', error)
@@ -129,7 +145,9 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
   /**
    * Subscribe to settings changes
    */
-  subscribeToSettingsChanges(callback: (event: SettingsChangeEvent) => void): string {
+  subscribeToSettingsChanges(
+    callback: (event: SettingsChangeEvent) => void,
+  ): string {
     const subscriptionId = `settings-${Date.now()}-${Math.random()}`
     this.on('settings_changed', callback)
     return subscriptionId
@@ -138,7 +156,9 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
   /**
    * Subscribe to capacity updates
    */
-  subscribeToCapacityUpdates(callback: (event: CapacityUpdateEvent) => void): string {
+  subscribeToCapacityUpdates(
+    callback: (event: CapacityUpdateEvent) => void,
+  ): string {
     const subscriptionId = `capacity-${Date.now()}-${Math.random()}`
     this.on('capacity_updated', callback)
     return subscriptionId
@@ -147,7 +167,9 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
   /**
    * Subscribe to conflict notifications
    */
-  subscribeToConflictNotifications(callback: (notification: ConflictNotification) => void): string {
+  subscribeToConflictNotifications(
+    callback: (notification: ConflictNotification) => void,
+  ): string {
     const subscriptionId = `notification-${Date.now()}-${Math.random()}`
     this.on('conflict_notification', callback)
     return subscriptionId
@@ -172,7 +194,9 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
    * Mark notification as read
    */
   markNotificationAsRead(notificationId: string): void {
-    const notification = this.notificationQueue.find(n => n.id === notificationId)
+    const notification = this.notificationQueue.find(
+      (n) => n.id === notificationId,
+    )
     if (notification) {
       notification.isRead = true
       this.emit('notification_updated', notification)
@@ -213,7 +237,7 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
       if (response.ok) {
         return await response.json()
       }
-      
+
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     } catch (error) {
       console.error('Error getting capacity status:', error)
@@ -222,7 +246,7 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
         totalCapacity: 0,
         currentUsage: 0,
         availableSlots: 0,
-        utilizationPercentage: 0
+        utilizationPercentage: 0,
       }
     }
   }
@@ -234,17 +258,26 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
     // Check for changes every 30 seconds
     this.pollingInterval = setInterval(async () => {
       try {
-        const currentAccounts = await zoomAccountServiceClient.getAvailableAccounts()
-        const currentAccountIds = currentAccounts.map(account => account.id)
+        const currentAccounts =
+          await zoomAccountServiceClient.getAvailableAccounts()
+        const currentAccountIds = currentAccounts.map((account) => account.id)
 
         // Check if accounts have changed
         const accountsChanged =
           currentAccountIds.length !== this.currentZoomAccounts.length ||
-          !currentAccountIds.every(id => this.currentZoomAccounts.includes(id))
+          !currentAccountIds.every((id) =>
+            this.currentZoomAccounts.includes(id),
+          )
 
         if (accountsChanged) {
-          console.log('Detected Zoom account changes during periodic monitoring')
-          await this.handleZoomAccountChange(ZoomAccountChangeType.UPDATED, 'system-detected', null)
+          console.log(
+            'Detected Zoom account changes during periodic monitoring',
+          )
+          await this.handleZoomAccountChange(
+            ZoomAccountChangeType.UPDATED,
+            'system-detected',
+            null,
+          )
         }
       } catch (error) {
         console.error('Error during periodic monitoring:', error)
@@ -260,7 +293,7 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
       clearInterval(this.pollingInterval)
       this.pollingInterval = null
     }
-    
+
     this.removeAllListeners()
     this.notificationQueue = []
     this.isInitialized = false
@@ -268,4 +301,5 @@ export class SettingsIntegrationServiceClient extends EventEmitter implements Se
 }
 
 // Export singleton instance for client-side use
-export const settingsIntegrationServiceClient = SettingsIntegrationServiceClient.getInstance()
+export const settingsIntegrationServiceClient =
+  SettingsIntegrationServiceClient.getInstance()

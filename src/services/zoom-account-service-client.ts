@@ -1,17 +1,17 @@
 import { getBaseUrl } from '@/lib/utils'
 /**
  * Client-Side Zoom Account Service
- * 
+ *
  * Handles Zoom account operations from the browser by communicating with API endpoints.
  * This service runs in the browser and cannot access the database directly.
  */
 
-import { 
-  ZoomAccountService, 
-  ZoomAccountInfo, 
-  ZoomCapacityResult, 
+import {
+  ZoomAccountService,
+  ZoomAccountInfo,
+  ZoomCapacityResult,
   AccountLoadInfo,
-  ConflictDetectionError 
+  ConflictDetectionError,
 } from '@/types/conflict-detection'
 
 export class ZoomAccountServiceClient implements ZoomAccountService {
@@ -19,10 +19,10 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
   private accountCache: Map<string, ZoomAccountInfo> = new Map()
   private cacheTimestamp: Date | null = null
   private readonly CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
-  private baseUrl: string;
+  private baseUrl: string
 
   private constructor() {
-    this.baseUrl = getBaseUrl();
+    this.baseUrl = getBaseUrl()
   }
 
   public static getInstance(): ZoomAccountServiceClient {
@@ -39,24 +39,28 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
     try {
       // Check cache first
       if (this.isCacheValid()) {
-        return Array.from(this.accountCache.values()).filter(account => account.isActive)
+        return Array.from(this.accountCache.values()).filter(
+          (account) => account.isActive,
+        )
       }
 
-      const response = await fetch(`${this.baseUrl}/api/zoom-accounts`, { credentials: 'same-origin' })
+      const response = await fetch(`${this.baseUrl}/api/zoom-accounts`, {
+        credentials: 'same-origin',
+      })
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
       const accounts: ZoomAccountInfo[] = await response.json()
-      
+
       // Update cache
       this.accountCache.clear()
-      accounts.forEach(account => {
+      accounts.forEach((account) => {
         this.accountCache.set(account.id, account)
       })
       this.cacheTimestamp = new Date()
 
-      return accounts.filter(account => account.isActive)
+      return accounts.filter((account) => account.isActive)
     } catch (error) {
       console.error('Error fetching Zoom accounts:', error)
       // Return empty array for graceful degradation
@@ -70,7 +74,7 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
   async checkConcurrentMeetingCapacity(
     startTime: Date,
     endTime: Date,
-    excludeMeetingId?: string
+    excludeMeetingId?: string,
   ): Promise<ZoomCapacityResult> {
     try {
       const params = new URLSearchParams({
@@ -82,7 +86,10 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
         params.append('excludeMeetingId', excludeMeetingId)
       }
 
-      const response = await fetch(`${this.baseUrl}/api/zoom-accounts/capacity?${params}`, { credentials: 'same-origin' })
+      const response = await fetch(
+        `${this.baseUrl}/api/zoom-accounts/capacity?${params}`,
+        { credentials: 'same-origin' },
+      )
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
@@ -90,7 +97,7 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
       return await response.json()
     } catch (error) {
       console.error('Error checking Zoom capacity:', error)
-      
+
       // Return safe default for graceful degradation
       return {
         hasAvailableAccount: false,
@@ -98,7 +105,7 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
         totalMaxConcurrent: 0,
         currentTotalUsage: 0,
         availableSlots: 0,
-        conflictingMeetings: []
+        conflictingMeetings: [],
       }
     }
   }
@@ -108,10 +115,13 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
    */
   async findAvailableAccount(
     startTime: Date,
-    endTime: Date
+    endTime: Date,
   ): Promise<ZoomAccountInfo | null> {
     try {
-      const capacityResult = await this.checkConcurrentMeetingCapacity(startTime, endTime)
+      const capacityResult = await this.checkConcurrentMeetingCapacity(
+        startTime,
+        endTime,
+      )
       return capacityResult.suggestedAccount || null
     } catch (error) {
       console.error('Error finding available Zoom account:', error)
@@ -124,7 +134,10 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
    */
   async getAccountLoadBalancing(): Promise<AccountLoadInfo[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/zoom-accounts/load-balancing`, { credentials: 'same-origin' })
+      const response = await fetch(
+        `${this.baseUrl}/api/zoom-accounts/load-balancing`,
+        { credentials: 'same-origin' },
+      )
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
@@ -139,16 +152,22 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
   /**
    * Update account capacity (for future extensibility)
    */
-  async updateAccountCapacity(accountId: string, capacity: number): Promise<void> {
+  async updateAccountCapacity(
+    accountId: string,
+    capacity: number,
+  ): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/zoom-accounts/${accountId}/capacity`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${this.baseUrl}/api/zoom-accounts/${accountId}/capacity`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ capacity }),
+          credentials: 'same-origin',
         },
-        body: JSON.stringify({ capacity }),
-        credentials: 'same-origin'
-      })
+      )
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
@@ -161,7 +180,7 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
       throw new ConflictDetectionError(
         'Failed to update account capacity',
         'resource',
-        false
+        false,
       )
     }
   }
@@ -178,7 +197,9 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
 
       const leastLoadedAccountId = loadInfo[0].accountId
       const accounts = await this.getAvailableAccounts()
-      return accounts.find(account => account.id === leastLoadedAccountId) || null
+      return (
+        accounts.find((account) => account.id === leastLoadedAccountId) || null
+      )
     } catch (error) {
       console.error('Error getting least loaded account:', error)
       return null
@@ -192,7 +213,7 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
     accountId: string,
     startTime: Date,
     endTime: Date,
-    excludeMeetingId?: string
+    excludeMeetingId?: string,
   ): Promise<number> {
     try {
       const params = new URLSearchParams({
@@ -205,7 +226,10 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
         params.append('excludeMeetingId', excludeMeetingId)
       }
 
-      const response = await fetch(`${this.baseUrl}/api/zoom-accounts/concurrent-meetings?${params}`, { credentials: 'same-origin' })
+      const response = await fetch(
+        `${this.baseUrl}/api/zoom-accounts/concurrent-meetings?${params}`,
+        { credentials: 'same-origin' },
+      )
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
@@ -229,15 +253,20 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
   /**
    * Get cache statistics (useful for monitoring)
    */
-  public getCacheStats(): { size: number; lastUpdated: Date | null; isExpired: boolean } {
+  public getCacheStats(): {
+    size: number
+    lastUpdated: Date | null
+    isExpired: boolean
+  } {
     const now = new Date()
-    const isExpired = !this.cacheTimestamp || 
-      (now.getTime() - this.cacheTimestamp.getTime()) >= this.CACHE_TTL_MS
+    const isExpired =
+      !this.cacheTimestamp ||
+      now.getTime() - this.cacheTimestamp.getTime() >= this.CACHE_TTL_MS
 
     return {
       size: this.accountCache.size,
       lastUpdated: this.cacheTimestamp,
-      isExpired
+      isExpired,
     }
   }
 
@@ -250,7 +279,7 @@ export class ZoomAccountServiceClient implements ZoomAccountService {
     }
 
     const now = new Date()
-    return (now.getTime() - this.cacheTimestamp.getTime()) < this.CACHE_TTL_MS
+    return now.getTime() - this.cacheTimestamp.getTime() < this.CACHE_TTL_MS
   }
 }
 

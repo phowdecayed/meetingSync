@@ -32,7 +32,7 @@ const ErrorDisplay = memo(function ErrorDisplay({
   onRetry: () => void
 }) {
   return (
-    <div 
+    <div
       className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/50 dark:to-indigo-900/60"
       role="alert"
       aria-live="assertive"
@@ -42,21 +42,18 @@ const ErrorDisplay = memo(function ErrorDisplay({
           <Loader2 className="text-destructive h-12 w-12" />
         </div>
         <div className="space-y-2">
-          <h3 
+          <h3
             className="text-foreground text-lg font-semibold"
             id="error-title"
           >
             Gagal Memuat Data
           </h3>
-          <p 
-            className="text-muted-foreground max-w-md"
-            id="error-message"
-          >
+          <p className="text-muted-foreground max-w-md" id="error-message">
             {error.message}
           </p>
           <button
             onClick={onRetry}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 mt-4 rounded-md px-4 py-2 text-sm font-medium transition-colors"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-ring mt-4 rounded-md px-4 py-2 text-sm font-medium transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-none"
             aria-describedby="error-title error-message"
             type="button"
           >
@@ -71,17 +68,17 @@ const ErrorDisplay = memo(function ErrorDisplay({
 // Memoized loading display component
 const LoadingDisplay = memo(function LoadingDisplay() {
   return (
-    <div 
+    <div
       className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/50 dark:to-indigo-900/60"
       role="status"
       aria-live="polite"
     >
       <div className="flex flex-col items-center gap-4">
-        <Loader2 
-          className="text-primary h-12 w-12 animate-spin" 
+        <Loader2
+          className="text-primary h-12 w-12 animate-spin"
           aria-hidden="true"
         />
-        <p 
+        <p
           className="text-muted-foreground text-lg font-medium"
           id="loading-message"
         >
@@ -102,11 +99,13 @@ const PublicCalendar = memo(function PublicCalendar() {
 
   // Accessibility state
   const [announceMessage, setAnnounceMessage] = useState('')
-  
+
   // Animation state
   const [isAnimating, setIsAnimating] = useState(false)
-  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
-  
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(
+    null,
+  )
+
   // Accessibility refs
   const skipLinkRef = useRef<HTMLAnchorElement>(null)
   const mainContentRef = useRef<HTMLDivElement>(null)
@@ -120,29 +119,35 @@ const PublicCalendar = memo(function PublicCalendar() {
   }, [])
 
   // Keyboard navigation handlers
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    // Skip to main content (Alt + M)
-    if (event.altKey && event.key === 'm') {
-      event.preventDefault()
-      mainContentRef.current?.focus()
-      announceToScreenReader('Navigated to main content')
-    }
-    
-    // Skip to filters (Alt + F)
-    if (event.altKey && event.key === 'f') {
-      event.preventDefault()
-      filtersRef.current?.focus()
-      announceToScreenReader('Navigated to filters')
-    }
-
-    // Escape key to clear focus and return to main navigation
-    if (event.key === 'Escape') {
-      if (document.activeElement && document.activeElement !== document.body) {
-        (document.activeElement as HTMLElement).blur()
-        announceToScreenReader('Focus cleared')
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      // Skip to main content (Alt + M)
+      if (event.altKey && event.key === 'm') {
+        event.preventDefault()
+        mainContentRef.current?.focus()
+        announceToScreenReader('Navigated to main content')
       }
-    }
-  }, [announceToScreenReader])
+
+      // Skip to filters (Alt + F)
+      if (event.altKey && event.key === 'f') {
+        event.preventDefault()
+        filtersRef.current?.focus()
+        announceToScreenReader('Navigated to filters')
+      }
+
+      // Escape key to clear focus and return to main navigation
+      if (event.key === 'Escape') {
+        if (
+          document.activeElement &&
+          document.activeElement !== document.body
+        ) {
+          ;(document.activeElement as HTMLElement).blur()
+          announceToScreenReader('Focus cleared')
+        }
+      }
+    },
+    [announceToScreenReader],
+  )
 
   // Set up keyboard event listeners
   useEffect(() => {
@@ -170,19 +175,22 @@ const PublicCalendar = memo(function PublicCalendar() {
   })
 
   // Enhanced date navigation with animations
-  const handleDateChangeWithAnimation = useCallback((newDate: Date, direction: 'left' | 'right') => {
-    setIsAnimating(true)
-    setSlideDirection(direction)
-    
-    // Trigger the date change after a brief delay for animation
-    setTimeout(() => {
-      setCurrentDate(newDate)
+  const handleDateChangeWithAnimation = useCallback(
+    (newDate: Date, direction: 'left' | 'right') => {
+      setIsAnimating(true)
+      setSlideDirection(direction)
+
+      // Trigger the date change after a brief delay for animation
       setTimeout(() => {
-        setIsAnimating(false)
-        setSlideDirection(null)
-      }, 300)
-    }, 150)
-  }, [])
+        setCurrentDate(newDate)
+        setTimeout(() => {
+          setIsAnimating(false)
+          setSlideDirection(null)
+        }, 300)
+      }, 150)
+    },
+    [],
+  )
 
   // Data fetching
   const fetchMeetings = useCallback(async (showLoader: boolean = true) => {
@@ -287,7 +295,7 @@ const PublicCalendar = memo(function PublicCalendar() {
   // Optimized filtering with performance measurement
   const filteredMeetings = useMemo(() => {
     const startTime = performance.now()
-    
+
     let filtered = meetings
 
     // Early return for empty datasets
@@ -328,9 +336,11 @@ const PublicCalendar = memo(function PublicCalendar() {
     // Performance logging
     const endTime = performance.now()
     const duration = endTime - startTime
-    
+
     if (duration > 50 || meetings.length > 200) {
-      console.log(`[Filter Performance] ${duration.toFixed(2)}ms for ${meetings.length} → ${filtered.length} meetings`)
+      console.log(
+        `[Filter Performance] ${duration.toFixed(2)}ms for ${meetings.length} → ${filtered.length} meetings`,
+      )
     }
 
     return filtered
@@ -353,7 +363,7 @@ const PublicCalendar = memo(function PublicCalendar() {
         <a
           ref={skipLinkRef}
           href="#main-content"
-          className="absolute left-4 top-4 z-50 rounded bg-primary px-4 py-2 text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          className="bg-primary text-primary-foreground focus:ring-ring absolute top-4 left-4 z-50 rounded px-4 py-2 focus:ring-2 focus:ring-offset-2 focus:outline-none"
           onClick={(e) => {
             e.preventDefault()
             mainContentRef.current?.focus()
@@ -364,7 +374,7 @@ const PublicCalendar = memo(function PublicCalendar() {
         </a>
         <a
           href="#filters"
-          className="absolute left-4 top-16 z-50 rounded bg-primary px-4 py-2 text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          className="bg-primary text-primary-foreground focus:ring-ring absolute top-16 left-4 z-50 rounded px-4 py-2 focus:ring-2 focus:ring-offset-2 focus:outline-none"
           onClick={(e) => {
             e.preventDefault()
             filtersRef.current?.focus()
@@ -385,8 +395,8 @@ const PublicCalendar = memo(function PublicCalendar() {
         {announceMessage}
       </div>
 
-      <div 
-        className={`m-4 flex h-full flex-col overflow-hidden rounded-2xl bg-white/30 shadow-2xl backdrop-blur-xl dark:bg-gray-800/30 transition-all duration-500 ease-in-out ${
+      <div
+        className={`m-4 flex h-full flex-col overflow-hidden rounded-2xl bg-white/30 shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out dark:bg-gray-800/30 ${
           isAnimating ? 'scale-[0.98] opacity-90' : 'scale-100 opacity-100'
         }`}
         role="application"
@@ -405,12 +415,12 @@ const PublicCalendar = memo(function PublicCalendar() {
         {/* Main Content Area */}
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar with Filters */}
-          <aside 
+          <aside
             className="bg-background/50 hidden w-80 flex-shrink-0 border-r backdrop-blur-sm lg:block"
             aria-label="Calendar filters and search"
             role="complementary"
           >
-            <div 
+            <div
               className="h-full overflow-y-auto p-4"
               ref={filtersRef}
               tabIndex={-1}
@@ -430,19 +440,19 @@ const PublicCalendar = memo(function PublicCalendar() {
           </aside>
 
           {/* Main Calendar Grid */}
-          <main 
+          <main
             className="flex-1 overflow-y-auto"
             role="main"
             aria-label="Calendar meetings"
           >
-            <div 
+            <div
               className="p-4 lg:p-6"
               ref={mainContentRef}
               tabIndex={-1}
               id="main-content"
             >
               {/* Mobile Filters */}
-              <div 
+              <div
                 className="mb-4 lg:hidden"
                 role="region"
                 aria-label="Mobile filter controls"
@@ -459,7 +469,7 @@ const PublicCalendar = memo(function PublicCalendar() {
               </div>
 
               {/* Calendar Grid */}
-              <section 
+              <section
                 aria-label={`Calendar showing ${filteredMeetings.length} meetings`}
                 role="region"
               >

@@ -1,18 +1,18 @@
 /**
  * Zoom Account Service
- * 
+ *
  * Handles concurrent meeting tracking and capacity management for multiple Zoom accounts.
  * Implements load balancing and validation for Zoom meeting scheduling.
  */
 
 import prisma from '@/lib/prisma'
-import { 
-  ZoomAccountService, 
-  ZoomAccountInfo, 
-  ZoomCapacityResult, 
+import {
+  ZoomAccountService,
+  ZoomAccountInfo,
+  ZoomCapacityResult,
   AccountLoadInfo,
   ScheduledMeeting,
-  ConflictDetectionError 
+  ConflictDetectionError,
 } from '@/types/conflict-detection'
 
 export class ZoomAccountServiceImpl implements ZoomAccountService {
@@ -47,11 +47,11 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
   async checkConcurrentMeetingCapacity(
     startTime: Date,
     endTime: Date,
-    excludeMeetingId?: string
+    excludeMeetingId?: string,
   ): Promise<ZoomCapacityResult> {
     try {
       const accounts = await this.getAvailableAccounts()
-      
+
       if (accounts.length === 0) {
         return {
           hasAvailableAccount: false,
@@ -59,15 +59,15 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
           totalMaxConcurrent: 0,
           currentTotalUsage: 0,
           availableSlots: 0,
-          conflictingMeetings: []
+          conflictingMeetings: [],
         }
       }
 
       // Get all meetings that overlap with the requested time slot
       const overlappingMeetings = await this.getOverlappingMeetings(
-        startTime, 
-        endTime, 
-        excludeMeetingId
+        startTime,
+        endTime,
+        excludeMeetingId,
       )
 
       // Calculate capacity usage for each account
@@ -75,12 +75,12 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
       const conflictingMeetings: ScheduledMeeting[] = []
 
       // Initialize account usage
-      accounts.forEach(account => {
+      accounts.forEach((account) => {
         accountUsage.set(account.id, 0)
       })
 
       // Count overlapping meetings per account
-      overlappingMeetings.forEach(meeting => {
+      overlappingMeetings.forEach((meeting) => {
         if (meeting.zoomAccountId) {
           const currentUsage = accountUsage.get(meeting.zoomAccountId) || 0
           accountUsage.set(meeting.zoomAccountId, currentUsage + 1)
@@ -90,11 +90,14 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
 
       // Calculate totals
       const totalMaxConcurrent = accounts.length * this.MAX_CONCURRENT_MEETINGS
-      const currentTotalUsage = Array.from(accountUsage.values()).reduce((sum, usage) => sum + usage, 0)
+      const currentTotalUsage = Array.from(accountUsage.values()).reduce(
+        (sum, usage) => sum + usage,
+        0,
+      )
       const availableSlots = totalMaxConcurrent - currentTotalUsage
 
       // Find an available account (one with less than max concurrent meetings)
-      const suggestedAccount = accounts.find(account => {
+      const suggestedAccount = accounts.find((account) => {
         const usage = accountUsage.get(account.id) || 0
         return usage < this.MAX_CONCURRENT_MEETINGS
       })
@@ -106,7 +109,7 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
         currentTotalUsage,
         availableSlots: Math.max(0, availableSlots),
         suggestedAccount,
-        conflictingMeetings
+        conflictingMeetings,
       }
     } catch (error) {
       if (error instanceof ConflictDetectionError) {
@@ -115,7 +118,7 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
       throw new ConflictDetectionError(
         'Failed to check Zoom capacity',
         'validation',
-        true
+        true,
       )
     }
   }
@@ -125,16 +128,19 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
    */
   async findAvailableAccount(
     startTime: Date,
-    endTime: Date
+    endTime: Date,
   ): Promise<ZoomAccountInfo | null> {
     try {
-      const capacityResult = await this.checkConcurrentMeetingCapacity(startTime, endTime)
+      const capacityResult = await this.checkConcurrentMeetingCapacity(
+        startTime,
+        endTime,
+      )
       return capacityResult.suggestedAccount || null
     } catch (error) {
       throw new ConflictDetectionError(
         'Failed to find available Zoom account',
         'resource',
-        true
+        true,
       )
     }
   }
@@ -156,17 +162,19 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
           accountId: account.id,
           currentLoad,
           maxCapacity,
-          utilizationPercentage
+          utilizationPercentage,
         })
       }
 
       // Sort by utilization percentage (ascending) for load balancing
-      return loadInfo.sort((a, b) => a.utilizationPercentage - b.utilizationPercentage)
+      return loadInfo.sort(
+        (a, b) => a.utilizationPercentage - b.utilizationPercentage,
+      )
     } catch (error) {
       throw new ConflictDetectionError(
         'Failed to get account load balancing info',
         'resource',
-        true
+        true,
       )
     }
   }
@@ -174,7 +182,10 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
   /**
    * Update account capacity (for future extensibility)
    */
-  async updateAccountCapacity(accountId: string, capacity: number): Promise<void> {
+  async updateAccountCapacity(
+    accountId: string,
+    capacity: number,
+  ): Promise<void> {
     try {
       // For now, we use a fixed capacity of 2 per Zoom's limits
       // This method is for future extensibility when Zoom might allow different limits
@@ -186,7 +197,7 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
       throw new ConflictDetectionError(
         'Failed to update account capacity',
         'resource',
-        false
+        false,
       )
     }
   }
@@ -203,12 +214,14 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
 
       const leastLoadedAccountId = loadInfo[0].accountId
       const accounts = await this.getAvailableAccounts()
-      return accounts.find(account => account.id === leastLoadedAccountId) || null
+      return (
+        accounts.find((account) => account.id === leastLoadedAccountId) || null
+      )
     } catch (error) {
       throw new ConflictDetectionError(
         'Failed to get least loaded account',
         'resource',
-        true
+        true,
       )
     }
   }
@@ -220,23 +233,23 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
     accountId: string,
     startTime: Date,
     endTime: Date,
-    excludeMeetingId?: string
+    excludeMeetingId?: string,
   ): Promise<number> {
     try {
       const overlappingMeetings = await this.getOverlappingMeetings(
         startTime,
         endTime,
-        excludeMeetingId
+        excludeMeetingId,
       )
 
-      return overlappingMeetings.filter(meeting => 
-        meeting.zoomAccountId === accountId
+      return overlappingMeetings.filter(
+        (meeting) => meeting.zoomAccountId === accountId,
       ).length
     } catch (error) {
       throw new ConflictDetectionError(
         'Failed to count concurrent meetings',
         'validation',
-        true
+        true,
       )
     }
   }
@@ -246,30 +259,32 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
    */
   private async refreshAccountCache(): Promise<void> {
     const now = new Date()
-    
+
     // Check if cache is still valid
-    if (this.cacheTimestamp && 
-        (now.getTime() - this.cacheTimestamp.getTime()) < this.CACHE_TTL_MS) {
+    if (
+      this.cacheTimestamp &&
+      now.getTime() - this.cacheTimestamp.getTime() < this.CACHE_TTL_MS
+    ) {
       return
     }
 
     try {
       // Test database connection first
       await prisma.$queryRaw`SELECT 1`
-      
+
       // Fetch Zoom credentials from database
       const credentials = await prisma.zoomCredentials.findMany({
         where: {
-          deletedAt: null
+          deletedAt: null,
         },
         include: {
           meetings: {
             where: {
               deletedAt: null,
-              isZoomMeeting: true
-            }
-          }
-        }
+              isZoomMeeting: true,
+            },
+          },
+        },
       })
 
       // Clear existing cache
@@ -284,24 +299,30 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
           maxConcurrentMeetings: this.MAX_CONCURRENT_MEETINGS,
           maxParticipants: 1000, // Standard Zoom limit
           currentActiveMeetings: 0, // Will be calculated dynamically
-          scheduledMeetings: credential.meetings.map(meeting => ({
+          scheduledMeetings: credential.meetings.map((meeting) => ({
             id: meeting.id,
             title: meeting.title,
             startTime: meeting.date,
-            endTime: new Date(meeting.date.getTime() + (meeting.duration * 60 * 1000)),
-            participants: meeting.participants.split(',').filter(p => p.trim()),
-            zoomAccountId: credential.id
-          }))
+            endTime: new Date(
+              meeting.date.getTime() + meeting.duration * 60 * 1000,
+            ),
+            participants: meeting.participants
+              .split(',')
+              .filter((p) => p.trim()),
+            zoomAccountId: credential.id,
+          })),
         }
 
         this.accountCache.set(credential.id, accountInfo)
       }
 
       this.cacheTimestamp = now
-      console.log(`Refreshed Zoom account cache: ${credentials.length} accounts found`)
+      console.log(
+        `Refreshed Zoom account cache: ${credentials.length} accounts found`,
+      )
     } catch (error) {
       console.error('Failed to refresh account cache:', error)
-      
+
       // Don't throw error, just log it and continue with empty cache
       // This allows the application to continue working even if Zoom accounts aren't configured
       this.accountCache.clear()
@@ -315,12 +336,12 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
   private async getOverlappingMeetings(
     startTime: Date,
     endTime: Date,
-    excludeMeetingId?: string
+    excludeMeetingId?: string,
   ): Promise<ScheduledMeeting[]> {
     try {
       // Test database connection first
       await prisma.$queryRaw`SELECT 1`
-      
+
       const meetings = await prisma.meeting.findMany({
         where: {
           deletedAt: null,
@@ -332,8 +353,8 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
             {
               date: {
                 gte: startTime,
-                lt: endTime
-              }
+                lt: endTime,
+              },
             },
             // Meeting ends during the time slot
             {
@@ -342,38 +363,42 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
                 // Calculate end time: date + duration in minutes
                 {
                   date: {
-                    gte: new Date(startTime.getTime() - (24 * 60 * 60 * 1000)) // Look back 24 hours max
-                  }
-                }
-              ]
-            }
-          ]
+                    gte: new Date(startTime.getTime() - 24 * 60 * 60 * 1000), // Look back 24 hours max
+                  },
+                },
+              ],
+            },
+          ],
         },
         include: {
-          zoomCredential: true
-        }
+          zoomCredential: true,
+        },
       })
 
       // Filter meetings that actually overlap (since Prisma query is approximate)
       return meetings
-        .filter(meeting => {
+        .filter((meeting) => {
           const meetingStart = meeting.date
-          const meetingEnd = new Date(meeting.date.getTime() + (meeting.duration * 60 * 1000))
-          
+          const meetingEnd = new Date(
+            meeting.date.getTime() + meeting.duration * 60 * 1000,
+          )
+
           // Check if meetings overlap
-          return (meetingStart < endTime && meetingEnd > startTime)
+          return meetingStart < endTime && meetingEnd > startTime
         })
-        .map(meeting => ({
+        .map((meeting) => ({
           id: meeting.id,
           title: meeting.title,
           startTime: meeting.date,
-          endTime: new Date(meeting.date.getTime() + (meeting.duration * 60 * 1000)),
-          participants: meeting.participants.split(',').filter(p => p.trim()),
-          zoomAccountId: meeting.zoomCredentialId!
+          endTime: new Date(
+            meeting.date.getTime() + meeting.duration * 60 * 1000,
+          ),
+          participants: meeting.participants.split(',').filter((p) => p.trim()),
+          zoomAccountId: meeting.zoomCredentialId!,
         }))
     } catch (error) {
       console.error('Failed to get overlapping meetings:', error)
-      
+
       // Return empty array instead of throwing error for graceful degradation
       return []
     }
@@ -390,15 +415,20 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
   /**
    * Get cache statistics (useful for monitoring)
    */
-  public getCacheStats(): { size: number; lastUpdated: Date | null; isExpired: boolean } {
+  public getCacheStats(): {
+    size: number
+    lastUpdated: Date | null
+    isExpired: boolean
+  } {
     const now = new Date()
-    const isExpired = !this.cacheTimestamp || 
-      (now.getTime() - this.cacheTimestamp.getTime()) >= this.CACHE_TTL_MS
+    const isExpired =
+      !this.cacheTimestamp ||
+      now.getTime() - this.cacheTimestamp.getTime() >= this.CACHE_TTL_MS
 
     return {
       size: this.accountCache.size,
       lastUpdated: this.cacheTimestamp,
-      isExpired
+      isExpired,
     }
   }
 }

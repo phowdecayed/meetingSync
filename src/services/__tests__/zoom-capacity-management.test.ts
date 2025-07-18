@@ -1,6 +1,6 @@
 /**
  * Zoom Capacity Management Tests
- * 
+ *
  * Comprehensive tests for Zoom account capacity management including:
  * - Load balancing algorithms
  * - Capacity calculation edge cases
@@ -17,12 +17,12 @@ import prisma from '@/lib/prisma'
 vi.mock('@/lib/prisma', () => ({
   default: {
     zoomCredentials: {
-      findMany: vi.fn()
+      findMany: vi.fn(),
     },
     meeting: {
-      findMany: vi.fn()
-    }
-  }
+      findMany: vi.fn(),
+    },
+  },
 }))
 
 const mockPrisma = prisma as {
@@ -51,37 +51,37 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'zoom-2',
           accountId: 'acc-2',
           clientId: 'client-2',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'zoom-3',
           accountId: 'acc-3',
           clientId: 'client-3',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // Mock different load levels
       mockPrisma.meeting.findMany
         .mockResolvedValueOnce([]) // zoom-1: 0 meetings
         .mockResolvedValueOnce([
-          { id: 'meeting-1', zoomCredentialId: 'zoom-2' }
+          { id: 'meeting-1', zoomCredentialId: 'zoom-2' },
         ]) // zoom-2: 1 meeting
         .mockResolvedValueOnce([
           { id: 'meeting-2', zoomCredentialId: 'zoom-3' },
-          { id: 'meeting-3', zoomCredentialId: 'zoom-3' }
+          { id: 'meeting-3', zoomCredentialId: 'zoom-3' },
         ]) // zoom-3: 2 meetings (at capacity)
 
       const loadInfo = await service.getAccountLoadBalancing()
 
       expect(loadInfo).toHaveLength(3)
-      
+
       // Should be sorted by utilization (ascending)
       expect(loadInfo[0].utilizationPercentage).toBe(0) // zoom-1
       expect(loadInfo[1].utilizationPercentage).toBe(50) // zoom-2
@@ -98,21 +98,21 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-low-load',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'zoom-high-load',
           accountId: 'acc-2',
           clientId: 'client-2',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // Mock different loads
       mockPrisma.meeting.findMany
         .mockResolvedValueOnce([]) // zoom-low-load: 0 meetings
         .mockResolvedValueOnce([
-          { id: 'meeting-1', zoomCredentialId: 'zoom-high-load' }
+          { id: 'meeting-1', zoomCredentialId: 'zoom-high-load' },
         ]) // zoom-high-load: 1 meeting
 
       const leastLoadedAccount = await service.getLeastLoadedAccount()
@@ -127,23 +127,23 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'zoom-2',
           accountId: 'acc-2',
           clientId: 'client-2',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // Both accounts have equal load
       mockPrisma.meeting.findMany
         .mockResolvedValueOnce([
-          { id: 'meeting-1', zoomCredentialId: 'zoom-1' }
+          { id: 'meeting-1', zoomCredentialId: 'zoom-1' },
         ])
         .mockResolvedValueOnce([
-          { id: 'meeting-2', zoomCredentialId: 'zoom-2' }
+          { id: 'meeting-2', zoomCredentialId: 'zoom-2' },
         ])
 
       const loadInfo = await service.getAccountLoadBalancing()
@@ -164,8 +164,8 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // Mock meetings with various overlap scenarios
@@ -176,7 +176,7 @@ describe('Zoom Capacity Management', () => {
           date: new Date('2024-01-15T10:00:00Z'),
           duration: 60, // 10:00-11:00 (exact overlap)
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
+          zoomCredential: { id: 'zoom-1' },
         },
         {
           id: 'meeting-2',
@@ -184,7 +184,7 @@ describe('Zoom Capacity Management', () => {
           date: new Date('2024-01-15T09:30:00Z'),
           duration: 60, // 09:30-10:30 (overlaps start)
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
+          zoomCredential: { id: 'zoom-1' },
         },
         {
           id: 'meeting-3',
@@ -192,7 +192,7 @@ describe('Zoom Capacity Management', () => {
           date: new Date('2024-01-15T10:30:00Z'),
           duration: 60, // 10:30-11:30 (overlaps end)
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
+          zoomCredential: { id: 'zoom-1' },
         },
         {
           id: 'meeting-4',
@@ -200,7 +200,7 @@ describe('Zoom Capacity Management', () => {
           date: new Date('2024-01-15T09:00:00Z'),
           duration: 180, // 09:00-12:00 (contains our meeting)
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
+          zoomCredential: { id: 'zoom-1' },
         },
         {
           id: 'meeting-5',
@@ -208,11 +208,14 @@ describe('Zoom Capacity Management', () => {
           date: new Date('2024-01-15T12:00:00Z'),
           duration: 60, // 12:00-13:00 (no overlap)
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
-        }
+          zoomCredential: { id: 'zoom-1' },
+        },
       ])
 
-      const result = await service.checkConcurrentMeetingCapacity(startTime, endTime)
+      const result = await service.checkConcurrentMeetingCapacity(
+        startTime,
+        endTime,
+      )
 
       // Should count 4 overlapping meetings (all except meeting-5)
       expect(result.currentTotalUsage).toBe(4)
@@ -229,8 +232,8 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       mockPrisma.meeting.findMany.mockResolvedValue([
@@ -240,11 +243,14 @@ describe('Zoom Capacity Management', () => {
           date: new Date('2024-01-15T23:45:00Z'),
           duration: 60, // 23:45-00:45 (crosses midnight)
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
-        }
+          zoomCredential: { id: 'zoom-1' },
+        },
       ])
 
-      const result = await service.checkConcurrentMeetingCapacity(startTime, endTime)
+      const result = await service.checkConcurrentMeetingCapacity(
+        startTime,
+        endTime,
+      )
 
       expect(result.currentTotalUsage).toBe(1)
       expect(result.conflictingMeetings).toHaveLength(1)
@@ -259,8 +265,8 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       mockPrisma.meeting.findMany.mockResolvedValue([
@@ -270,11 +276,14 @@ describe('Zoom Capacity Management', () => {
           date: new Date('2024-01-15T10:00:30Z'),
           duration: 1, // 1 minute meeting
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
-        }
+          zoomCredential: { id: 'zoom-1' },
+        },
       ])
 
-      const result = await service.checkConcurrentMeetingCapacity(startTime, endTime)
+      const result = await service.checkConcurrentMeetingCapacity(
+        startTime,
+        endTime,
+      )
 
       expect(result.currentTotalUsage).toBe(1)
       expect(result.hasAvailableAccount).toBe(true) // Still has capacity
@@ -289,8 +298,8 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       mockPrisma.meeting.findMany.mockResolvedValue([
@@ -300,11 +309,14 @@ describe('Zoom Capacity Management', () => {
           date: new Date('2024-01-15T08:00:00Z'),
           duration: 480, // 8 hours (8:00-16:00)
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
-        }
+          zoomCredential: { id: 'zoom-1' },
+        },
       ])
 
-      const result = await service.checkConcurrentMeetingCapacity(startTime, endTime)
+      const result = await service.checkConcurrentMeetingCapacity(
+        startTime,
+        endTime,
+      )
 
       expect(result.currentTotalUsage).toBe(1)
       expect(result.conflictingMeetings[0].title).toBe('All Day Meeting')
@@ -319,14 +331,14 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'zoom-2',
           accountId: 'acc-2',
           clientId: 'client-2',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       const initialAccounts = await service.getAvailableAccounts()
@@ -338,8 +350,8 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // Clear cache to force refresh
@@ -357,8 +369,8 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       const initialAccounts = await service.getAvailableAccounts()
@@ -375,7 +387,7 @@ describe('Zoom Capacity Management', () => {
       // Capacity check should reflect no available accounts
       const capacityResult = await service.checkConcurrentMeetingCapacity(
         new Date(),
-        new Date()
+        new Date(),
       )
 
       expect(capacityResult.hasAvailableAccount).toBe(false)
@@ -396,8 +408,8 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-recovered',
           accountId: 'acc-recovered',
           clientId: 'client-recovered',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       service.clearCache()
@@ -415,8 +427,8 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // First call should hit database
@@ -441,8 +453,8 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // First call
@@ -473,17 +485,25 @@ describe('Zoom Capacity Management', () => {
           date: new Date('2024-01-15T10:30:00Z'),
           duration: 60,
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
-        }
+          zoomCredential: { id: 'zoom-1' },
+        },
       ])
 
       // Multiple calls for the same account should be efficient
-      const count1 = await service.countConcurrentMeetings('zoom-1', startTime, endTime)
-      const count2 = await service.countConcurrentMeetings('zoom-1', startTime, endTime)
+      const count1 = await service.countConcurrentMeetings(
+        'zoom-1',
+        startTime,
+        endTime,
+      )
+      const count2 = await service.countConcurrentMeetings(
+        'zoom-1',
+        startTime,
+        endTime,
+      )
 
       expect(count1).toBe(1)
       expect(count2).toBe(1)
-      
+
       // Should have made database calls (no caching at this level)
       expect(mockPrisma.meeting.findMany).toHaveBeenCalledTimes(2)
     })
@@ -496,27 +516,27 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'zoom-2',
           accountId: 'acc-2',
           clientId: 'client-2',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'zoom-3',
           accountId: 'acc-3',
           clientId: 'client-3',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       mockPrisma.meeting.findMany.mockResolvedValue([])
 
       const result = await service.checkConcurrentMeetingCapacity(
         new Date('2024-01-15T10:00:00Z'),
-        new Date('2024-01-15T11:00:00Z')
+        new Date('2024-01-15T11:00:00Z'),
       )
 
       expect(result.totalAccounts).toBe(3)
@@ -532,14 +552,14 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'zoom-2',
           accountId: 'acc-2',
           clientId: 'client-2',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // One account has 1 meeting, other has none
@@ -549,13 +569,13 @@ describe('Zoom Capacity Management', () => {
           date: new Date('2024-01-15T10:30:00Z'),
           duration: 60,
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
-        }
+          zoomCredential: { id: 'zoom-1' },
+        },
       ])
 
       const result = await service.checkConcurrentMeetingCapacity(
         new Date('2024-01-15T10:00:00Z'),
-        new Date('2024-01-15T11:00:00Z')
+        new Date('2024-01-15T11:00:00Z'),
       )
 
       expect(result.totalAccounts).toBe(2)
@@ -571,8 +591,8 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // Exactly at capacity (2 meetings)
@@ -582,20 +602,20 @@ describe('Zoom Capacity Management', () => {
           date: new Date('2024-01-15T10:30:00Z'),
           duration: 60,
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
+          zoomCredential: { id: 'zoom-1' },
         },
         {
           id: 'meeting-2',
           date: new Date('2024-01-15T10:15:00Z'),
           duration: 90,
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
-        }
+          zoomCredential: { id: 'zoom-1' },
+        },
       ])
 
       const result = await service.checkConcurrentMeetingCapacity(
         new Date('2024-01-15T10:00:00Z'),
-        new Date('2024-01-15T11:00:00Z')
+        new Date('2024-01-15T11:00:00Z'),
       )
 
       expect(result.totalAccounts).toBe(1)
@@ -608,9 +628,13 @@ describe('Zoom Capacity Management', () => {
 
   describe('Error Handling and Edge Cases', () => {
     it('should handle database connection errors', async () => {
-      mockPrisma.zoomCredentials.findMany.mockRejectedValue(new Error('Connection timeout'))
+      mockPrisma.zoomCredentials.findMany.mockRejectedValue(
+        new Error('Connection timeout'),
+      )
 
-      await expect(service.getAvailableAccounts()).rejects.toThrow(ConflictDetectionError)
+      await expect(service.getAvailableAccounts()).rejects.toThrow(
+        ConflictDetectionError,
+      )
     })
 
     it('should handle malformed meeting data', async () => {
@@ -619,8 +643,8 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // Mock malformed meeting data
@@ -630,14 +654,14 @@ describe('Zoom Capacity Management', () => {
           date: null, // Invalid date
           duration: -10, // Invalid duration
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
-        }
+          zoomCredential: { id: 'zoom-1' },
+        },
       ])
 
       // Should handle gracefully without crashing
       const result = await service.checkConcurrentMeetingCapacity(
         new Date('2024-01-15T10:00:00Z'),
-        new Date('2024-01-15T11:00:00Z')
+        new Date('2024-01-15T11:00:00Z'),
       )
 
       expect(result).toBeDefined()
@@ -650,15 +674,15 @@ describe('Zoom Capacity Management', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       mockPrisma.meeting.findMany.mockResolvedValue([])
 
       const result = await service.checkConcurrentMeetingCapacity(
         new Date('2024-01-15T10:00:00Z'),
-        new Date('2024-01-15T11:00:00Z')
+        new Date('2024-01-15T11:00:00Z'),
       )
 
       expect(result.currentTotalUsage).toBe(0)
@@ -671,7 +695,7 @@ describe('Zoom Capacity Management', () => {
 
       const result = await service.checkConcurrentMeetingCapacity(
         new Date('2024-01-15T10:00:00Z'),
-        new Date('2024-01-15T11:00:00Z')
+        new Date('2024-01-15T11:00:00Z'),
       )
 
       expect(result.totalAccounts).toBe(0)

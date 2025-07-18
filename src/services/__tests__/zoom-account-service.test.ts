@@ -1,11 +1,14 @@
 /**
  * Unit Tests for Zoom Account Service
- * 
+ *
  * Tests concurrent meeting tracking, capacity management, and load balancing
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest'
-import { ZoomAccountServiceImpl, zoomAccountService } from '../zoom-account-service'
+import {
+  ZoomAccountServiceImpl,
+  zoomAccountService,
+} from '../zoom-account-service'
 import { ConflictDetectionError } from '@/types/conflict-detection'
 import prisma from '@/lib/prisma'
 
@@ -13,12 +16,12 @@ import prisma from '@/lib/prisma'
 vi.mock('@/lib/prisma', () => ({
   default: {
     zoomCredentials: {
-      findMany: vi.fn()
+      findMany: vi.fn(),
     },
     meeting: {
-      findMany: vi.fn()
-    }
-  }
+      findMany: vi.fn(),
+    },
+  },
 }))
 
 const mockPrisma = prisma as {
@@ -47,14 +50,14 @@ describe('ZoomAccountService', () => {
           id: 'cred-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'cred-2',
           accountId: 'acc-2',
           clientId: 'client-2',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       const accounts = await service.getAvailableAccounts()
@@ -64,7 +67,7 @@ describe('ZoomAccountService', () => {
         id: 'cred-1',
         isActive: true,
         maxConcurrentMeetings: 2,
-        maxParticipants: 1000
+        maxParticipants: 1000,
       })
     })
 
@@ -77,9 +80,13 @@ describe('ZoomAccountService', () => {
     })
 
     it('should throw ConflictDetectionError on database error', async () => {
-      mockPrisma.zoomCredentials.findMany.mockRejectedValue(new Error('DB Error'))
+      mockPrisma.zoomCredentials.findMany.mockRejectedValue(
+        new Error('DB Error'),
+      )
 
-      await expect(service.getAvailableAccounts()).rejects.toThrow(ConflictDetectionError)
+      await expect(service.getAvailableAccounts()).rejects.toThrow(
+        ConflictDetectionError,
+      )
     })
   })
 
@@ -94,28 +101,31 @@ describe('ZoomAccountService', () => {
           id: 'cred-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'cred-2',
           accountId: 'acc-2',
           clientId: 'client-2',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
     })
 
     it('should return capacity when no overlapping meetings', async () => {
       mockPrisma.meeting.findMany.mockResolvedValue([])
 
-      const result = await service.checkConcurrentMeetingCapacity(startTime, endTime)
+      const result = await service.checkConcurrentMeetingCapacity(
+        startTime,
+        endTime,
+      )
 
       expect(result).toMatchObject({
         hasAvailableAccount: true,
         totalAccounts: 2,
         totalMaxConcurrent: 4, // 2 accounts × 2 meetings each
         currentTotalUsage: 0,
-        availableSlots: 4
+        availableSlots: 4,
       })
       expect(result.suggestedAccount).toBeDefined()
     })
@@ -130,7 +140,7 @@ describe('ZoomAccountService', () => {
           duration: 60,
           participants: 'user1@test.com,user2@test.com',
           zoomCredentialId: 'cred-1',
-          zoomCredential: { id: 'cred-1' }
+          zoomCredential: { id: 'cred-1' },
         },
         {
           id: 'meeting-2',
@@ -139,18 +149,21 @@ describe('ZoomAccountService', () => {
           duration: 90,
           participants: 'user3@test.com',
           zoomCredentialId: 'cred-1',
-          zoomCredential: { id: 'cred-1' }
-        }
+          zoomCredential: { id: 'cred-1' },
+        },
       ])
 
-      const result = await service.checkConcurrentMeetingCapacity(startTime, endTime)
+      const result = await service.checkConcurrentMeetingCapacity(
+        startTime,
+        endTime,
+      )
 
       expect(result).toMatchObject({
         hasAvailableAccount: true,
         totalAccounts: 2,
         totalMaxConcurrent: 4,
         currentTotalUsage: 2, // 2 meetings on cred-1
-        availableSlots: 2
+        availableSlots: 2,
       })
       expect(result.conflictingMeetings).toHaveLength(2)
     })
@@ -166,7 +179,7 @@ describe('ZoomAccountService', () => {
           duration: 60,
           participants: 'user1@test.com',
           zoomCredentialId: 'cred-1',
-          zoomCredential: { id: 'cred-1' }
+          zoomCredential: { id: 'cred-1' },
         },
         {
           id: 'meeting-2',
@@ -175,7 +188,7 @@ describe('ZoomAccountService', () => {
           duration: 90,
           participants: 'user2@test.com',
           zoomCredentialId: 'cred-1',
-          zoomCredential: { id: 'cred-1' }
+          zoomCredential: { id: 'cred-1' },
         },
         // 2 meetings on cred-2
         {
@@ -185,7 +198,7 @@ describe('ZoomAccountService', () => {
           duration: 30,
           participants: 'user3@test.com',
           zoomCredentialId: 'cred-2',
-          zoomCredential: { id: 'cred-2' }
+          zoomCredential: { id: 'cred-2' },
         },
         {
           id: 'meeting-4',
@@ -194,18 +207,21 @@ describe('ZoomAccountService', () => {
           duration: 120,
           participants: 'user4@test.com',
           zoomCredentialId: 'cred-2',
-          zoomCredential: { id: 'cred-2' }
-        }
+          zoomCredential: { id: 'cred-2' },
+        },
       ])
 
-      const result = await service.checkConcurrentMeetingCapacity(startTime, endTime)
+      const result = await service.checkConcurrentMeetingCapacity(
+        startTime,
+        endTime,
+      )
 
       expect(result).toMatchObject({
         hasAvailableAccount: false,
         totalAccounts: 2,
         totalMaxConcurrent: 4,
         currentTotalUsage: 4,
-        availableSlots: 0
+        availableSlots: 0,
       })
       expect(result.suggestedAccount).toBeUndefined()
     })
@@ -219,14 +235,14 @@ describe('ZoomAccountService', () => {
           duration: 60,
           participants: 'user1@test.com',
           zoomCredentialId: 'cred-1',
-          zoomCredential: { id: 'cred-1' }
-        }
+          zoomCredential: { id: 'cred-1' },
+        },
       ])
 
       const result = await service.checkConcurrentMeetingCapacity(
-        startTime, 
-        endTime, 
-        'meeting-1'
+        startTime,
+        endTime,
+        'meeting-1',
       )
 
       expect(result.currentTotalUsage).toBe(1) // Should still count the meeting since mock doesn't filter
@@ -243,8 +259,8 @@ describe('ZoomAccountService', () => {
           id: 'cred-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
       mockPrisma.meeting.findMany.mockResolvedValue([])
 
@@ -271,14 +287,14 @@ describe('ZoomAccountService', () => {
           id: 'cred-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'cred-2',
           accountId: 'acc-2',
           clientId: 'client-2',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       const loadInfo = await service.getAccountLoadBalancing()
@@ -288,12 +304,12 @@ describe('ZoomAccountService', () => {
         accountId: expect.any(String),
         currentLoad: 0,
         maxCapacity: 2,
-        utilizationPercentage: 0
+        utilizationPercentage: 0,
       })
-      
+
       // Should be sorted by utilization (ascending)
       expect(loadInfo[0].utilizationPercentage).toBeLessThanOrEqual(
-        loadInfo[1].utilizationPercentage
+        loadInfo[1].utilizationPercentage,
       )
     })
   })
@@ -311,7 +327,7 @@ describe('ZoomAccountService', () => {
           duration: 60,
           participants: 'user1@test.com',
           zoomCredentialId: 'cred-1',
-          zoomCredential: { id: 'cred-1' }
+          zoomCredential: { id: 'cred-1' },
         },
         {
           id: 'meeting-2',
@@ -320,11 +336,15 @@ describe('ZoomAccountService', () => {
           duration: 90,
           participants: 'user2@test.com',
           zoomCredentialId: 'cred-2',
-          zoomCredential: { id: 'cred-2' }
-        }
+          zoomCredential: { id: 'cred-2' },
+        },
       ])
 
-      const count = await service.countConcurrentMeetings('cred-1', startTime, endTime)
+      const count = await service.countConcurrentMeetings(
+        'cred-1',
+        startTime,
+        endTime,
+      )
 
       expect(count).toBe(1) // Only meeting-1 belongs to cred-1
     })
@@ -332,7 +352,11 @@ describe('ZoomAccountService', () => {
     it('should return 0 when no meetings for account', async () => {
       mockPrisma.meeting.findMany.mockResolvedValue([])
 
-      const count = await service.countConcurrentMeetings('cred-1', startTime, endTime)
+      const count = await service.countConcurrentMeetings(
+        'cred-1',
+        startTime,
+        endTime,
+      )
 
       expect(count).toBe(0)
     })
@@ -345,14 +369,14 @@ describe('ZoomAccountService', () => {
           id: 'cred-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'cred-2',
           accountId: 'acc-2',
           clientId: 'client-2',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       const account = await service.getLeastLoadedAccount()
@@ -377,8 +401,8 @@ describe('ZoomAccountService', () => {
           id: 'cred-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // First call should hit database
@@ -394,13 +418,13 @@ describe('ZoomAccountService', () => {
       // Initialize cache first
       mockPrisma.zoomCredentials.findMany.mockResolvedValue([])
       await service.getAvailableAccounts()
-      
+
       const stats = service.getCacheStats()
 
       expect(stats).toMatchObject({
         size: expect.any(Number),
         lastUpdated: expect.any(Date),
-        isExpired: expect.any(Boolean)
+        isExpired: expect.any(Boolean),
       })
     })
 
@@ -415,7 +439,9 @@ describe('ZoomAccountService', () => {
 
   describe('error handling', () => {
     it('should throw ConflictDetectionError with proper type', async () => {
-      mockPrisma.zoomCredentials.findMany.mockRejectedValue(new Error('Database error'))
+      mockPrisma.zoomCredentials.findMany.mockRejectedValue(
+        new Error('Database error'),
+      )
 
       try {
         await service.getAvailableAccounts()

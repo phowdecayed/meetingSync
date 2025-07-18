@@ -1,6 +1,6 @@
 /**
  * Room Conflict Detection and Suggestion Generation Tests
- * 
+ *
  * Comprehensive tests for room availability checking and conflict resolution including:
  * - Complex room booking scenarios
  * - Optimal room suggestion algorithms
@@ -11,7 +11,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest'
 import { RoomAvailabilityServiceImpl } from '../room-availability-service'
 import { conflictResolutionService } from '../conflict-resolution-service'
-import { MeetingType, ConflictType, ConflictSeverity, SuggestionType } from '@/types/conflict-detection'
+import {
+  MeetingType,
+  ConflictType,
+  ConflictSeverity,
+  SuggestionType,
+} from '@/types/conflict-detection'
 import prisma from '@/lib/prisma'
 
 // Mock Prisma
@@ -24,11 +29,11 @@ vi.mock('@/lib/prisma', () => ({
     meeting: {
       findMany: vi.fn(),
     },
-  }
+  },
 }))
 
 const mockPrisma = prisma as {
-  meetingRoom: { findUnique: Mock, findMany: Mock }
+  meetingRoom: { findUnique: Mock; findMany: Mock }
   meeting: { findMany: Mock }
 }
 
@@ -98,16 +103,20 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           organizer: { name: 'Diana' },
           meetingRoom: { name: 'Conference Room A' },
           zoomCredentialId: null,
-        }
+        },
       ])
 
-      const result = await service.checkRoomAvailability(roomId, startTime, endTime)
+      const result = await service.checkRoomAvailability(
+        roomId,
+        startTime,
+        endTime,
+      )
 
       expect(result.isAvailable).toBe(false)
       expect(result.conflictingMeetings).toHaveLength(4) // All meetings overlap
-      
+
       // Verify each conflict is properly identified
-      const conflictTitles = result.conflictingMeetings.map(m => m.title)
+      const conflictTitles = result.conflictingMeetings.map((m) => m.title)
       expect(conflictTitles).toContain('Morning Standup')
       expect(conflictTitles).toContain('Project Review')
       expect(conflictTitles).toContain('Client Call')
@@ -146,10 +155,14 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           organizer: { name: 'User 2' },
           meetingRoom: { name: 'Conference Room A' },
           zoomCredentialId: null,
-        }
+        },
       ])
 
-      const result = await service.checkRoomAvailability(roomId, startTime, endTime)
+      const result = await service.checkRoomAvailability(
+        roomId,
+        startTime,
+        endTime,
+      )
 
       // Should be available - no actual overlap at boundaries
       expect(result.isAvailable).toBe(true)
@@ -179,10 +192,14 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           organizer: { name: 'Team Lead' },
           meetingRoom: { name: 'Conference Room A' },
           zoomCredentialId: null,
-        }
+        },
       ])
 
-      const result = await service.checkRoomAvailability(roomId, startTime, endTime)
+      const result = await service.checkRoomAvailability(
+        roomId,
+        startTime,
+        endTime,
+      )
 
       expect(result.isAvailable).toBe(false)
       expect(result.conflictingMeetings).toHaveLength(1)
@@ -212,10 +229,15 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           organizer: { name: 'Other User' },
           meetingRoom: { name: 'Conference Room A' },
           zoomCredentialId: null,
-        }
+        },
       ])
 
-      const result = await service.checkRoomAvailability(roomId, startTime, endTime, excludeMeetingId)
+      const result = await service.checkRoomAvailability(
+        roomId,
+        startTime,
+        endTime,
+        excludeMeetingId,
+      )
 
       // Should properly exclude the specified meeting
       expect(mockPrisma.meeting.findMany).toHaveBeenCalledWith({
@@ -262,7 +284,7 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           name: 'Large Room',
           capacity: 50, // Too large
           location: 'Floor 1',
-        }
+        },
       ]
 
       mockPrisma.meetingRoom.findMany.mockResolvedValue(mockRooms)
@@ -272,21 +294,23 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
         startTime,
         endTime,
         participantCount,
-        preferredLocation
+        preferredLocation,
       )
 
       expect(result.length).toBeGreaterThan(0)
-      
+
       // Perfect room should be ranked highly
-      const perfectRoomIndex = result.findIndex(r => r.id === 'room-perfect')
-      const goodRoomIndex = result.findIndex(r => r.id === 'room-good')
-      const tooLargeRoomIndex = result.findIndex(r => r.id === 'room-too-large')
-      
+      const perfectRoomIndex = result.findIndex((r) => r.id === 'room-perfect')
+      const goodRoomIndex = result.findIndex((r) => r.id === 'room-good')
+      const tooLargeRoomIndex = result.findIndex(
+        (r) => r.id === 'room-too-large',
+      )
+
       expect(perfectRoomIndex).toBeLessThan(goodRoomIndex)
       expect(goodRoomIndex).toBeLessThan(tooLargeRoomIndex)
-      
+
       // Too small room should be excluded or ranked last
-      const tooSmallRoom = result.find(r => r.id === 'room-too-small')
+      const tooSmallRoom = result.find((r) => r.id === 'room-too-small')
       expect(tooSmallRoom).toBeUndefined() // Should be filtered out
     })
 
@@ -308,7 +332,7 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           name: 'Room on Other Floor',
           capacity: 8, // Same capacity
           location: 'Floor 2', // Different location
-        }
+        },
       ]
 
       mockPrisma.meetingRoom.findMany.mockResolvedValue(mockRooms)
@@ -318,11 +342,11 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
         startTime,
         endTime,
         participantCount,
-        preferredLocation
+        preferredLocation,
       )
 
       expect(result.length).toBe(2)
-      
+
       // Preferred location should be first
       expect(result[0].id).toBe('room-preferred-location')
       expect(result[1].id).toBe('room-other-location')
@@ -339,36 +363,44 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           name: 'Basic Room',
           capacity: 8,
           location: 'Floor 1',
-          equipment: []
+          equipment: [],
         },
         {
           id: 'room-with-projector',
           name: 'Room with Projector',
           capacity: 8,
           location: 'Floor 1',
-          equipment: ['projector']
+          equipment: ['projector'],
         },
         {
           id: 'room-fully-equipped',
           name: 'Fully Equipped Room',
           capacity: 8,
           location: 'Floor 1',
-          equipment: ['projector', 'whiteboard', 'video-conference']
-        }
+          equipment: ['projector', 'whiteboard', 'video-conference'],
+        },
       ]
 
       mockPrisma.meetingRoom.findMany.mockResolvedValue(mockRooms)
       mockPrisma.meeting.findMany.mockResolvedValue([])
 
-      const result = await service.findOptimalRooms(startTime, endTime, participantCount)
+      const result = await service.findOptimalRooms(
+        startTime,
+        endTime,
+        participantCount,
+      )
 
       expect(result.length).toBe(3)
-      
+
       // Rooms with more equipment should be ranked higher (assuming they're more versatile)
-      const fullyEquippedIndex = result.findIndex(r => r.id === 'room-fully-equipped')
-      const projectorIndex = result.findIndex(r => r.id === 'room-with-projector')
-      const basicIndex = result.findIndex(r => r.id === 'room-basic')
-      
+      const fullyEquippedIndex = result.findIndex(
+        (r) => r.id === 'room-fully-equipped',
+      )
+      const projectorIndex = result.findIndex(
+        (r) => r.id === 'room-with-projector',
+      )
+      const basicIndex = result.findIndex((r) => r.id === 'room-basic')
+
       expect(fullyEquippedIndex).toBeLessThan(projectorIndex)
       expect(projectorIndex).toBeLessThan(basicIndex)
     })
@@ -390,11 +422,11 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           name: 'Conflicted Room',
           capacity: 8,
           location: 'Floor 1',
-        }
+        },
       ]
 
       mockPrisma.meetingRoom.findMany.mockResolvedValue(mockRooms)
-      
+
       // Mock conflicts for room-conflicted only
       mockPrisma.meeting.findMany
         .mockResolvedValueOnce([]) // No conflicts for room-available
@@ -408,10 +440,14 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
             organizer: { name: 'User' },
             meetingRoom: { name: 'Conflicted Room' },
             zoomCredentialId: null,
-          }
+          },
         ]) // Conflict for room-conflicted
 
-      const result = await service.findOptimalRooms(startTime, endTime, participantCount)
+      const result = await service.findOptimalRooms(
+        startTime,
+        endTime,
+        participantCount,
+      )
 
       expect(result.length).toBe(1)
       expect(result[0].id).toBe('room-available')
@@ -436,12 +472,16 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
         {
           id: 'meeting-3',
           duration: 30, // 0.5 hours
-        }
+        },
       ]
 
       mockPrisma.meeting.findMany.mockResolvedValue(mockMeetings)
 
-      const result = await service.getRoomUtilization(roomId, startDate, endDate)
+      const result = await service.getRoomUtilization(
+        roomId,
+        startDate,
+        endDate,
+      )
 
       expect(result.bookedHours).toBe(3.5) // 1 + 2 + 0.5 hours
       expect(result.meetingCount).toBe(3)
@@ -451,16 +491,20 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
 
     it('should handle different time ranges for utilization', async () => {
       const roomId = 'room-1'
-      
+
       // Test single day
       const singleDayStart = new Date('2024-01-15T00:00:00Z')
       const singleDayEnd = new Date('2024-01-15T23:59:59Z')
 
       mockPrisma.meeting.findMany.mockResolvedValue([
-        { id: 'meeting-1', duration: 120 } // 2 hours
+        { id: 'meeting-1', duration: 120 }, // 2 hours
       ])
 
-      const singleDayResult = await service.getRoomUtilization(roomId, singleDayStart, singleDayEnd)
+      const singleDayResult = await service.getRoomUtilization(
+        roomId,
+        singleDayStart,
+        singleDayEnd,
+      )
 
       expect(singleDayResult.totalHours).toBe(16) // 1 day × 16 hours
       expect(singleDayResult.utilizationPercentage).toBe(12.5) // 2/16 * 100
@@ -469,7 +513,11 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
       const weekStart = new Date('2024-01-15T00:00:00Z') // Monday
       const weekEnd = new Date('2024-01-21T23:59:59Z') // Sunday
 
-      const weekResult = await service.getRoomUtilization(roomId, weekStart, weekEnd)
+      const weekResult = await service.getRoomUtilization(
+        roomId,
+        weekStart,
+        weekEnd,
+      )
 
       expect(weekResult.totalHours).toBe(112) // 7 days × 16 hours
       expect(weekResult.utilizationPercentage).toBeCloseTo(1.79, 2) // 2/112 * 100
@@ -483,7 +531,11 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
       // Test with no meetings
       mockPrisma.meeting.findMany.mockResolvedValue([])
 
-      const noMeetingsResult = await service.getRoomUtilization(roomId, startDate, endDate)
+      const noMeetingsResult = await service.getRoomUtilization(
+        roomId,
+        startDate,
+        endDate,
+      )
 
       expect(noMeetingsResult.bookedHours).toBe(0)
       expect(noMeetingsResult.meetingCount).toBe(0)
@@ -491,10 +543,14 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
 
       // Test with very long meetings
       mockPrisma.meeting.findMany.mockResolvedValue([
-        { id: 'all-day', duration: 960 } // 16 hours (full business day)
+        { id: 'all-day', duration: 960 }, // 16 hours (full business day)
       ])
 
-      const fullDayResult = await service.getRoomUtilization(roomId, startDate, endDate)
+      const fullDayResult = await service.getRoomUtilization(
+        roomId,
+        startDate,
+        endDate,
+      )
 
       expect(fullDayResult.bookedHours).toBe(16)
       expect(fullDayResult.utilizationPercentage).toBe(100)
@@ -513,9 +569,9 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
             'Use Conference Room B instead',
             'Use Meeting Room C instead',
             'Schedule at 12:00 (after conflicts)',
-            'Schedule at 09:00 (before conflicts)'
-          ]
-        }
+            'Schedule at 09:00 (before conflicts)',
+          ],
+        },
       ]
 
       const meetingData = {
@@ -527,24 +583,37 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
         isZoomMeeting: false,
         meetingRoomId: 'room-1',
         participants: ['user1@example.com', 'user2@example.com'],
-        description: 'Team meeting'
+        description: 'Team meeting',
       }
 
-      const suggestions = conflictResolutionService.generateSuggestions(conflicts, meetingData)
+      const suggestions = conflictResolutionService.generateSuggestions(
+        conflicts,
+        meetingData,
+      )
 
       expect(suggestions.length).toBeGreaterThan(0)
-      
+
       // Should have room change suggestions
-      const roomSuggestions = suggestions.filter(s => s.type === SuggestionType.ROOM_CHANGE)
+      const roomSuggestions = suggestions.filter(
+        (s) => s.type === SuggestionType.ROOM_CHANGE,
+      )
       expect(roomSuggestions.length).toBeGreaterThan(0)
-      
+
       // Should have time change suggestions
-      const timeSuggestions = suggestions.filter(s => s.type === SuggestionType.TIME_CHANGE)
+      const timeSuggestions = suggestions.filter(
+        (s) => s.type === SuggestionType.TIME_CHANGE,
+      )
       expect(timeSuggestions.length).toBeGreaterThan(0)
-      
+
       // Verify specific suggestions
-      expect(roomSuggestions.some(s => s.description.includes('Conference Room B'))).toBe(true)
-      expect(timeSuggestions.some(s => s.description.includes('12:00'))).toBe(true)
+      expect(
+        roomSuggestions.some((s) =>
+          s.description.includes('Conference Room B'),
+        ),
+      ).toBe(true)
+      expect(timeSuggestions.some((s) => s.description.includes('12:00'))).toBe(
+        true,
+      )
     })
 
     it('should prioritize suggestions by feasibility', async () => {
@@ -557,9 +626,9 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           suggestions: [
             'Use Conference Room B instead',
             'Use Meeting Room C instead',
-            'Schedule at 14:00'
-          ]
-        }
+            'Schedule at 14:00',
+          ],
+        },
       ]
 
       const meetingData = {
@@ -571,21 +640,30 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
         isZoomMeeting: false,
         meetingRoomId: 'room-1',
         participants: ['user1@example.com', 'user2@example.com'],
-        description: 'Team meeting'
+        description: 'Team meeting',
       }
 
-      const suggestions = conflictResolutionService.generateSuggestions(conflicts, meetingData)
-      const prioritized = conflictResolutionService.prioritizeSuggestions(suggestions)
+      const suggestions = conflictResolutionService.generateSuggestions(
+        conflicts,
+        meetingData,
+      )
+      const prioritized =
+        conflictResolutionService.prioritizeSuggestions(suggestions)
 
       expect(prioritized.length).toBeGreaterThan(0)
-      
+
       // Room changes should generally have higher priority than time changes
       const firstSuggestion = prioritized[0]
-      expect([SuggestionType.ROOM_CHANGE, SuggestionType.TIME_CHANGE]).toContain(firstSuggestion.type)
-      
+      expect([
+        SuggestionType.ROOM_CHANGE,
+        SuggestionType.TIME_CHANGE,
+      ]).toContain(firstSuggestion.type)
+
       // Verify priority ordering
       for (let i = 1; i < prioritized.length; i++) {
-        expect(prioritized[i].priority).toBeGreaterThanOrEqual(prioritized[i - 1].priority)
+        expect(prioritized[i].priority).toBeGreaterThanOrEqual(
+          prioritized[i - 1].priority,
+        )
       }
     })
 
@@ -595,8 +673,8 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           type: ConflictType.MISSING_ROOM,
           severity: ConflictSeverity.ERROR,
           message: 'Offline meetings require a physical room',
-          suggestions: ['Select a meeting room from the dropdown']
-        }
+          suggestions: ['Select a meeting room from the dropdown'],
+        },
       ]
 
       const meetingData = {
@@ -608,7 +686,7 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
         isZoomMeeting: false,
         meetingRoomId: undefined, // No room selected
         participants: ['user1@example.com', 'user2@example.com'],
-        description: 'Team meeting'
+        description: 'Team meeting',
       }
 
       // Mock available rooms for suggestions
@@ -617,28 +695,37 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           id: 'room-2',
           name: 'Conference Room B',
           capacity: 8,
-          location: 'Floor 2'
+          location: 'Floor 2',
         },
         {
           id: 'room-3',
           name: 'Meeting Room C',
           capacity: 6,
-          location: 'Floor 1'
-        }
+          location: 'Floor 1',
+        },
       ])
 
-      const suggestions = conflictResolutionService.generateSuggestions(conflicts, meetingData)
+      const suggestions = conflictResolutionService.generateSuggestions(
+        conflicts,
+        meetingData,
+      )
 
       expect(suggestions.length).toBeGreaterThan(0)
-      
+
       // Should have room selection suggestions
-      const roomSuggestions = suggestions.filter(s => s.type === SuggestionType.ROOM_CHANGE)
+      const roomSuggestions = suggestions.filter(
+        (s) => s.type === SuggestionType.ROOM_CHANGE,
+      )
       expect(roomSuggestions.length).toBeGreaterThan(0)
-      
+
       // Should also suggest changing meeting type to online
-      const typeSuggestions = suggestions.filter(s => s.type === SuggestionType.TYPE_CHANGE)
+      const typeSuggestions = suggestions.filter(
+        (s) => s.type === SuggestionType.TYPE_CHANGE,
+      )
       expect(typeSuggestions.length).toBeGreaterThan(0)
-      expect(typeSuggestions.some(s => s.action.value === MeetingType.ONLINE)).toBe(true)
+      expect(
+        typeSuggestions.some((s) => s.action.value === MeetingType.ONLINE),
+      ).toBe(true)
     })
 
     it('should apply room suggestions correctly', () => {
@@ -649,15 +736,15 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
         action: {
           field: 'meetingRoomId' as keyof any,
           value: 'room-2',
-          additionalChanges: {}
+          additionalChanges: {},
         },
-        priority: 1
+        priority: 1,
       }
 
       const changes = conflictResolutionService.applySuggestion(roomSuggestion)
 
       expect(changes).toEqual({
-        meetingRoomId: 'room-2'
+        meetingRoomId: 'room-2',
       })
     })
 
@@ -684,11 +771,11 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           name: 'Meeting Room C',
           capacity: 6,
           location: 'Floor 2',
-        }
+        },
       ]
 
       mockPrisma.meetingRoom.findMany.mockResolvedValue(mockRooms)
-      
+
       // Mock conflicts for room-1 and room-2, but not room-3
       mockPrisma.meeting.findMany
         .mockResolvedValueOnce([
@@ -701,7 +788,7 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
             organizer: { name: 'User 1' },
             meetingRoom: { name: 'Conference Room A' },
             zoomCredentialId: null,
-          }
+          },
         ]) // room-1 has conflict
         .mockResolvedValueOnce([
           {
@@ -713,11 +800,14 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
             organizer: { name: 'User 2' },
             meetingRoom: { name: 'Conference Room B' },
             zoomCredentialId: null,
-          }
+          },
         ]) // room-2 has conflict
         .mockResolvedValueOnce([]) // room-3 has no conflict
 
-      const availableRooms = await service.findAvailableRooms(startTime, endTime)
+      const availableRooms = await service.findAvailableRooms(
+        startTime,
+        endTime,
+      )
 
       expect(availableRooms).toHaveLength(1)
       expect(availableRooms[0].id).toBe('room-3')
@@ -771,7 +861,7 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
           name: 'Room with No Location',
           capacity: 6,
           location: null, // Null location
-        }
+        },
       ]
 
       mockPrisma.meetingRoom.findMany.mockResolvedValue(mockRooms)
@@ -781,9 +871,9 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
       const result = await service.findAvailableRooms(startTime, endTime)
 
       expect(result).toHaveLength(3)
-      expect(result.some(r => r.id === 'room-1')).toBe(true)
-      expect(result.some(r => r.id === 'room-2')).toBe(true)
-      expect(result.some(r => r.id === 'room-3')).toBe(true)
+      expect(result.some((r) => r.id === 'room-1')).toBe(true)
+      expect(result.some((r) => r.id === 'room-2')).toBe(true)
+      expect(result.some((r) => r.id === 'room-3')).toBe(true)
     })
 
     it('should handle database errors gracefully', async () => {
@@ -791,10 +881,12 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
       const startTime = new Date('2024-01-15T10:00:00Z')
       const endTime = new Date('2024-01-15T11:00:00Z')
 
-      mockPrisma.meetingRoom.findUnique.mockRejectedValue(new Error('Database connection failed'))
+      mockPrisma.meetingRoom.findUnique.mockRejectedValue(
+        new Error('Database connection failed'),
+      )
 
       await expect(
-        service.checkRoomAvailability(roomId, startTime, endTime)
+        service.checkRoomAvailability(roomId, startTime, endTime),
       ).rejects.toThrow('Database connection failed')
     })
 
@@ -813,7 +905,11 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
       mockPrisma.meeting.findMany.mockResolvedValue([])
 
       // Should handle gracefully
-      const result = await service.checkRoomAvailability(roomId, startTime, endTime)
+      const result = await service.checkRoomAvailability(
+        roomId,
+        startTime,
+        endTime,
+      )
 
       expect(result).toBeDefined()
       expect(result.isAvailable).toBe(true) // No conflicts found due to invalid range

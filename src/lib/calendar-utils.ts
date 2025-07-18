@@ -636,11 +636,14 @@ export const findOverlappingMeetings = (
 /**
  * Enhanced meeting display utilities with memoization
  */
-const colorClassesCache = new Map<string, {
-  background: string
-  border: string
-  text: string
-}>()
+const colorClassesCache = new Map<
+  string,
+  {
+    background: string
+    border: string
+    text: string
+  }
+>()
 
 export const getMeetingColorClasses = (
   meeting: PublicMeeting,
@@ -651,7 +654,7 @@ export const getMeetingColorClasses = (
 } => {
   // Use status as cache key for performance
   const cacheKey = meeting.status
-  
+
   if (colorClassesCache.has(cacheKey)) {
     return colorClassesCache.get(cacheKey)!
   }
@@ -710,7 +713,7 @@ export const createDebouncedFilter = (
   delay: number = 300,
 ) => {
   let timeoutId: NodeJS.Timeout
-  
+
   return (items: PublicMeeting[], term: string): Promise<PublicMeeting[]> => {
     return new Promise((resolve) => {
       clearTimeout(timeoutId)

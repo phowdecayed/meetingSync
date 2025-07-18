@@ -1,6 +1,6 @@
 /**
  * Enhanced Conflict Detection Types and Interfaces
- * 
+ *
  * This file defines TypeScript interfaces for the enhanced conflict detection system
  * that handles different meeting types and resource constraints.
  */
@@ -8,8 +8,8 @@
 // Meeting Type Enums
 export enum MeetingType {
   OFFLINE = 'offline',
-  HYBRID = 'hybrid', 
-  ONLINE = 'online'
+  HYBRID = 'hybrid',
+  ONLINE = 'online',
 }
 
 export enum ConflictType {
@@ -17,18 +17,18 @@ export enum ConflictType {
   ZOOM_CAPACITY = 'zoom_capacity',
   MISSING_ROOM = 'missing_room',
   INVALID_TYPE = 'invalid_type',
-  OVERLAP = 'overlap'
+  OVERLAP = 'overlap',
 }
 
 export enum ConflictSeverity {
   ERROR = 'error',
-  WARNING = 'warning'
+  WARNING = 'warning',
 }
 
 export enum SuggestionType {
   TIME_CHANGE = 'time_change',
   ROOM_CHANGE = 'room_change',
-  TYPE_CHANGE = 'type_change'
+  TYPE_CHANGE = 'type_change',
 }
 
 // Core Conflict Detection Interfaces
@@ -183,21 +183,18 @@ export interface MeetingTypeValidator {
 
 export interface RoomAvailabilityService {
   checkRoomAvailability(
-    roomId: string, 
-    startTime: Date, 
+    roomId: string,
+    startTime: Date,
     endTime: Date,
-    excludeMeetingId?: string
+    excludeMeetingId?: string,
   ): Promise<RoomAvailabilityResult>
-  
-  findAvailableRooms(
-    startTime: Date, 
-    endTime: Date
-  ): Promise<MeetingRoomInfo[]>
-  
+
+  findAvailableRooms(startTime: Date, endTime: Date): Promise<MeetingRoomInfo[]>
+
   getRoomConflicts(
     roomId: string,
     startTime: Date,
-    endTime: Date
+    endTime: Date,
   ): Promise<ScheduledMeeting[]>
 }
 
@@ -206,14 +203,14 @@ export interface ZoomAccountService {
   checkConcurrentMeetingCapacity(
     startTime: Date,
     endTime: Date,
-    excludeMeetingId?: string
+    excludeMeetingId?: string,
   ): Promise<ZoomCapacityResult>
-  
+
   findAvailableAccount(
     startTime: Date,
-    endTime: Date
+    endTime: Date,
   ): Promise<ZoomAccountInfo | null>
-  
+
   getAccountLoadBalancing(): Promise<AccountLoadInfo[]>
   updateAccountCapacity(accountId: string, capacity: number): Promise<void>
 }
@@ -229,7 +226,7 @@ export class ConflictDetectionError extends Error {
   constructor(
     message: string,
     public type: 'validation' | 'resource' | 'network',
-    public recoverable: boolean = true
+    public recoverable: boolean = true,
   ) {
     super(message)
     this.name = 'ConflictDetectionError'
@@ -268,7 +265,11 @@ export interface ConflictDetectionConfig {
 
 // Event Types for Real-time Updates
 export interface ConflictDetectionEvent {
-  type: 'conflict_detected' | 'conflict_resolved' | 'capacity_updated' | 'room_availability_changed'
+  type:
+    | 'conflict_detected'
+    | 'conflict_resolved'
+    | 'capacity_updated'
+    | 'room_availability_changed'
   payload: any
   timestamp: Date
 }
@@ -305,7 +306,7 @@ export type MeetingConstraints = {
 export enum ZoomAccountChangeType {
   ADDED = 'added',
   REMOVED = 'removed',
-  UPDATED = 'updated'
+  UPDATED = 'updated',
 }
 
 export interface SettingsChangeEvent {
@@ -343,11 +344,17 @@ export interface SettingsIntegrationService {
   handleZoomAccountChange(
     changeType: ZoomAccountChangeType,
     accountId: string,
-    accountData?: any
+    accountData?: any,
   ): Promise<void>
-  subscribeToSettingsChanges(callback: (event: SettingsChangeEvent) => void): string
-  subscribeToCapacityUpdates(callback: (event: CapacityUpdateEvent) => void): string
-  subscribeToConflictNotifications(callback: (notification: ConflictNotification) => void): string
+  subscribeToSettingsChanges(
+    callback: (event: SettingsChangeEvent) => void,
+  ): string
+  subscribeToCapacityUpdates(
+    callback: (event: CapacityUpdateEvent) => void,
+  ): string
+  subscribeToConflictNotifications(
+    callback: (notification: ConflictNotification) => void,
+  ): string
   getNotificationQueue(): ConflictNotification[]
   clearNotificationQueue(): void
   markNotificationAsRead(notificationId: string): void

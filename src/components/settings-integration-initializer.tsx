@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { settingsIntegrationServiceClient } from '@/services/settings-integration-service-client'
-import { ConflictNotification, CapacityUpdateEvent } from '@/types/conflict-detection'
+import {
+  ConflictNotification,
+  CapacityUpdateEvent,
+} from '@/types/conflict-detection'
 import { useToast } from '@/hooks/use-toast'
 
 /**
  * Settings Integration Initializer Component
- * 
+ *
  * Initializes the settings integration service and handles real-time updates
  * for conflict notifications and capacity changes.
  */
@@ -23,56 +26,74 @@ export function SettingsIntegrationInitializer() {
       try {
         // Initialize the settings integration service (client-side)
         await settingsIntegrationServiceClient.initialize()
-        
+
         if (!mounted) return
 
         // Subscribe to conflict notifications
-        settingsIntegrationServiceClient.subscribeToConflictNotifications((notification) => {
-          if (!mounted) return
-          
-          setNotifications(prev => [notification, ...prev.slice(0, 9)]) // Keep last 10 notifications
-          
-          // Show toast notification for new conflicts
-          toast({
-            title: notification.severity === 'error' ? 'Meeting Conflict' : 'Meeting Warning',
-            description: notification.message,
-            variant: notification.severity === 'error' ? 'destructive' : 'default',
-            duration: 8000, // Show for 8 seconds
-          })
-        })
+        settingsIntegrationServiceClient.subscribeToConflictNotifications(
+          (notification) => {
+            if (!mounted) return
+
+            setNotifications((prev) => [notification, ...prev.slice(0, 9)]) // Keep last 10 notifications
+
+            // Show toast notification for new conflicts
+            toast({
+              title:
+                notification.severity === 'error'
+                  ? 'Meeting Conflict'
+                  : 'Meeting Warning',
+              description: notification.message,
+              variant:
+                notification.severity === 'error' ? 'destructive' : 'default',
+              duration: 8000, // Show for 8 seconds
+            })
+          },
+        )
 
         // Subscribe to capacity updates
-        settingsIntegrationServiceClient.subscribeToCapacityUpdates((event: CapacityUpdateEvent) => {
-          if (!mounted) return
-          
-          // Show toast for significant capacity changes
-          if (event.addedAccounts.length > 0 || event.removedAccounts.length > 0) {
-            const message = event.addedAccounts.length > 0 
-              ? `${event.addedAccounts.length} Zoom account(s) added. Total capacity: ${event.newCapacity} meetings.`
-              : `${event.removedAccounts.length} Zoom account(s) removed. Total capacity: ${event.newCapacity} meetings.`
-            
-            toast({
-              title: 'Zoom Capacity Updated',
-              description: message,
-              duration: 5000,
-            })
-          }
-        })
+        settingsIntegrationServiceClient.subscribeToCapacityUpdates(
+          (event: CapacityUpdateEvent) => {
+            if (!mounted) return
+
+            // Show toast for significant capacity changes
+            if (
+              event.addedAccounts.length > 0 ||
+              event.removedAccounts.length > 0
+            ) {
+              const message =
+                event.addedAccounts.length > 0
+                  ? `${event.addedAccounts.length} Zoom account(s) added. Total capacity: ${event.newCapacity} meetings.`
+                  : `${event.removedAccounts.length} Zoom account(s) removed. Total capacity: ${event.newCapacity} meetings.`
+
+              toast({
+                title: 'Zoom Capacity Updated',
+                description: message,
+                duration: 5000,
+              })
+            }
+          },
+        )
 
         setIsInitialized(true)
-        console.log('Settings Integration Service (Client) initialized successfully')
+        console.log(
+          'Settings Integration Service (Client) initialized successfully',
+        )
       } catch (error) {
-        console.error('Failed to initialize Settings Integration Service (Client):', error)
-        
+        console.error(
+          'Failed to initialize Settings Integration Service (Client):',
+          error,
+        )
+
         // Set as initialized even if there was an error to prevent infinite retries
         setIsInitialized(true)
-        
+
         if (mounted) {
           // Only show error toast in development or if it's a critical error
           if (process.env.NODE_ENV === 'development') {
             toast({
               title: 'Initialization Warning',
-              description: 'Settings integration initialized with limited functionality. Check console for details.',
+              description:
+                'Settings integration initialized with limited functionality. Check console for details.',
               variant: 'default',
               duration: 5000,
             })
@@ -132,11 +153,14 @@ export function useConflictNotifications() {
     fetchNotifications()
 
     // Subscribe to real-time updates
-    const unsubscribe = settingsIntegrationServiceClient.subscribeToConflictNotifications((notification) => {
-      if (mounted) {
-        setNotifications(prev => [notification, ...prev])
-      }
-    })
+    const unsubscribe =
+      settingsIntegrationServiceClient.subscribeToConflictNotifications(
+        (notification) => {
+          if (mounted) {
+            setNotifications((prev) => [notification, ...prev])
+          }
+        },
+      )
 
     return () => {
       mounted = false
@@ -157,10 +181,10 @@ export function useConflictNotifications() {
       })
 
       if (response.ok) {
-        setNotifications(prev => 
-          prev.map(n => 
-            n.id === notificationId ? { ...n, isRead: true } : n
-          )
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notificationId ? { ...n, isRead: true } : n,
+          ),
         )
       }
     } catch (error) {
@@ -233,12 +257,13 @@ export function useCapacityStatus() {
     fetchCapacityStatus()
 
     // Subscribe to capacity updates
-    const unsubscribe = settingsIntegrationServiceClient.subscribeToCapacityUpdates((event) => {
-      if (mounted) {
-        // Refresh capacity status when updates occur
-        fetchCapacityStatus()
-      }
-    })
+    const unsubscribe =
+      settingsIntegrationServiceClient.subscribeToCapacityUpdates((event) => {
+        if (mounted) {
+          // Refresh capacity status when updates occur
+          fetchCapacityStatus()
+        }
+      })
 
     // Refresh every 60 seconds
     const interval = setInterval(fetchCapacityStatus, 60000)

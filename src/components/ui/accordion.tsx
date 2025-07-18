@@ -17,9 +17,9 @@ const AccordionItem = React.forwardRef<
   <AccordionPrimitive.Item
     ref={ref}
     className={cn(
-      'group/item border border-border/40 rounded-xl bg-card/20 backdrop-blur-sm transition-all duration-500 ease-out hover:bg-card/50 hover:border-border/70 hover:shadow-lg hover:scale-[1.01] data-[state=open]:bg-card/70 data-[state=open]:border-primary/40 data-[state=open]:shadow-xl data-[state=open]:scale-[1.02]',
+      'group/item border-border/40 bg-card/20 hover:bg-card/50 hover:border-border/70 data-[state=open]:bg-card/70 data-[state=open]:border-primary/40 rounded-xl border backdrop-blur-sm transition-all duration-500 ease-out hover:scale-[1.01] hover:shadow-lg data-[state=open]:scale-[1.02] data-[state=open]:shadow-xl',
       isCompleted && 'border-green-500/30 bg-green-50/10 dark:bg-green-950/10',
-      className
+      className,
     )}
     {...props}
   />
@@ -36,7 +36,7 @@ const AccordionTrigger = React.forwardRef<
     <AccordionPrimitive.Trigger
       ref={ref}
       className={cn(
-        'flex flex-1 items-center justify-between py-6 px-6 font-semibold text-base transition-all duration-400 ease-out hover:no-underline group/trigger rounded-t-xl data-[state=open]:pb-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 hover:bg-accent/20 data-[state=open]:bg-primary/5',
+        'group/trigger focus-visible:ring-primary/50 hover:bg-accent/20 data-[state=open]:bg-primary/5 flex flex-1 items-center justify-between rounded-t-xl px-6 py-6 text-base font-semibold transition-all duration-400 ease-out hover:no-underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none data-[state=open]:pb-4',
         isCompleted && 'text-green-700 dark:text-green-400',
         className,
       )}
@@ -44,17 +44,17 @@ const AccordionTrigger = React.forwardRef<
     >
       <div className="flex items-center gap-3">
         {isCompleted && (
-          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 animate-in fade-in-0 zoom-in-95 duration-300" />
+          <CheckCircle2 className="animate-in fade-in-0 zoom-in-95 h-5 w-5 text-green-600 duration-300 dark:text-green-400" />
         )}
         {children}
       </div>
       <div className="flex items-center gap-2">
         {isCompleted && (
-          <span className="text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-950/30 px-2 py-1 rounded-full animate-in fade-in-0 slide-in-from-right-2 duration-300">
+          <span className="animate-in fade-in-0 slide-in-from-right-2 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-600 duration-300 dark:bg-green-950/30 dark:text-green-400">
             Complete
           </span>
         )}
-        <ChevronDown className="h-5 w-5 shrink-0 transition-all duration-400 ease-out text-muted-foreground group-hover/trigger:text-foreground group-data-[state=open]/trigger:rotate-180 group-data-[state=open]/trigger:text-primary group-hover/trigger:scale-110" />
+        <ChevronDown className="text-muted-foreground group-hover/trigger:text-foreground group-data-[state=open]/trigger:text-primary h-5 w-5 shrink-0 transition-all duration-400 ease-out group-hover/trigger:scale-110 group-data-[state=open]/trigger:rotate-180" />
       </div>
     </AccordionPrimitive.Trigger>
   </AccordionPrimitive.Header>
@@ -70,10 +70,13 @@ const AccordionContent = React.forwardRef<
     className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden text-sm transition-all duration-400 ease-out"
     {...props}
   >
-    <div className={cn('px-6 pt-2 pb-8 animate-in fade-in-0 slide-in-from-top-1 duration-400', className)}>
-      <div className="border-t border-border/20 pt-6">
-        {children}
-      </div>
+    <div
+      className={cn(
+        'animate-in fade-in-0 slide-in-from-top-1 px-6 pt-2 pb-8 duration-400',
+        className,
+      )}
+    >
+      <div className="border-border/20 border-t pt-6">{children}</div>
     </div>
   </AccordionPrimitive.Content>
 ))

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     if (!startTimeStr || !endTimeStr) {
       return NextResponse.json(
         { error: 'startTime and endTime are required' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -21,20 +21,21 @@ export async function GET(request: NextRequest) {
     if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
       return NextResponse.json(
         { error: 'Invalid date format' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
-    const capacityResult = await zoomAccountService.checkConcurrentMeetingCapacity(
-      startTime,
-      endTime,
-      excludeMeetingId || undefined
-    )
+    const capacityResult =
+      await zoomAccountService.checkConcurrentMeetingCapacity(
+        startTime,
+        endTime,
+        excludeMeetingId || undefined,
+      )
 
     return NextResponse.json(capacityResult)
   } catch (error) {
     console.error('Error checking Zoom capacity:', error)
-    
+
     // Return safe default for graceful degradation
     return NextResponse.json({
       hasAvailableAccount: false,
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
       totalMaxConcurrent: 0,
       currentTotalUsage: 0,
       availableSlots: 0,
-      conflictingMeetings: []
+      conflictingMeetings: [],
     })
   }
 }

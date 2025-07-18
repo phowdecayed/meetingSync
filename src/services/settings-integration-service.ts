@@ -1,6 +1,6 @@
 /**
  * Settings Integration Service
- * 
+ *
  * Handles real-time integration between settings changes and conflict detection.
  * Manages capacity recalculation and notification system for newly created conflicts.
  */
@@ -13,10 +13,13 @@ import {
   SettingsChangeEvent,
   ConflictNotification,
   CapacityUpdateEvent,
-  ZoomAccountChangeType
+  ZoomAccountChangeType,
 } from '@/types/conflict-detection'
 
-export class SettingsIntegrationServiceImpl extends EventEmitter implements SettingsIntegrationService {
+export class SettingsIntegrationServiceImpl
+  extends EventEmitter
+  implements SettingsIntegrationService
+{
   private static instance: SettingsIntegrationServiceImpl
   private isInitialized = false
   private currentZoomAccounts: string[] = []
@@ -30,7 +33,8 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
 
   public static getInstance(): SettingsIntegrationServiceImpl {
     if (!SettingsIntegrationServiceImpl.instance) {
-      SettingsIntegrationServiceImpl.instance = new SettingsIntegrationServiceImpl()
+      SettingsIntegrationServiceImpl.instance =
+        new SettingsIntegrationServiceImpl()
     }
     return SettingsIntegrationServiceImpl.instance
   }
@@ -46,20 +50,24 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
     try {
       // Get initial state of Zoom accounts
       const accounts = await zoomAccountServiceClient.getAvailableAccounts()
-      this.currentZoomAccounts = accounts.map(account => account.id)
+      this.currentZoomAccounts = accounts.map((account) => account.id)
 
       // Set up periodic monitoring for changes
       this.startPeriodicMonitoring()
 
       this.isInitialized = true
-      console.log(`Settings Integration Service initialized with ${accounts.length} Zoom accounts`)
+      console.log(
+        `Settings Integration Service initialized with ${accounts.length} Zoom accounts`,
+      )
     } catch (error) {
       console.error('Failed to initialize Settings Integration Service:', error)
-      
+
       // Initialize with empty state instead of throwing error
       this.currentZoomAccounts = []
       this.isInitialized = true
-      console.log('Settings Integration Service initialized with no Zoom accounts (graceful degradation)')
+      console.log(
+        'Settings Integration Service initialized with no Zoom accounts (graceful degradation)',
+      )
     }
   }
 
@@ -69,19 +77,24 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
   async handleZoomAccountChange(
     changeType: ZoomAccountChangeType,
     accountId: string,
-    accountData?: any
+    accountData?: any,
   ): Promise<void> {
     try {
       // Clear zoom account service cache to force refresh
       zoomAccountServiceClient.clearCache()
 
       // Get updated account list
-      const updatedAccounts = await zoomAccountServiceClient.getAvailableAccounts()
-      const newAccountIds = updatedAccounts.map(account => account.id)
+      const updatedAccounts =
+        await zoomAccountServiceClient.getAvailableAccounts()
+      const newAccountIds = updatedAccounts.map((account) => account.id)
 
       // Determine what changed
-      const addedAccounts = newAccountIds.filter(id => !this.currentZoomAccounts.includes(id))
-      const removedAccounts = this.currentZoomAccounts.filter(id => !newAccountIds.includes(id))
+      const addedAccounts = newAccountIds.filter(
+        (id) => !this.currentZoomAccounts.includes(id),
+      )
+      const removedAccounts = this.currentZoomAccounts.filter(
+        (id) => !newAccountIds.includes(id),
+      )
 
       // Update our tracking
       this.currentZoomAccounts = newAccountIds
@@ -94,7 +107,7 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
         newCapacity: newAccountIds.length * 2,
         addedAccounts,
         removedAccounts,
-        totalAccounts: newAccountIds.length
+        totalAccounts: newAccountIds.length,
       }
 
       // Emit capacity update event
@@ -113,7 +126,7 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
         changeType,
         affectedAccountId: accountId,
         newAccountData: accountData,
-        totalAccounts: newAccountIds.length
+        totalAccounts: newAccountIds.length,
       }
 
       this.emit('settings_changed', settingsEvent)
@@ -121,7 +134,7 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
       console.log(`Zoom account ${changeType}: ${accountId}`, {
         totalAccounts: newAccountIds.length,
         addedAccounts,
-        removedAccounts
+        removedAccounts,
       })
     } catch (error) {
       console.error('Error handling Zoom account change:', error)
@@ -132,7 +145,9 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
   /**
    * Subscribe to settings changes
    */
-  subscribeToSettingsChanges(callback: (event: SettingsChangeEvent) => void): string {
+  subscribeToSettingsChanges(
+    callback: (event: SettingsChangeEvent) => void,
+  ): string {
     const subscriptionId = `settings-${Date.now()}-${Math.random()}`
     this.on('settings_changed', callback)
     return subscriptionId
@@ -141,7 +156,9 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
   /**
    * Subscribe to capacity updates
    */
-  subscribeToCapacityUpdates(callback: (event: CapacityUpdateEvent) => void): string {
+  subscribeToCapacityUpdates(
+    callback: (event: CapacityUpdateEvent) => void,
+  ): string {
     const subscriptionId = `capacity-${Date.now()}-${Math.random()}`
     this.on('capacity_updated', callback)
     return subscriptionId
@@ -150,7 +167,9 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
   /**
    * Subscribe to conflict notifications
    */
-  subscribeToConflictNotifications(callback: (notification: ConflictNotification) => void): string {
+  subscribeToConflictNotifications(
+    callback: (notification: ConflictNotification) => void,
+  ): string {
     const subscriptionId = `notification-${Date.now()}-${Math.random()}`
     this.on('conflict_notification', callback)
     return subscriptionId
@@ -175,7 +194,9 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
    * Mark notification as read
    */
   markNotificationAsRead(notificationId: string): void {
-    const notification = this.notificationQueue.find(n => n.id === notificationId)
+    const notification = this.notificationQueue.find(
+      (n) => n.id === notificationId,
+    )
     if (notification) {
       notification.isRead = true
       this.emit('notification_updated', notification)
@@ -217,16 +238,20 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
       const loadInfo = await zoomAccountServiceClient.getAccountLoadBalancing()
 
       const totalCapacity = accounts.length * 2 // 2 meetings per account
-      const currentUsage = loadInfo.reduce((sum, info) => sum + info.currentLoad, 0)
+      const currentUsage = loadInfo.reduce(
+        (sum, info) => sum + info.currentLoad,
+        0,
+      )
       const availableSlots = totalCapacity - currentUsage
-      const utilizationPercentage = totalCapacity > 0 ? (currentUsage / totalCapacity) * 100 : 0
+      const utilizationPercentage =
+        totalCapacity > 0 ? (currentUsage / totalCapacity) * 100 : 0
 
       return {
         totalAccounts: accounts.length,
         totalCapacity,
         currentUsage,
         availableSlots,
-        utilizationPercentage
+        utilizationPercentage,
       }
     } catch (error) {
       console.error('Error getting capacity status:', error)
@@ -235,7 +260,7 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
         totalCapacity: 0,
         currentUsage: 0,
         availableSlots: 0,
-        utilizationPercentage: 0
+        utilizationPercentage: 0,
       }
     }
   }
@@ -247,17 +272,26 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
     // Check for changes every 30 seconds
     setInterval(async () => {
       try {
-        const currentAccounts = await zoomAccountServiceClient.getAvailableAccounts()
-        const currentAccountIds = currentAccounts.map(account => account.id)
+        const currentAccounts =
+          await zoomAccountServiceClient.getAvailableAccounts()
+        const currentAccountIds = currentAccounts.map((account) => account.id)
 
         // Check if accounts have changed
         const accountsChanged =
           currentAccountIds.length !== this.currentZoomAccounts.length ||
-          !currentAccountIds.every(id => this.currentZoomAccounts.includes(id))
+          !currentAccountIds.every((id) =>
+            this.currentZoomAccounts.includes(id),
+          )
 
         if (accountsChanged) {
-          console.log('Detected Zoom account changes during periodic monitoring')
-          await this.handleZoomAccountChange(ZoomAccountChangeType.UPDATED, 'system-detected', null)
+          console.log(
+            'Detected Zoom account changes during periodic monitoring',
+          )
+          await this.handleZoomAccountChange(
+            ZoomAccountChangeType.UPDATED,
+            'system-detected',
+            null,
+          )
         }
       } catch (error) {
         console.error('Error during periodic monitoring:', error)
@@ -268,7 +302,9 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
   /**
    * Check for newly created conflicts after capacity changes
    */
-  private async checkForNewConflicts(capacityEvent: CapacityUpdateEvent): Promise<void> {
+  private async checkForNewConflicts(
+    capacityEvent: CapacityUpdateEvent,
+  ): Promise<void> {
     try {
       // If capacity was reduced, we need to check existing meetings for new conflicts
       if (capacityEvent.newCapacity < capacityEvent.previousCapacity) {
@@ -278,7 +314,8 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
         for (const meeting of upcomingMeetings) {
           // Re-validate each meeting with new capacity
           const meetingFormData = this.convertMeetingToFormData(meeting)
-          const conflictResult = await enhancedConflictDetection.validateMeeting(meetingFormData)
+          const conflictResult =
+            await enhancedConflictDetection.validateMeeting(meetingFormData)
 
           // If new conflicts are found, create notifications
           if (conflictResult.conflicts.length > 0) {
@@ -289,8 +326,12 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
               conflicts: conflictResult.conflicts,
               createdAt: new Date(),
               isRead: false,
-              severity: conflictResult.conflicts.some(c => c.severity === 'error') ? 'error' : 'warning',
-              message: `Meeting "${meeting.title}" now has conflicts due to Zoom account changes`
+              severity: conflictResult.conflicts.some(
+                (c) => c.severity === 'error',
+              )
+                ? 'error'
+                : 'warning',
+              message: `Meeting "${meeting.title}" now has conflicts due to Zoom account changes`,
             }
 
             this.addNotification(notification)
@@ -311,7 +352,10 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
 
     // Limit queue size
     if (this.notificationQueue.length > this.MAX_NOTIFICATION_QUEUE) {
-      this.notificationQueue = this.notificationQueue.slice(0, this.MAX_NOTIFICATION_QUEUE)
+      this.notificationQueue = this.notificationQueue.slice(
+        0,
+        this.MAX_NOTIFICATION_QUEUE,
+      )
     }
 
     // Emit notification event
@@ -326,7 +370,9 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
       // Use Prisma directly since this is a server-side service
       const prisma = (await import('@/lib/prisma')).default
       const now = new Date()
-      const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000))
+      const thirtyDaysFromNow = new Date(
+        now.getTime() + 30 * 24 * 60 * 60 * 1000,
+      )
 
       const meetings = await prisma.meeting.findMany({
         where: {
@@ -334,8 +380,8 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
           isZoomMeeting: true,
           date: {
             gte: now,
-            lte: thirtyDaysFromNow
-          }
+            lte: thirtyDaysFromNow,
+          },
         },
         select: {
           id: true,
@@ -347,8 +393,8 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
           isZoomMeeting: true,
           meetingRoomId: true,
           description: true,
-          zoomPassword: true
-        }
+          zoomPassword: true,
+        },
       })
 
       return meetings
@@ -374,7 +420,7 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
         ? meeting.participants
         : meeting.participants?.split(',').map((p: string) => p.trim()) || [],
       description: meeting.description,
-      zoomPassword: meeting.zoomPassword
+      zoomPassword: meeting.zoomPassword,
     }
   }
 
@@ -389,4 +435,5 @@ export class SettingsIntegrationServiceImpl extends EventEmitter implements Sett
 }
 
 // Export singleton instance
-export const settingsIntegrationService = SettingsIntegrationServiceImpl.getInstance()
+export const settingsIntegrationService =
+  SettingsIntegrationServiceImpl.getInstance()

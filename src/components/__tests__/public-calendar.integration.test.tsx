@@ -29,7 +29,10 @@ Object.defineProperty(document, 'exitFullscreen', {
 
 // Mock data - using current week dates to ensure they show up in the calendar
 const now = new Date()
-const mockMeetingsData: Omit<PublicMeeting, 'duration' | 'isToday' | 'isOngoing'>[] = [
+const mockMeetingsData: Omit<
+  PublicMeeting,
+  'duration' | 'isToday' | 'isOngoing'
+>[] = [
   {
     id: '1',
     title: 'Team Standup',
@@ -166,13 +169,15 @@ describe('PublicCalendar Integration Tests', () => {
       // Use getAllByPlaceholderText to handle multiple search inputs (desktop and mobile)
       const searchInputs = screen.getAllByPlaceholderText('Search meetings...')
       const searchInput = searchInputs[0] // Use the first one (desktop version)
-      
+
       await user.type(searchInput, 'Team')
 
       // Should show only meetings matching search term
       await waitFor(() => {
         expect(screen.getByText('Team Standup')).toBeInTheDocument()
-        expect(screen.queryByText('Client Presentation')).not.toBeInTheDocument()
+        expect(
+          screen.queryByText('Client Presentation'),
+        ).not.toBeInTheDocument()
         expect(screen.queryByText('Project Planning')).not.toBeInTheDocument()
       })
     })
@@ -180,7 +185,7 @@ describe('PublicCalendar Integration Tests', () => {
     it('should search across multiple fields (title, description, organizer)', async () => {
       const searchInputs = screen.getAllByPlaceholderText('Search meetings...')
       const searchInput = searchInputs[0]
-      
+
       // Search by organizer name
       await user.clear(searchInput)
       await user.type(searchInput, 'Jane')
@@ -203,24 +208,28 @@ describe('PublicCalendar Integration Tests', () => {
     it('should show no results message when search yields no matches', async () => {
       const searchInputs = screen.getAllByPlaceholderText('Search meetings...')
       const searchInput = searchInputs[0]
-      
+
       await user.type(searchInput, 'NonexistentMeeting')
 
       await waitFor(() => {
         expect(screen.getByText('Tidak Ada Rapat')).toBeInTheDocument()
-        expect(screen.getByText(/Tidak ada rapat yang ditemukan/)).toBeInTheDocument()
+        expect(
+          screen.getByText(/Tidak ada rapat yang ditemukan/),
+        ).toBeInTheDocument()
       })
     })
 
     it('should clear search when clear button is clicked', async () => {
       const searchInputs = screen.getAllByPlaceholderText('Search meetings...')
       const searchInput = searchInputs[0]
-      
+
       await user.type(searchInput, 'Team')
 
       // Wait for filtered results
       await waitFor(() => {
-        expect(screen.queryByText('Client Presentation')).not.toBeInTheDocument()
+        expect(
+          screen.queryByText('Client Presentation'),
+        ).not.toBeInTheDocument()
       })
 
       // Find and click clear filters button (use getAllByText to handle multiple buttons)
@@ -253,7 +262,9 @@ describe('PublicCalendar Integration Tests', () => {
       await waitFor(() => {
         expect(screen.getByText('Team Standup')).toBeInTheDocument()
         expect(screen.getByText('Project Planning')).toBeInTheDocument()
-        expect(screen.queryByText('Client Presentation')).not.toBeInTheDocument()
+        expect(
+          screen.queryByText('Client Presentation'),
+        ).not.toBeInTheDocument()
         expect(screen.queryByText('External Review')).not.toBeInTheDocument()
       })
     })
@@ -310,7 +321,7 @@ describe('PublicCalendar Integration Tests', () => {
 
     it('should refresh data when refresh button is clicked', async () => {
       const refreshButton = screen.getByTitle('Refresh data')
-      
+
       // Mock new data for refresh
       const newMeetingData = [
         ...mockMeetingsData,
@@ -351,7 +362,7 @@ describe('PublicCalendar Integration Tests', () => {
 
     it('should toggle fullscreen mode', async () => {
       const fullscreenButton = screen.getByTitle('Masuk ke layar penuh')
-      
+
       await user.click(fullscreenButton)
 
       expect(mockRequestFullscreen).toHaveBeenCalled()
@@ -369,7 +380,9 @@ describe('PublicCalendar Integration Tests', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Tidak Ada Rapat')).toBeInTheDocument()
-        expect(screen.getByText(/Tidak ada rapat yang ditemukan/)).toBeInTheDocument()
+        expect(
+          screen.getByText(/Tidak ada rapat yang ditemukan/),
+        ).toBeInTheDocument()
       })
     })
 
@@ -414,17 +427,21 @@ describe('PublicCalendar Integration Tests', () => {
     })
 
     it('should handle very long meeting titles and descriptions', async () => {
-      const longMeetingData = [{
-        id: '1',
-        title: 'This is a very long meeting title that should be truncated properly to avoid layout issues and maintain readability',
-        description: 'This is an extremely long description that contains a lot of details about the meeting agenda, participants, objectives, and other important information that might overflow the card layout if not handled properly',
-        start: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
-        end: new Date(now.getTime() + 90 * 60 * 1000).toISOString(),
-        organizerName: 'John Doe',
-        status: 'Akan Datang' as const,
-        meetingType: 'internal' as const,
-        meetingRoom: 'Conference Room A',
-      }]
+      const longMeetingData = [
+        {
+          id: '1',
+          title:
+            'This is a very long meeting title that should be truncated properly to avoid layout issues and maintain readability',
+          description:
+            'This is an extremely long description that contains a lot of details about the meeting agenda, participants, objectives, and other important information that might overflow the card layout if not handled properly',
+          start: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
+          end: new Date(now.getTime() + 90 * 60 * 1000).toISOString(),
+          organizerName: 'John Doe',
+          status: 'Akan Datang' as const,
+          meetingType: 'internal' as const,
+          meetingRoom: 'Conference Room A',
+        },
+      ]
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -434,23 +451,27 @@ describe('PublicCalendar Integration Tests', () => {
       render(<PublicCalendar />)
 
       await waitFor(() => {
-        expect(screen.getByText(/This is a very long meeting title/)).toBeInTheDocument()
+        expect(
+          screen.getByText(/This is a very long meeting title/),
+        ).toBeInTheDocument()
       })
     })
 
     it('should handle meetings with missing optional fields', async () => {
-      const incompleteMeetingData = [{
-        id: '1',
-        title: 'Basic Meeting',
-        description: null,
-        start: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
-        end: new Date(now.getTime() + 90 * 60 * 1000).toISOString(),
-        organizerName: 'John Doe',
-        status: 'Akan Datang' as const,
-        meetingType: 'internal' as const,
-        meetingRoom: null,
-        meetingId: null,
-      }]
+      const incompleteMeetingData = [
+        {
+          id: '1',
+          title: 'Basic Meeting',
+          description: null,
+          start: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
+          end: new Date(now.getTime() + 90 * 60 * 1000).toISOString(),
+          organizerName: 'John Doe',
+          status: 'Akan Datang' as const,
+          meetingType: 'internal' as const,
+          meetingRoom: null,
+          meetingId: null,
+        },
+      ]
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -480,7 +501,9 @@ describe('PublicCalendar Integration Tests', () => {
       await user.type(searchInput, 'Team')
 
       await waitFor(() => {
-        expect(screen.queryByText('Client Presentation')).not.toBeInTheDocument()
+        expect(
+          screen.queryByText('Client Presentation'),
+        ).not.toBeInTheDocument()
       })
 
       // Refresh the data
@@ -490,14 +513,16 @@ describe('PublicCalendar Integration Tests', () => {
       // Filter should still be applied
       await waitFor(() => {
         expect(screen.getByText('Team Standup')).toBeInTheDocument()
-        expect(screen.queryByText('Client Presentation')).not.toBeInTheDocument()
+        expect(
+          screen.queryByText('Client Presentation'),
+        ).not.toBeInTheDocument()
       })
     })
 
     it('should handle rapid filter changes', async () => {
       const searchInputs = screen.getAllByPlaceholderText('Search meetings...')
       const searchInput = searchInputs[0]
-      
+
       // Type rapidly
       await user.type(searchInput, 'Team')
       await user.clear(searchInput)

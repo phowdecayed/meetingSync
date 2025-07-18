@@ -82,8 +82,8 @@ const CalendarFilters = memo(function CalendarFilters({
   }
 
   return (
-    <div 
-      className="space-y-4 rounded-lg bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:bg-gray-800/80 transition-all duration-300 ease-in-out hover:shadow-md"
+    <div
+      className="space-y-4 rounded-lg bg-white/80 p-4 shadow-sm backdrop-blur-sm transition-all duration-300 ease-in-out hover:shadow-md dark:bg-gray-800/80"
       role="search"
       aria-label="Meeting search and filters"
     >
@@ -92,8 +92,8 @@ const CalendarFilters = memo(function CalendarFilters({
         <label htmlFor="meeting-search" className="sr-only">
           Search meetings by title, description, or organizer
         </label>
-        <Search 
-          className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" 
+        <Search
+          className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
           aria-hidden="true"
         />
         <Input
@@ -112,7 +112,7 @@ const CalendarFilters = memo(function CalendarFilters({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="focus:ring-ring absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 focus:ring-2 focus:ring-offset-2 focus:outline-none"
             onClick={() => setLocalSearchTerm('')}
             aria-label="Clear search"
             title="Clear search"
@@ -162,9 +162,9 @@ const CalendarFilters = memo(function CalendarFilters({
       <div
         id="mobile-filters-content"
         className={`space-y-4 transition-all duration-300 ease-in-out md:block ${
-          isFiltersExpanded 
-            ? 'block opacity-100 max-h-96' 
-            : 'hidden opacity-0 max-h-0 overflow-hidden md:opacity-100 md:max-h-none md:overflow-visible'
+          isFiltersExpanded
+            ? 'block max-h-96 opacity-100'
+            : 'hidden max-h-0 overflow-hidden opacity-0 md:max-h-none md:overflow-visible md:opacity-100'
         }`}
         aria-hidden={!isFiltersExpanded}
       >
@@ -193,7 +193,11 @@ const CalendarFilters = memo(function CalendarFilters({
         {/* Meeting Status Filters */}
         <div className="space-y-2">
           <h3 className="text-foreground text-sm font-medium">Status</h3>
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by meeting status">
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label="Filter by meeting status"
+          >
             {meetingStatuses.map((status) => (
               <Badge
                 key={status.value}
@@ -202,7 +206,7 @@ const CalendarFilters = memo(function CalendarFilters({
                     ? status.variant
                     : 'outline'
                 }
-                className={`cursor-pointer transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                className={`focus:ring-ring cursor-pointer transition-all hover:scale-105 focus:ring-2 focus:ring-offset-2 focus:outline-none ${
                   selectedStatuses.includes(status.value)
                     ? 'ring-ring ring-2 ring-offset-2'
                     : 'hover:bg-accent'

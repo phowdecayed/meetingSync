@@ -183,7 +183,7 @@ const CalendarGrid = memo(function CalendarGrid({
             style={{
               animationDelay: `${sectionIndex * 100}ms`,
               animationDuration: '500ms',
-              animationFillMode: 'both'
+              animationFillMode: 'both',
             }}
           >
             <DateSection
@@ -198,9 +198,9 @@ const CalendarGrid = memo(function CalendarGrid({
                     key={meeting.id}
                     className="animate-in fade-in-0 slide-in-from-bottom-2"
                     style={{
-                      animationDelay: `${(sectionIndex * 100) + (cardIndex * 50)}ms`,
+                      animationDelay: `${sectionIndex * 100 + cardIndex * 50}ms`,
                       animationDuration: '400ms',
-                      animationFillMode: 'both'
+                      animationFillMode: 'both',
                     }}
                   >
                     <MeetingCard
@@ -220,9 +220,7 @@ const CalendarGrid = memo(function CalendarGrid({
       })}
     </div>
   )
-}
-
-)
+})
 
 export { CalendarGrid }
 export default CalendarGrid

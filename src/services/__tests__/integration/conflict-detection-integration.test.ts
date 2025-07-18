@@ -1,6 +1,6 @@
 /**
  * Integration Tests for Enhanced Conflict Detection System
- * 
+ *
  * Tests the complete flow of conflict detection including:
  * - Meeting type validation scenarios
  * - Zoom account load balancing and capacity management
@@ -19,7 +19,7 @@ import {
   MeetingType,
   ConflictType,
   ConflictSeverity,
-  SuggestionType
+  SuggestionType,
 } from '@/types/conflict-detection'
 import prisma from '@/lib/prisma'
 
@@ -27,22 +27,22 @@ import prisma from '@/lib/prisma'
 vi.mock('@/lib/prisma', () => ({
   default: {
     zoomCredentials: {
-      findMany: vi.fn()
+      findMany: vi.fn(),
     },
     meeting: {
-      findMany: vi.fn()
+      findMany: vi.fn(),
     },
     meetingRoom: {
       findMany: vi.fn(),
-      findUnique: vi.fn()
-    }
-  }
+      findUnique: vi.fn(),
+    },
+  },
 }))
 
 const mockPrisma = prisma as {
   zoomCredentials: { findMany: Mock }
   meeting: { findMany: Mock }
-  meetingRoom: { findMany: Mock, findUnique: Mock }
+  meetingRoom: { findMany: Mock; findUnique: Mock }
 }
 
 describe('Conflict Detection Integration Tests', () => {
@@ -58,7 +58,9 @@ describe('Conflict Detection Integration Tests', () => {
     vi.clearAllMocks()
   })
 
-  const createMockMeetingData = (overrides: Partial<MeetingFormData> = {}): MeetingFormData => ({
+  const createMockMeetingData = (
+    overrides: Partial<MeetingFormData> = {},
+  ): MeetingFormData => ({
     title: 'Integration Test Meeting',
     date: new Date('2025-12-15T00:00:00Z'),
     time: '10:00',
@@ -77,7 +79,7 @@ describe('Conflict Detection Integration Tests', () => {
       const meetingData = createMockMeetingData({
         meetingType: MeetingType.OFFLINE,
         isZoomMeeting: false,
-        meetingRoomId: 'room-1'
+        meetingRoomId: 'room-1',
       })
 
       // Mock room availability - room is available
@@ -85,7 +87,7 @@ describe('Conflict Detection Integration Tests', () => {
         id: 'room-1',
         name: 'Conference Room A',
         capacity: 10,
-        location: 'Floor 1'
+        location: 'Floor 1',
       })
       mockPrisma.meeting.findMany.mockResolvedValue([])
 
@@ -99,7 +101,7 @@ describe('Conflict Detection Integration Tests', () => {
       const meetingData = createMeetingData({
         meetingType: MeetingType.HYBRID,
         isZoomMeeting: true,
-        meetingRoomId: 'room-1'
+        meetingRoomId: 'room-1',
       })
 
       // Mock room conflict
@@ -107,7 +109,7 @@ describe('Conflict Detection Integration Tests', () => {
         id: 'room-1',
         name: 'Conference Room A',
         capacity: 10,
-        location: 'Floor 1'
+        location: 'Floor 1',
       })
       mockPrisma.meeting.findMany.mockResolvedValue([
         {
@@ -118,8 +120,8 @@ describe('Conflict Detection Integration Tests', () => {
           participants: 'user3@example.com',
           organizer: { name: 'John Doe' },
           meetingRoom: { name: 'Conference Room A' },
-          zoomCredentialId: null
-        }
+          zoomCredentialId: null,
+        },
       ])
 
       // Mock alternative rooms
@@ -128,8 +130,8 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'room-2',
           name: 'Conference Room B',
           capacity: 8,
-          location: 'Floor 2'
-        }
+          location: 'Floor 2',
+        },
       ])
 
       // Mock Zoom accounts
@@ -138,14 +140,16 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       const result = await conflictEngine.validateMeeting(meetingData)
 
       expect(result.canSubmit).toBe(false) // Room conflict blocks submission
-      expect(result.conflicts.some(c => c.type === ConflictType.ROOM_CONFLICT)).toBe(true)
+      expect(
+        result.conflicts.some((c) => c.type === ConflictType.ROOM_CONFLICT),
+      ).toBe(true)
       expect(result.suggestions.length).toBeGreaterThan(0)
     })
 
@@ -153,7 +157,7 @@ describe('Conflict Detection Integration Tests', () => {
       const meetingData = createMockMeetingData({
         meetingType: MeetingType.ONLINE,
         isZoomMeeting: true,
-        meetingRoomId: undefined
+        meetingRoomId: undefined,
       })
 
       // Mock Zoom accounts at capacity
@@ -162,8 +166,8 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // Mock meetings that fill Zoom capacity
@@ -175,7 +179,7 @@ describe('Conflict Detection Integration Tests', () => {
           duration: 60,
           participants: 'user1@example.com',
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
+          zoomCredential: { id: 'zoom-1' },
         },
         {
           id: 'meeting-2',
@@ -184,15 +188,19 @@ describe('Conflict Detection Integration Tests', () => {
           duration: 90,
           participants: 'user2@example.com',
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
-        }
+          zoomCredential: { id: 'zoom-1' },
+        },
       ])
 
       const result = await conflictEngine.validateMeeting(meetingData)
 
       expect(result.canSubmit).toBe(false) // Zoom capacity exceeded
-      expect(result.conflicts.some(c => c.type === ConflictType.ZOOM_CAPACITY)).toBe(true)
-      expect(result.suggestions.some(s => s.type === SuggestionType.TIME_CHANGE)).toBe(true)
+      expect(
+        result.conflicts.some((c) => c.type === ConflictType.ZOOM_CAPACITY),
+      ).toBe(true)
+      expect(
+        result.suggestions.some((s) => s.type === SuggestionType.TIME_CHANGE),
+      ).toBe(true)
     })
   })
 
@@ -204,14 +212,14 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'zoom-2',
           accountId: 'acc-2',
           clientId: 'client-2',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // Mock existing meetings - zoom-1 has 1 meeting, zoom-2 has none
@@ -223,14 +231,15 @@ describe('Conflict Detection Integration Tests', () => {
           duration: 60,
           participants: 'user1@example.com',
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
-        }
+          zoomCredential: { id: 'zoom-1' },
+        },
       ])
 
-      const capacityResult = await zoomAccountService.checkConcurrentMeetingCapacity(
-        new Date('2025-12-15T10:00:00Z'),
-        new Date('2025-12-15T11:00:00Z')
-      )
+      const capacityResult =
+        await zoomAccountService.checkConcurrentMeetingCapacity(
+          new Date('2025-12-15T10:00:00Z'),
+          new Date('2025-12-15T11:00:00Z'),
+        )
 
       expect(capacityResult.hasAvailableAccount).toBe(true)
       expect(capacityResult.totalMaxConcurrent).toBe(4) // 2 accounts × 2 meetings each
@@ -240,7 +249,7 @@ describe('Conflict Detection Integration Tests', () => {
       // Should suggest the least loaded account (zoom-2)
       const suggestedAccount = await zoomAccountService.findAvailableAccount(
         new Date('2025-12-15T10:00:00Z'),
-        new Date('2025-12-15T11:00:00Z')
+        new Date('2025-12-15T11:00:00Z'),
       )
 
       expect(suggestedAccount).toBeDefined()
@@ -254,8 +263,8 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // Mock meetings that fill all capacity
@@ -267,7 +276,7 @@ describe('Conflict Detection Integration Tests', () => {
           duration: 60,
           participants: 'user1@example.com',
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
+          zoomCredential: { id: 'zoom-1' },
         },
         {
           id: 'meeting-2',
@@ -276,22 +285,26 @@ describe('Conflict Detection Integration Tests', () => {
           duration: 90,
           participants: 'user2@example.com',
           zoomCredentialId: 'zoom-1',
-          zoomCredential: { id: 'zoom-1' }
-        }
+          zoomCredential: { id: 'zoom-1' },
+        },
       ])
 
       const meetingData = createMockMeetingData({
         meetingType: MeetingType.ONLINE,
-        isZoomMeeting: true
+        isZoomMeeting: true,
       })
 
       const result = await conflictEngine.validateMeeting(meetingData)
 
       expect(result.canSubmit).toBe(false)
-      expect(result.conflicts.some(c => c.type === ConflictType.ZOOM_CAPACITY)).toBe(true)
-      
+      expect(
+        result.conflicts.some((c) => c.type === ConflictType.ZOOM_CAPACITY),
+      ).toBe(true)
+
       // Should suggest time changes
-      expect(result.suggestions.some(s => s.type === SuggestionType.TIME_CHANGE)).toBe(true)
+      expect(
+        result.suggestions.some((s) => s.type === SuggestionType.TIME_CHANGE),
+      ).toBe(true)
     })
 
     it('should provide load balancing statistics', async () => {
@@ -300,14 +313,14 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
+          meetings: [],
         },
         {
           id: 'zoom-2',
           accountId: 'acc-2',
           clientId: 'client-2',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       const loadInfo = await zoomAccountService.getAccountLoadBalancing()
@@ -317,12 +330,12 @@ describe('Conflict Detection Integration Tests', () => {
         accountId: expect.any(String),
         currentLoad: expect.any(Number),
         maxCapacity: 2,
-        utilizationPercentage: expect.any(Number)
+        utilizationPercentage: expect.any(Number),
       })
 
       // Should be sorted by utilization (ascending)
       expect(loadInfo[0].utilizationPercentage).toBeLessThanOrEqual(
-        loadInfo[1].utilizationPercentage
+        loadInfo[1].utilizationPercentage,
       )
     })
   })
@@ -332,7 +345,7 @@ describe('Conflict Detection Integration Tests', () => {
       const meetingData = createMockMeetingData({
         meetingType: MeetingType.OFFLINE,
         meetingRoomId: 'room-1',
-        isZoomMeeting: false
+        isZoomMeeting: false,
       })
 
       // Mock room conflict
@@ -340,7 +353,7 @@ describe('Conflict Detection Integration Tests', () => {
         id: 'room-1',
         name: 'Conference Room A',
         capacity: 10,
-        location: 'Floor 1'
+        location: 'Floor 1',
       })
 
       mockPrisma.meeting.findMany.mockResolvedValue([
@@ -352,8 +365,8 @@ describe('Conflict Detection Integration Tests', () => {
           participants: 'user3@example.com',
           organizer: { name: 'John Doe' },
           meetingRoom: { name: 'Conference Room A' },
-          zoomCredentialId: null
-        }
+          zoomCredentialId: null,
+        },
       ])
 
       // Mock alternative rooms
@@ -362,27 +375,33 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'room-2',
           name: 'Conference Room B',
           capacity: 8,
-          location: 'Floor 2'
+          location: 'Floor 2',
         },
         {
           id: 'room-3',
           name: 'Meeting Room C',
           capacity: 6,
-          location: 'Floor 1'
-        }
+          location: 'Floor 1',
+        },
       ])
 
       const result = await conflictEngine.validateMeeting(meetingData)
 
       expect(result.canSubmit).toBe(false)
-      expect(result.conflicts.some(c => c.type === ConflictType.ROOM_CONFLICT)).toBe(true)
-      
+      expect(
+        result.conflicts.some((c) => c.type === ConflictType.ROOM_CONFLICT),
+      ).toBe(true)
+
       // Should have room change suggestions
-      const roomSuggestions = result.suggestions.filter(s => s.type === SuggestionType.ROOM_CHANGE)
+      const roomSuggestions = result.suggestions.filter(
+        (s) => s.type === SuggestionType.ROOM_CHANGE,
+      )
       expect(roomSuggestions.length).toBeGreaterThan(0)
-      
+
       // Should have time change suggestions
-      const timeSuggestions = result.suggestions.filter(s => s.type === SuggestionType.TIME_CHANGE)
+      const timeSuggestions = result.suggestions.filter(
+        (s) => s.type === SuggestionType.TIME_CHANGE,
+      )
       expect(timeSuggestions.length).toBeGreaterThan(0)
     })
 
@@ -390,7 +409,11 @@ describe('Conflict Detection Integration Tests', () => {
       const meetingData = createMockMeetingData({
         meetingType: MeetingType.OFFLINE,
         meetingRoomId: undefined, // No room selected
-        participants: ['user1@example.com', 'user2@example.com', 'user3@example.com'] // 3 participants
+        participants: [
+          'user1@example.com',
+          'user2@example.com',
+          'user3@example.com',
+        ], // 3 participants
       })
 
       // Mock available rooms with different capacities
@@ -399,34 +422,38 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'room-small',
           name: 'Small Room',
           capacity: 2, // Too small
-          location: 'Floor 1'
+          location: 'Floor 1',
         },
         {
           id: 'room-perfect',
           name: 'Perfect Room',
           capacity: 4, // Just right
-          location: 'Floor 1'
+          location: 'Floor 1',
         },
         {
           id: 'room-large',
           name: 'Large Room',
           capacity: 20, // Too large
-          location: 'Floor 2'
-        }
+          location: 'Floor 2',
+        },
       ])
 
       mockPrisma.meeting.findMany.mockResolvedValue([]) // No conflicts
 
       const result = await conflictEngine.validateMeeting(meetingData)
 
-      expect(result.conflicts.some(c => c.type === ConflictType.MISSING_ROOM)).toBe(true)
-      
-      const roomSuggestions = result.suggestions.filter(s => s.type === SuggestionType.ROOM_CHANGE)
+      expect(
+        result.conflicts.some((c) => c.type === ConflictType.MISSING_ROOM),
+      ).toBe(true)
+
+      const roomSuggestions = result.suggestions.filter(
+        (s) => s.type === SuggestionType.ROOM_CHANGE,
+      )
       expect(roomSuggestions.length).toBeGreaterThan(0)
-      
+
       // Should prioritize the perfect-sized room
-      const perfectRoomSuggestion = roomSuggestions.find(s => 
-        s.description.includes('Perfect Room')
+      const perfectRoomSuggestion = roomSuggestions.find((s) =>
+        s.description.includes('Perfect Room'),
       )
       expect(perfectRoomSuggestion).toBeDefined()
     })
@@ -439,18 +466,18 @@ describe('Conflict Detection Integration Tests', () => {
       mockPrisma.meeting.findMany.mockResolvedValue([
         {
           id: 'meeting-1',
-          duration: 60 // 1 hour
+          duration: 60, // 1 hour
         },
         {
           id: 'meeting-2',
-          duration: 120 // 2 hours
-        }
+          duration: 120, // 2 hours
+        },
       ])
 
       const utilization = await roomAvailabilityService.getRoomUtilization(
         'room-1',
         new Date('2025-12-15T00:00:00Z'),
-        new Date('2025-12-16T23:59:59Z')
+        new Date('2025-12-16T23:59:59Z'),
       )
 
       expect(utilization.bookedHours).toBe(3) // 1 + 2 hours
@@ -464,7 +491,7 @@ describe('Conflict Detection Integration Tests', () => {
       const meetingData = createMockMeetingData({
         meetingType: MeetingType.HYBRID,
         meetingRoomId: 'room-1',
-        isZoomMeeting: true
+        isZoomMeeting: true,
       })
 
       // Mock both room and Zoom conflicts
@@ -472,7 +499,7 @@ describe('Conflict Detection Integration Tests', () => {
         id: 'room-1',
         name: 'Conference Room A',
         capacity: 10,
-        location: 'Floor 1'
+        location: 'Floor 1',
       })
 
       // Room conflict
@@ -486,8 +513,8 @@ describe('Conflict Detection Integration Tests', () => {
             participants: 'user3@example.com',
             organizer: { name: 'John Doe' },
             meetingRoom: { name: 'Conference Room A' },
-            zoomCredentialId: null
-          }
+            zoomCredentialId: null,
+          },
         ])
         // Zoom capacity conflict
         .mockResolvedValueOnce([
@@ -498,7 +525,7 @@ describe('Conflict Detection Integration Tests', () => {
             duration: 60,
             participants: 'user1@example.com',
             zoomCredentialId: 'zoom-1',
-            zoomCredential: { id: 'zoom-1' }
+            zoomCredential: { id: 'zoom-1' },
           },
           {
             id: 'zoom-meeting-2',
@@ -507,8 +534,8 @@ describe('Conflict Detection Integration Tests', () => {
             duration: 90,
             participants: 'user2@example.com',
             zoomCredentialId: 'zoom-1',
-            zoomCredential: { id: 'zoom-1' }
-          }
+            zoomCredential: { id: 'zoom-1' },
+          },
         ])
 
       // Mock alternative rooms
@@ -517,8 +544,8 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'room-2',
           name: 'Conference Room B',
           capacity: 8,
-          location: 'Floor 2'
-        }
+          location: 'Floor 2',
+        },
       ])
 
       // Mock single Zoom account at capacity
@@ -527,27 +554,35 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       const result = await conflictEngine.validateMeeting(meetingData)
 
       expect(result.canSubmit).toBe(false)
       expect(result.conflicts.length).toBeGreaterThan(1) // Multiple conflicts
-      expect(result.conflicts.some(c => c.type === ConflictType.ROOM_CONFLICT)).toBe(true)
-      expect(result.conflicts.some(c => c.type === ConflictType.ZOOM_CAPACITY)).toBe(true)
+      expect(
+        result.conflicts.some((c) => c.type === ConflictType.ROOM_CONFLICT),
+      ).toBe(true)
+      expect(
+        result.conflicts.some((c) => c.type === ConflictType.ZOOM_CAPACITY),
+      ).toBe(true)
 
       // Should provide comprehensive suggestions
       expect(result.suggestions.length).toBeGreaterThan(0)
-      expect(result.suggestions.some(s => s.type === SuggestionType.ROOM_CHANGE)).toBe(true)
-      expect(result.suggestions.some(s => s.type === SuggestionType.TIME_CHANGE)).toBe(true)
+      expect(
+        result.suggestions.some((s) => s.type === SuggestionType.ROOM_CHANGE),
+      ).toBe(true)
+      expect(
+        result.suggestions.some((s) => s.type === SuggestionType.TIME_CHANGE),
+      ).toBe(true)
     })
 
     it('should apply suggestions and re-validate', async () => {
       const originalMeetingData = createMockMeetingData({
         meetingType: MeetingType.OFFLINE,
-        meetingRoomId: undefined // Missing room
+        meetingRoomId: undefined, // Missing room
       })
 
       // Mock available rooms
@@ -556,19 +591,28 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'room-2',
           name: 'Conference Room B',
           capacity: 8,
-          location: 'Floor 2'
-        }
+          location: 'Floor 2',
+        },
       ])
 
       // First validation - should have missing room conflict
-      const initialResult = await conflictEngine.validateMeeting(originalMeetingData)
-      expect(initialResult.conflicts.some(c => c.type === ConflictType.MISSING_ROOM)).toBe(true)
+      const initialResult =
+        await conflictEngine.validateMeeting(originalMeetingData)
+      expect(
+        initialResult.conflicts.some(
+          (c) => c.type === ConflictType.MISSING_ROOM,
+        ),
+      ).toBe(true)
 
       // Apply room suggestion
-      const roomSuggestion = initialResult.suggestions.find(s => s.type === SuggestionType.ROOM_CHANGE)
+      const roomSuggestion = initialResult.suggestions.find(
+        (s) => s.type === SuggestionType.ROOM_CHANGE,
+      )
       expect(roomSuggestion).toBeDefined()
 
-      const appliedChanges = conflictResolutionService.applySuggestion(roomSuggestion!)
+      const appliedChanges = conflictResolutionService.applySuggestion(
+        roomSuggestion!,
+      )
       const updatedMeetingData = { ...originalMeetingData, ...appliedChanges }
 
       // Mock room availability for the suggested room
@@ -576,21 +620,24 @@ describe('Conflict Detection Integration Tests', () => {
         id: 'room-2',
         name: 'Conference Room B',
         capacity: 8,
-        location: 'Floor 2'
+        location: 'Floor 2',
       })
       mockPrisma.meeting.findMany.mockResolvedValue([]) // No conflicts
 
       // Re-validate with applied suggestion
-      const finalResult = await conflictEngine.validateMeeting(updatedMeetingData)
+      const finalResult =
+        await conflictEngine.validateMeeting(updatedMeetingData)
       expect(finalResult.canSubmit).toBe(true)
-      expect(finalResult.conflicts.some(c => c.type === ConflictType.MISSING_ROOM)).toBe(false)
+      expect(
+        finalResult.conflicts.some((c) => c.type === ConflictType.MISSING_ROOM),
+      ).toBe(false)
     })
 
     it('should handle real-time conflict updates', async () => {
       const meetingData = createMockMeetingData({
         meetingType: MeetingType.HYBRID,
         meetingRoomId: 'room-1',
-        isZoomMeeting: true
+        isZoomMeeting: true,
       })
 
       // Setup initial state - no conflicts
@@ -598,7 +645,7 @@ describe('Conflict Detection Integration Tests', () => {
         id: 'room-1',
         name: 'Conference Room A',
         capacity: 10,
-        location: 'Floor 1'
+        location: 'Floor 1',
       })
       mockPrisma.meeting.findMany.mockResolvedValue([])
       mockPrisma.zoomCredentials.findMany.mockResolvedValue([
@@ -606,8 +653,8 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // Initial validation - should pass
@@ -624,8 +671,8 @@ describe('Conflict Detection Integration Tests', () => {
           participants: 'user3@example.com',
           organizer: { name: 'Jane Doe' },
           meetingRoom: { name: 'Conference Room A' },
-          zoomCredentialId: null
-        }
+          zoomCredentialId: null,
+        },
       ])
 
       // Clear cache to force re-validation
@@ -634,7 +681,11 @@ describe('Conflict Detection Integration Tests', () => {
       // Re-validate - should now have conflict
       const updatedResult = await conflictEngine.validateMeeting(meetingData)
       expect(updatedResult.canSubmit).toBe(false)
-      expect(updatedResult.conflicts.some(c => c.type === ConflictType.ROOM_CONFLICT)).toBe(true)
+      expect(
+        updatedResult.conflicts.some(
+          (c) => c.type === ConflictType.ROOM_CONFLICT,
+        ),
+      ).toBe(true)
     })
   })
 
@@ -647,7 +698,7 @@ describe('Conflict Detection Integration Tests', () => {
         id: 'room-1',
         name: 'Conference Room A',
         capacity: 10,
-        location: 'Floor 1'
+        location: 'Floor 1',
       })
       mockPrisma.meeting.findMany.mockResolvedValue([])
       mockPrisma.zoomCredentials.findMany.mockResolvedValue([])
@@ -680,8 +731,8 @@ describe('Conflict Detection Integration Tests', () => {
           id: 'zoom-1',
           accountId: 'acc-1',
           clientId: 'client-1',
-          meetings: []
-        }
+          meetings: [],
+        },
       ])
 
       // First validation to populate cache
@@ -699,7 +750,9 @@ describe('Conflict Detection Integration Tests', () => {
       const meetingData = createMockMeetingData()
 
       // Mock database error
-      mockPrisma.meetingRoom.findUnique.mockRejectedValue(new Error('Database connection failed'))
+      mockPrisma.meetingRoom.findUnique.mockRejectedValue(
+        new Error('Database connection failed'),
+      )
 
       const result = await conflictEngine.validateMeeting(meetingData)
 
@@ -713,7 +766,7 @@ describe('Conflict Detection Integration Tests', () => {
       const meetingData = createMockMeetingData({
         meetingType: MeetingType.HYBRID,
         meetingRoomId: 'room-1',
-        isZoomMeeting: true
+        isZoomMeeting: true,
       })
 
       // Room service works, Zoom service fails
@@ -721,10 +774,12 @@ describe('Conflict Detection Integration Tests', () => {
         id: 'room-1',
         name: 'Conference Room A',
         capacity: 10,
-        location: 'Floor 1'
+        location: 'Floor 1',
       })
       mockPrisma.meeting.findMany.mockResolvedValue([])
-      mockPrisma.zoomCredentials.findMany.mockRejectedValue(new Error('Zoom service unavailable'))
+      mockPrisma.zoomCredentials.findMany.mockRejectedValue(
+        new Error('Zoom service unavailable'),
+      )
 
       const result = await conflictEngine.validateMeeting(meetingData)
 
@@ -737,7 +792,9 @@ describe('Conflict Detection Integration Tests', () => {
 })
 
 // Helper function to create mock meeting data
-function createMeetingData(overrides: Partial<MeetingFormData> = {}): MeetingFormData {
+function createMeetingData(
+  overrides: Partial<MeetingFormData> = {},
+): MeetingFormData {
   return {
     title: 'Test Meeting',
     date: new Date('2025-12-15T00:00:00Z'),

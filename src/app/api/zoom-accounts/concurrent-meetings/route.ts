@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     if (!accountId || !startTimeStr || !endTimeStr) {
       return NextResponse.json(
         { error: 'accountId, startTime, and endTime are required' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
       return NextResponse.json(
         { error: 'Invalid date format' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       accountId,
       startTime,
       endTime,
-      excludeMeetingId || undefined
+      excludeMeetingId || undefined,
     )
 
     return NextResponse.json({ count })

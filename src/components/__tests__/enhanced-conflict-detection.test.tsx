@@ -136,7 +136,7 @@ describe('Enhanced Conflict Detection', () => {
     render(
       <SessionProvider session={null}>
         <MeetingForm allUsers={mockUsers} />
-      </SessionProvider>
+      </SessionProvider>,
     )
 
     // Fill in form fields to create a conflict
@@ -168,7 +168,7 @@ describe('Enhanced Conflict Detection', () => {
     render(
       <SessionProvider session={null}>
         <MeetingForm allUsers={mockUsers} />
-      </SessionProvider>
+      </SessionProvider>,
     )
 
     // Fill in form to create a third overlapping meeting (should be blocked)
@@ -194,7 +194,7 @@ describe('Enhanced Conflict Detection', () => {
     render(
       <SessionProvider session={null}>
         <MeetingForm allUsers={mockUsers} />
-      </SessionProvider>
+      </SessionProvider>,
     )
 
     // Create a conflict scenario
@@ -213,10 +213,13 @@ describe('Enhanced Conflict Detection', () => {
 
     // Check for suggestion buttons
     const suggestionButtons = screen.getAllByRole('button')
-    const timeSuggestions = suggestionButtons.filter(button => 
-      button.textContent?.includes(':') || button.textContent?.includes('before') || button.textContent?.includes('after')
+    const timeSuggestions = suggestionButtons.filter(
+      (button) =>
+        button.textContent?.includes(':') ||
+        button.textContent?.includes('before') ||
+        button.textContent?.includes('after'),
     )
-    
+
     expect(timeSuggestions.length).toBeGreaterThan(0)
   })
 
@@ -224,7 +227,7 @@ describe('Enhanced Conflict Detection', () => {
     render(
       <SessionProvider session={null}>
         <MeetingForm allUsers={mockUsers} />
-      </SessionProvider>
+      </SessionProvider>,
     )
 
     // Create a conflict scenario
@@ -243,13 +246,15 @@ describe('Enhanced Conflict Detection', () => {
 
     // Click on a time suggestion
     const suggestionButtons = screen.getAllByRole('button')
-    const timeSuggestion = suggestionButtons.find(button => 
-      button.textContent?.includes('before conflicts') || button.textContent?.includes('after conflicts')
+    const timeSuggestion = suggestionButtons.find(
+      (button) =>
+        button.textContent?.includes('before conflicts') ||
+        button.textContent?.includes('after conflicts'),
     )
 
     if (timeSuggestion) {
       fireEvent.click(timeSuggestion)
-      
+
       // Time input should be updated
       await waitFor(() => {
         const updatedTimeInput = screen.getByDisplayValue(/\d{2}:\d{2}/)

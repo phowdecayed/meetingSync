@@ -1,6 +1,6 @@
 /**
  * System Health Check Utilities
- * 
+ *
  * Provides utilities to check the health and configuration status of the application.
  */
 
@@ -36,7 +36,7 @@ export async function checkSystemHealth(): Promise<SystemHealthStatus> {
     database: { connected: false },
     zoomCredentials: { configured: false, count: 0 },
     meetings: { total: 0, zoomMeetings: 0 },
-    overall: { healthy: true, warnings: [], errors: [] }
+    overall: { healthy: true, warnings: [], errors: [] },
   }
 
   // Check database connection
@@ -45,7 +45,8 @@ export async function checkSystemHealth(): Promise<SystemHealthStatus> {
     status.database.connected = true
   } catch (error) {
     status.database.connected = false
-    status.database.error = error instanceof Error ? error.message : 'Unknown database error'
+    status.database.error =
+      error instanceof Error ? error.message : 'Unknown database error'
     status.overall.healthy = false
     status.overall.errors.push('Database connection failed')
   }
@@ -54,17 +55,20 @@ export async function checkSystemHealth(): Promise<SystemHealthStatus> {
   if (status.database.connected) {
     try {
       const zoomCredentials = await prisma.zoomCredentials.count({
-        where: { deletedAt: null }
+        where: { deletedAt: null },
       })
-      
+
       status.zoomCredentials.count = zoomCredentials
       status.zoomCredentials.configured = zoomCredentials > 0
-      
+
       if (zoomCredentials === 0) {
-        status.overall.warnings.push('No Zoom credentials configured - Zoom features will be limited')
+        status.overall.warnings.push(
+          'No Zoom credentials configured - Zoom features will be limited',
+        )
       }
     } catch (error) {
-      status.zoomCredentials.error = error instanceof Error ? error.message : 'Unknown error'
+      status.zoomCredentials.error =
+        error instanceof Error ? error.message : 'Unknown error'
       status.overall.warnings.push('Could not check Zoom credentials')
     }
 
@@ -72,13 +76,16 @@ export async function checkSystemHealth(): Promise<SystemHealthStatus> {
     try {
       const [totalMeetings, zoomMeetings] = await Promise.all([
         prisma.meeting.count({ where: { deletedAt: null } }),
-        prisma.meeting.count({ where: { deletedAt: null, isZoomMeeting: true } })
+        prisma.meeting.count({
+          where: { deletedAt: null, isZoomMeeting: true },
+        }),
       ])
-      
+
       status.meetings.total = totalMeetings
       status.meetings.zoomMeetings = zoomMeetings
     } catch (error) {
-      status.meetings.error = error instanceof Error ? error.message : 'Unknown error'
+      status.meetings.error =
+        error instanceof Error ? error.message : 'Unknown error'
       status.overall.warnings.push('Could not check meeting statistics')
     }
   }
@@ -92,7 +99,7 @@ export async function checkSystemHealth(): Promise<SystemHealthStatus> {
 export async function isZoomAvailable(): Promise<boolean> {
   try {
     const zoomCredentials = await prisma.zoomCredentials.count({
-      where: { deletedAt: null }
+      where: { deletedAt: null },
     })
     return zoomCredentials > 0
   } catch (error) {
@@ -112,20 +119,23 @@ export async function getSystemStats(): Promise<{
   zoomAccounts: number
 }> {
   try {
-    const [users, meetings, zoomMeetings, meetingRooms, zoomAccounts] = await Promise.all([
-      prisma.user.count({ where: { deletedAt: null } }),
-      prisma.meeting.count({ where: { deletedAt: null } }),
-      prisma.meeting.count({ where: { deletedAt: null, isZoomMeeting: true } }),
-      prisma.meetingRoom.count({ where: { deletedAt: null } }),
-      prisma.zoomCredentials.count({ where: { deletedAt: null } })
-    ])
+    const [users, meetings, zoomMeetings, meetingRooms, zoomAccounts] =
+      await Promise.all([
+        prisma.user.count({ where: { deletedAt: null } }),
+        prisma.meeting.count({ where: { deletedAt: null } }),
+        prisma.meeting.count({
+          where: { deletedAt: null, isZoomMeeting: true },
+        }),
+        prisma.meetingRoom.count({ where: { deletedAt: null } }),
+        prisma.zoomCredentials.count({ where: { deletedAt: null } }),
+      ])
 
     return {
       users,
       meetings,
       zoomMeetings,
       meetingRooms,
-      zoomAccounts
+      zoomAccounts,
     }
   } catch (error) {
     console.error('Error getting system stats:', error)
@@ -134,7 +144,7 @@ export async function getSystemStats(): Promise<{
       meetings: 0,
       zoomMeetings: 0,
       meetingRooms: 0,
-      zoomAccounts: 0
+      zoomAccounts: 0,
     }
   }
 }

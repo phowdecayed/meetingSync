@@ -64,7 +64,10 @@ export async function POST(request: Request) {
 
     if (existing) {
       return NextResponse.json(
-        { error: 'Credential with this Client ID and Account ID already exists.' },
+        {
+          error:
+            'Credential with this Client ID and Account ID already exists.',
+        },
         { status: 409 },
       )
     }
@@ -97,7 +100,10 @@ export async function DELETE(request: Request) {
     const { id } = z.object({ id: z.string() }).parse(body)
 
     if (!id) {
-      return NextResponse.json({ error: 'Credential ID is required' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Credential ID is required' },
+        { status: 400 },
+      )
     }
 
     // Soft delete the credential

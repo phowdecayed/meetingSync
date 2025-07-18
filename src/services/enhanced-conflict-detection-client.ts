@@ -1,6 +1,6 @@
 /**
  * Client-Side Enhanced Conflict Detection Engine
- * 
+ *
  * Orchestrates conflict detection from the browser by communicating with API endpoints.
  * This service runs in the browser and cannot access the database directly.
  */
@@ -17,12 +17,15 @@ import {
   SuggestionType,
   ConflictDetectionEvent,
   ConflictSubscription,
-  ZoomAccountInfo
+  ZoomAccountInfo,
 } from '@/types/conflict-detection'
 
 import { EventEmitter } from 'events'
 
-export class EnhancedConflictDetectionEngineClient extends EventEmitter implements ConflictDetectionEngine {
+export class EnhancedConflictDetectionEngineClient
+  extends EventEmitter
+  implements ConflictDetectionEngine
+{
   private static instance: EnhancedConflictDetectionEngineClient
   private validationCache: Map<string, ConflictResult> = new Map()
   private cacheTimestamp: Map<string, Date> = new Map()
@@ -36,7 +39,8 @@ export class EnhancedConflictDetectionEngineClient extends EventEmitter implemen
 
   public static getInstance(): EnhancedConflictDetectionEngineClient {
     if (!EnhancedConflictDetectionEngineClient.instance) {
-      EnhancedConflictDetectionEngineClient.instance = new EnhancedConflictDetectionEngineClient()
+      EnhancedConflictDetectionEngineClient.instance =
+        new EnhancedConflictDetectionEngineClient()
     }
     return EnhancedConflictDetectionEngineClient.instance
   }
@@ -62,7 +66,7 @@ export class EnhancedConflictDetectionEngineClient extends EventEmitter implemen
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(meetingData)
+        body: JSON.stringify(meetingData),
       })
 
       if (!response.ok) {
@@ -81,9 +85,9 @@ export class EnhancedConflictDetectionEngineClient extends EventEmitter implemen
         payload: {
           meetingData,
           result,
-          conflicts: result.conflicts
+          conflicts: result.conflicts,
         },
-        timestamp: new Date()
+        timestamp: new Date(),
       }
       this.emit('conflict_detected', event)
 
@@ -93,13 +97,16 @@ export class EnhancedConflictDetectionEngineClient extends EventEmitter implemen
 
       // Return safe default for graceful degradation
       return {
-        conflicts: [{
-          type: ConflictType.INVALID_TYPE,
-          severity: ConflictSeverity.WARNING,
-          message: 'Unable to validate meeting at this time. Please try again.'
-        }],
+        conflicts: [
+          {
+            type: ConflictType.INVALID_TYPE,
+            severity: ConflictSeverity.WARNING,
+            message:
+              'Unable to validate meeting at this time. Please try again.',
+          },
+        ],
         suggestions: [],
-        canSubmit: true // Allow submission when validation fails
+        canSubmit: true, // Allow submission when validation fails
       }
     }
   }
@@ -143,13 +150,14 @@ export class EnhancedConflictDetectionEngineClient extends EventEmitter implemen
    */
   getCacheStats(): { size: number; oldestEntry: Date | null } {
     const timestamps = Array.from(this.cacheTimestamp.values())
-    const oldestEntry = timestamps.length > 0
-      ? new Date(Math.min(...timestamps.map(d => d.getTime())))
-      : null
+    const oldestEntry =
+      timestamps.length > 0
+        ? new Date(Math.min(...timestamps.map((d) => d.getTime())))
+        : null
 
     return {
       size: this.validationCache.size,
-      oldestEntry
+      oldestEntry,
     }
   }
 
@@ -165,7 +173,7 @@ export class EnhancedConflictDetectionEngineClient extends EventEmitter implemen
       meetingType: meetingData.meetingType,
       isZoomMeeting: meetingData.isZoomMeeting,
       meetingRoomId: meetingData.meetingRoomId,
-      participants: meetingData.participants?.sort().join(',')
+      participants: meetingData.participants?.sort().join(','),
     }
 
     return JSON.stringify(keyData)
@@ -181,9 +189,10 @@ export class EnhancedConflictDetectionEngineClient extends EventEmitter implemen
     }
 
     const now = new Date()
-    return (now.getTime() - timestamp.getTime()) < this.CACHE_TTL_MS
+    return now.getTime() - timestamp.getTime() < this.CACHE_TTL_MS
   }
 }
 
 // Export singleton instance for client-side use
-export const enhancedConflictDetectionClient = EnhancedConflictDetectionEngineClient.getInstance()
+export const enhancedConflictDetectionClient =
+  EnhancedConflictDetectionEngineClient.getInstance()

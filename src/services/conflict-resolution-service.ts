@@ -1,12 +1,12 @@
 /**
  * Conflict Resolution Service
- * 
+ *
  * Generates actionable suggestions for meeting conflicts with prioritization
  * and feasibility scoring. Handles room alternatives, time slot suggestions,
  * and meeting type adjustments.
  */
 
-import { 
+import {
   ConflictResolutionService,
   ConflictInfo,
   ConflictSuggestion,
@@ -16,19 +16,21 @@ import {
   MeetingFormData,
   MeetingType,
   TimeSlot,
-  MeetingRoomInfo
+  MeetingRoomInfo,
 } from '@/types/conflict-detection'
 import { roomAvailabilityService } from './room-availability-service'
 import { zoomAccountServiceClient } from './zoom-account-service-client'
 import prisma from '@/lib/prisma'
 
-export class ConflictResolutionServiceImpl implements ConflictResolutionService {
+export class ConflictResolutionServiceImpl
+  implements ConflictResolutionService
+{
   private readonly MAX_SUGGESTIONS = 8
   private readonly SUGGESTION_PRIORITIES = {
     ROOM_CHANGE: 1,
     TIME_CHANGE: 2,
     TYPE_CHANGE: 3,
-    DURATION_CHANGE: 4
+    DURATION_CHANGE: 4,
   }
 
   /**
@@ -36,7 +38,7 @@ export class ConflictResolutionServiceImpl implements ConflictResolutionService 
    */
   async generateComprehensiveSuggestions(
     conflicts: ConflictInfo[],
-    meetingData: MeetingFormData
+    meetingData: MeetingFormData,
   ): Promise<ConflictSuggestion[]> {
     const suggestions: ConflictSuggestion[] = []
     let suggestionId = 1

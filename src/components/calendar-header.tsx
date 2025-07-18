@@ -70,15 +70,19 @@ const CalendarHeader = memo(function CalendarHeader({
   }
 
   return (
-    <header 
+    <header
       className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 flex h-16 items-center justify-between border-b backdrop-blur"
       role="banner"
       aria-label="Calendar header with navigation and controls"
     >
       {/* Left section - Navigation and Title */}
-      <div className="flex items-center gap-2 px-4 sm:gap-4" role="group" aria-label="Date navigation and title">
+      <div
+        className="flex items-center gap-2 px-4 sm:gap-4"
+        role="group"
+        aria-label="Date navigation and title"
+      >
         {/* Navigation Controls */}
-        <nav 
+        <nav
           className="flex items-center gap-1"
           role="navigation"
           aria-label="Week navigation"
@@ -87,7 +91,7 @@ const CalendarHeader = memo(function CalendarHeader({
             variant="outline"
             size="icon"
             onClick={handlePreviousWeek}
-            className="h-8 w-8 sm:h-9 sm:w-9 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="focus:ring-ring h-8 w-8 focus:ring-2 focus:ring-offset-2 focus:outline-none sm:h-9 sm:w-9"
             aria-label="Navigasi ke minggu sebelumnya"
             title="Minggu sebelumnya"
           >
@@ -98,7 +102,7 @@ const CalendarHeader = memo(function CalendarHeader({
             variant="outline"
             size="sm"
             onClick={handleToday}
-            className="hidden px-3 sm:inline-flex focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="focus:ring-ring hidden px-3 focus:ring-2 focus:ring-offset-2 focus:outline-none sm:inline-flex"
             aria-label="Kembali ke minggu ini"
             title="Kembali ke hari ini"
           >
@@ -110,7 +114,7 @@ const CalendarHeader = memo(function CalendarHeader({
             variant="outline"
             size="icon"
             onClick={handleToday}
-            className="h-8 w-8 sm:hidden focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="focus:ring-ring h-8 w-8 focus:ring-2 focus:ring-offset-2 focus:outline-none sm:hidden"
             aria-label="Kembali ke minggu ini"
             title="Kembali ke hari ini"
           >
@@ -121,7 +125,7 @@ const CalendarHeader = memo(function CalendarHeader({
             variant="outline"
             size="icon"
             onClick={handleNextWeek}
-            className="h-8 w-8 sm:h-9 sm:w-9 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="focus:ring-ring h-8 w-8 focus:ring-2 focus:ring-offset-2 focus:outline-none sm:h-9 sm:w-9"
             aria-label="Navigasi ke minggu selanjutnya"
             title="Minggu selanjutnya"
           >
@@ -131,14 +135,17 @@ const CalendarHeader = memo(function CalendarHeader({
 
         {/* Title */}
         <div className="flex items-center gap-2" role="heading" aria-level={1}>
-          <Calendar className="text-muted-foreground h-5 w-5" aria-hidden="true" />
-          <h1 
+          <Calendar
+            className="text-muted-foreground h-5 w-5"
+            aria-hidden="true"
+          />
+          <h1
             className="text-lg font-semibold sm:text-xl"
             id="calendar-title"
             aria-live="polite"
           >
             <span className="hidden sm:inline">Kalender Rapat - </span>
-            <span 
+            <span
               className="text-muted-foreground sm:text-foreground text-sm font-medium sm:text-base sm:font-semibold"
               aria-label={`Menampilkan minggu ${getCurrentWeekTitle()}`}
             >
@@ -149,7 +156,11 @@ const CalendarHeader = memo(function CalendarHeader({
       </div>
 
       {/* Right section - Action buttons */}
-      <div className="flex items-center gap-2 px-4" role="group" aria-label="Calendar actions">
+      <div
+        className="flex items-center gap-2 px-4"
+        role="group"
+        aria-label="Calendar actions"
+      >
         <Button
           variant="outline"
           size="icon"
@@ -159,9 +170,13 @@ const CalendarHeader = memo(function CalendarHeader({
             'h-8 w-8 sm:h-9 sm:w-9',
             'bg-background/50 backdrop-blur-sm',
             'hover:bg-accent/50',
-            'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+            'focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-none',
           )}
-          aria-label={isRefreshing ? 'Sedang memuat ulang data' : 'Muat ulang data kalender'}
+          aria-label={
+            isRefreshing
+              ? 'Sedang memuat ulang data'
+              : 'Muat ulang data kalender'
+          }
           title="Refresh data"
         >
           <RefreshCw
@@ -178,10 +193,12 @@ const CalendarHeader = memo(function CalendarHeader({
             'h-8 w-8 sm:h-9 sm:w-9',
             'bg-background/50 backdrop-blur-sm',
             'hover:bg-accent/50',
-            'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+            'focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-none',
           )}
           aria-label={
-            isFullscreen ? 'Keluar dari mode layar penuh' : 'Masuk ke mode layar penuh'
+            isFullscreen
+              ? 'Keluar dari mode layar penuh'
+              : 'Masuk ke mode layar penuh'
           }
           title={
             isFullscreen ? 'Keluar dari layar penuh' : 'Masuk ke layar penuh'

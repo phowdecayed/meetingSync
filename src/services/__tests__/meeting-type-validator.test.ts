@@ -1,6 +1,6 @@
 /**
  * Meeting Type Validator Tests
- * 
+ *
  * Comprehensive tests for meeting type validation rules including
  * offline, hybrid, and online meeting validation scenarios.
  */
@@ -8,18 +8,18 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { meetingTypeValidator } from '../meeting-type-validator'
 import { zoomAccountService } from '../zoom-account-service'
-import { 
-  MeetingFormData, 
-  MeetingType, 
-  ConflictType, 
-  ConflictSeverity 
+import {
+  MeetingFormData,
+  MeetingType,
+  ConflictType,
+  ConflictSeverity,
 } from '@/types/conflict-detection'
 
 // Mock the zoom account service
 vi.mock('../zoom-account-service', () => ({
   zoomAccountService: {
-    getAvailableAccounts: vi.fn()
-  }
+    getAvailableAccounts: vi.fn(),
+  },
 }))
 
 describe('MeetingTypeValidator', () => {
@@ -28,7 +28,7 @@ describe('MeetingTypeValidator', () => {
   beforeEach(() => {
     // Reset mocks
     vi.clearAllMocks()
-    
+
     // Setup default mock meeting data
     mockMeetingData = {
       title: 'Test Meeting',
@@ -39,7 +39,7 @@ describe('MeetingTypeValidator', () => {
       isZoomMeeting: false,
       meetingRoomId: 'room-1',
       participants: ['user1@example.com', 'user2@example.com'],
-      description: 'Test meeting description'
+      description: 'Test meeting description',
     }
 
     // Mock Zoom accounts as available by default
@@ -51,8 +51,8 @@ describe('MeetingTypeValidator', () => {
         maxConcurrentMeetings: 2,
         maxParticipants: 1000,
         currentActiveMeetings: 0,
-        scheduledMeetings: []
-      }
+        scheduledMeetings: [],
+      },
     ])
   })
 
@@ -69,7 +69,8 @@ describe('MeetingTypeValidator', () => {
       mockMeetingData.isZoomMeeting = false
       mockMeetingData.meetingRoomId = 'room-1'
 
-      const result = meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
+      const result =
+        meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
 
       expect(result.isValid).toBe(true)
       expect(result.conflicts).toHaveLength(0)
@@ -79,14 +80,16 @@ describe('MeetingTypeValidator', () => {
     it('should require physical room for offline meeting', () => {
       mockMeetingData.meetingRoomId = undefined
 
-      const result = meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
+      const result =
+        meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
 
       expect(result.isValid).toBe(false)
       expect(result.conflicts).toHaveLength(1)
       expect(result.conflicts[0]).toMatchObject({
         type: ConflictType.MISSING_ROOM,
         severity: ConflictSeverity.ERROR,
-        message: 'Offline meetings require a physical meeting room to be selected.'
+        message:
+          'Offline meetings require a physical meeting room to be selected.',
       })
       expect(result.requiredFields).toContain('meetingRoomId')
     })
@@ -95,14 +98,15 @@ describe('MeetingTypeValidator', () => {
       mockMeetingData.isZoomMeeting = true
       mockMeetingData.meetingRoomId = 'room-1'
 
-      const result = meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
+      const result =
+        meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
 
       expect(result.isValid).toBe(true) // Warning doesn't block submission
       expect(result.conflicts).toHaveLength(1)
       expect(result.conflicts[0]).toMatchObject({
         type: ConflictType.INVALID_TYPE,
         severity: ConflictSeverity.WARNING,
-        message: 'Offline meetings typically don\'t need Zoom meetings enabled.'
+        message: "Offline meetings typically don't need Zoom meetings enabled.",
       })
     })
 
@@ -110,10 +114,15 @@ describe('MeetingTypeValidator', () => {
       mockMeetingData.title = ''
       mockMeetingData.meetingRoomId = 'room-1'
 
-      const result = meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
+      const result =
+        meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
 
       expect(result.isValid).toBe(false)
-      expect(result.conflicts.some(c => c.message === 'Meeting title is required.')).toBe(true)
+      expect(
+        result.conflicts.some(
+          (c) => c.message === 'Meeting title is required.',
+        ),
+      ).toBe(true)
       expect(result.requiredFields).toContain('title')
     })
   })
@@ -144,7 +153,8 @@ describe('MeetingTypeValidator', () => {
       expect(result.conflicts[0]).toMatchObject({
         type: ConflictType.MISSING_ROOM,
         severity: ConflictSeverity.WARNING,
-        message: 'Hybrid meetings typically require a physical room for in-person participants.'
+        message:
+          'Hybrid meetings typically require a physical room for in-person participants.',
       })
       expect(result.requiredFields).toContain('meetingRoomId')
     })
@@ -160,7 +170,8 @@ describe('MeetingTypeValidator', () => {
       expect(result.conflicts[0]).toMatchObject({
         type: ConflictType.INVALID_TYPE,
         severity: ConflictSeverity.WARNING,
-        message: 'Hybrid meetings typically need Zoom enabled for remote participants.'
+        message:
+          'Hybrid meetings typically need Zoom enabled for remote participants.',
       })
       expect(result.requiredFields).toContain('isZoomMeeting')
     })
@@ -173,8 +184,12 @@ describe('MeetingTypeValidator', () => {
 
       expect(result.isValid).toBe(true) // Warnings don't block submission
       expect(result.conflicts).toHaveLength(2)
-      expect(result.conflicts.some(c => c.type === ConflictType.MISSING_ROOM)).toBe(true)
-      expect(result.conflicts.some(c => c.type === ConflictType.INVALID_TYPE)).toBe(true)
+      expect(
+        result.conflicts.some((c) => c.type === ConflictType.MISSING_ROOM),
+      ).toBe(true)
+      expect(
+        result.conflicts.some((c) => c.type === ConflictType.INVALID_TYPE),
+      ).toBe(true)
     })
   })
 
@@ -200,11 +215,14 @@ describe('MeetingTypeValidator', () => {
 
       expect(result.isValid).toBe(false)
       expect(result.conflicts.length).toBeGreaterThanOrEqual(1)
-      expect(result.conflicts.some(c => 
-        c.type === ConflictType.INVALID_TYPE &&
-        c.severity === ConflictSeverity.ERROR &&
-        c.message === 'Online meetings require Zoom to be enabled.'
-      )).toBe(true)
+      expect(
+        result.conflicts.some(
+          (c) =>
+            c.type === ConflictType.INVALID_TYPE &&
+            c.severity === ConflictSeverity.ERROR &&
+            c.message === 'Online meetings require Zoom to be enabled.',
+        ),
+      ).toBe(true)
       expect(result.requiredFields).toContain('isZoomMeeting')
     })
 
@@ -219,7 +237,7 @@ describe('MeetingTypeValidator', () => {
       expect(result.conflicts[0]).toMatchObject({
         type: ConflictType.INVALID_TYPE,
         severity: ConflictSeverity.WARNING,
-        message: 'Online meetings typically don\'t need a physical room.'
+        message: "Online meetings typically don't need a physical room.",
       })
     })
   })
@@ -229,16 +247,20 @@ describe('MeetingTypeValidator', () => {
       // Test offline routing
       mockMeetingData.meetingType = MeetingType.OFFLINE
       mockMeetingData.meetingRoomId = undefined
-      
+
       let result = meetingTypeValidator.validateMeetingType(mockMeetingData)
-      expect(result.conflicts.some(c => c.type === ConflictType.MISSING_ROOM)).toBe(true)
+      expect(
+        result.conflicts.some((c) => c.type === ConflictType.MISSING_ROOM),
+      ).toBe(true)
 
       // Test online routing
       mockMeetingData.meetingType = MeetingType.ONLINE
       mockMeetingData.isZoomMeeting = false
-      
+
       result = meetingTypeValidator.validateMeetingType(mockMeetingData)
-      expect(result.conflicts.some(c => c.message.includes('Zoom to be enabled'))).toBe(true)
+      expect(
+        result.conflicts.some((c) => c.message.includes('Zoom to be enabled')),
+      ).toBe(true)
     })
 
     it('should handle invalid meeting type', () => {
@@ -250,7 +272,7 @@ describe('MeetingTypeValidator', () => {
       expect(result.conflicts[0]).toMatchObject({
         type: ConflictType.INVALID_TYPE,
         severity: ConflictSeverity.ERROR,
-        message: 'Invalid meeting type: invalid'
+        message: 'Invalid meeting type: invalid',
       })
     })
   })
@@ -259,63 +281,90 @@ describe('MeetingTypeValidator', () => {
     it('should validate required title', () => {
       mockMeetingData.title = ''
 
-      const result = meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
+      const result =
+        meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
 
       expect(result.isValid).toBe(false)
-      expect(result.conflicts.some(c => c.message === 'Meeting title is required.')).toBe(true)
+      expect(
+        result.conflicts.some(
+          (c) => c.message === 'Meeting title is required.',
+        ),
+      ).toBe(true)
       expect(result.requiredFields).toContain('title')
     })
 
     it('should validate required date', () => {
       mockMeetingData.date = null as any
 
-      const result = meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
+      const result =
+        meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
 
       expect(result.isValid).toBe(false)
-      expect(result.conflicts.some(c => c.message === 'Meeting date is required.')).toBe(true)
+      expect(
+        result.conflicts.some((c) => c.message === 'Meeting date is required.'),
+      ).toBe(true)
       expect(result.requiredFields).toContain('date')
     })
 
     it('should validate time format', () => {
       mockMeetingData.time = 'invalid-time'
 
-      const result = meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
+      const result =
+        meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
 
       expect(result.isValid).toBe(false)
-      expect(result.conflicts.some(c => c.message.includes('Valid meeting time is required'))).toBe(true)
+      expect(
+        result.conflicts.some((c) =>
+          c.message.includes('Valid meeting time is required'),
+        ),
+      ).toBe(true)
       expect(result.requiredFields).toContain('time')
     })
 
     it('should accept valid time formats', () => {
       const validTimes = ['09:00', '14:30', '23:59', '00:00']
-      
-      validTimes.forEach(time => {
+
+      validTimes.forEach((time) => {
         mockMeetingData.time = time
-        const result = meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
-        expect(result.conflicts.some(c => c.message.includes('Valid meeting time is required'))).toBe(false)
+        const result =
+          meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
+        expect(
+          result.conflicts.some((c) =>
+            c.message.includes('Valid meeting time is required'),
+          ),
+        ).toBe(false)
       })
     })
 
     it('should validate duration', () => {
       mockMeetingData.duration = 0
 
-      const result = meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
+      const result =
+        meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
 
       expect(result.isValid).toBe(false)
-      expect(result.conflicts.some(c => c.message.includes('duration must be greater than 0'))).toBe(true)
+      expect(
+        result.conflicts.some((c) =>
+          c.message.includes('duration must be greater than 0'),
+        ),
+      ).toBe(true)
       expect(result.requiredFields).toContain('duration')
     })
 
     it('should warn about unusually long duration', () => {
       mockMeetingData.duration = 500 // More than 8 hours
 
-      const result = meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
+      const result =
+        meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
 
       expect(result.isValid).toBe(true) // Warning doesn't block
-      expect(result.conflicts.some(c => 
-        c.severity === ConflictSeverity.WARNING && 
-        c.message.includes('unusually long')
-      )).toBe(true)
+      expect(
+        result.conflicts.some(
+          (c) =>
+            c.severity === ConflictSeverity.WARNING &&
+            c.message.includes('unusually long'),
+        ),
+      ).toBe(true)
     })
 
     it('should prevent scheduling in the past', () => {
@@ -324,22 +373,31 @@ describe('MeetingTypeValidator', () => {
       mockMeetingData.date = pastDate
       mockMeetingData.time = '10:00'
 
-      const result = meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
+      const result =
+        meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
 
       expect(result.isValid).toBe(false)
-      expect(result.conflicts.some(c => c.message.includes('cannot be scheduled in the past'))).toBe(true)
+      expect(
+        result.conflicts.some((c) =>
+          c.message.includes('cannot be scheduled in the past'),
+        ),
+      ).toBe(true)
     })
 
     it('should warn about missing participants', () => {
       mockMeetingData.participants = []
 
-      const result = meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
+      const result =
+        meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
 
       expect(result.isValid).toBe(true) // Warning doesn't block
-      expect(result.conflicts.some(c => 
-        c.severity === ConflictSeverity.WARNING && 
-        c.message.includes('No participants specified')
-      )).toBe(true)
+      expect(
+        result.conflicts.some(
+          (c) =>
+            c.severity === ConflictSeverity.WARNING &&
+            c.message.includes('No participants specified'),
+        ),
+      ).toBe(true)
     })
   })
 
@@ -355,10 +413,13 @@ describe('MeetingTypeValidator', () => {
       const result = meetingTypeValidator.validateOnlineMeeting(mockMeetingData)
 
       expect(result.isValid).toBe(true) // Warning doesn't block
-      expect(result.conflicts.some(c => 
-        c.severity === ConflictSeverity.WARNING && 
-        c.message.includes('at least 4 characters long')
-      )).toBe(true)
+      expect(
+        result.conflicts.some(
+          (c) =>
+            c.severity === ConflictSeverity.WARNING &&
+            c.message.includes('at least 4 characters long'),
+        ),
+      ).toBe(true)
     })
 
     it('should accept valid Zoom password', () => {
@@ -366,30 +427,46 @@ describe('MeetingTypeValidator', () => {
 
       const result = meetingTypeValidator.validateOnlineMeeting(mockMeetingData)
 
-      expect(result.conflicts.some(c => c.message.includes('password'))).toBe(false)
+      expect(result.conflicts.some((c) => c.message.includes('password'))).toBe(
+        false,
+      )
     })
   })
 
   describe('Utility Methods', () => {
     it('should return validation rules for each meeting type', () => {
-      const offlineRules = meetingTypeValidator.getValidationRulesForType(MeetingType.OFFLINE)
+      const offlineRules = meetingTypeValidator.getValidationRulesForType(
+        MeetingType.OFFLINE,
+      )
       expect(offlineRules).toContain('Physical meeting room is required')
 
-      const hybridRules = meetingTypeValidator.getValidationRulesForType(MeetingType.HYBRID)
-      expect(hybridRules.some(rule => rule.includes('room is recommended'))).toBe(true)
+      const hybridRules = meetingTypeValidator.getValidationRulesForType(
+        MeetingType.HYBRID,
+      )
+      expect(
+        hybridRules.some((rule) => rule.includes('room is recommended')),
+      ).toBe(true)
 
-      const onlineRules = meetingTypeValidator.getValidationRulesForType(MeetingType.ONLINE)
+      const onlineRules = meetingTypeValidator.getValidationRulesForType(
+        MeetingType.ONLINE,
+      )
       expect(onlineRules).toContain('Zoom meeting is required')
     })
 
     it('should return required fields for each meeting type', () => {
-      const offlineFields = meetingTypeValidator.getRequiredFieldsForType(MeetingType.OFFLINE)
+      const offlineFields = meetingTypeValidator.getRequiredFieldsForType(
+        MeetingType.OFFLINE,
+      )
       expect(offlineFields).toContain('meetingRoomId')
 
-      const onlineFields = meetingTypeValidator.getRequiredFieldsForType(MeetingType.ONLINE)
+      const onlineFields = meetingTypeValidator.getRequiredFieldsForType(
+        MeetingType.ONLINE,
+      )
       expect(onlineFields).toContain('isZoomMeeting')
 
-      const hybridFields = meetingTypeValidator.getRequiredFieldsForType(MeetingType.HYBRID)
+      const hybridFields = meetingTypeValidator.getRequiredFieldsForType(
+        MeetingType.HYBRID,
+      )
       expect(hybridFields).toContain('title')
     })
 
@@ -398,12 +475,16 @@ describe('MeetingTypeValidator', () => {
       mockMeetingData.meetingRoomId = 'room-1'
 
       const result = meetingTypeValidator.validateMeetingTypeChange(
-        mockMeetingData, 
-        MeetingType.ONLINE
+        mockMeetingData,
+        MeetingType.ONLINE,
       )
 
-      expect(result.conflicts[0].message).toContain('Meeting type changed from offline to online')
-      expect(result.conflicts.some(c => c.message.includes('Zoom to be enabled'))).toBe(true)
+      expect(result.conflicts[0].message).toContain(
+        'Meeting type changed from offline to online',
+      )
+      expect(
+        result.conflicts.some((c) => c.message.includes('Zoom to be enabled')),
+      ).toBe(true)
     })
   })
 
@@ -422,10 +503,13 @@ describe('MeetingTypeValidator', () => {
       expect(result.isValid).toBe(false)
       expect(result.conflicts.length).toBeGreaterThan(0)
       // Should have validation errors for invalid date/time
-      expect(result.conflicts.some(c => 
-        c.message.includes('Meeting date is required') || 
-        c.message.includes('Valid meeting time is required')
-      )).toBe(true)
+      expect(
+        result.conflicts.some(
+          (c) =>
+            c.message.includes('Meeting date is required') ||
+            c.message.includes('Valid meeting time is required'),
+        ),
+      ).toBe(true)
     })
   })
 })

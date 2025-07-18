@@ -58,7 +58,11 @@ import { DurationPresets } from './duration-presets'
 import { ConflictIndicator } from './conflict-indicator'
 import { format } from 'date-fns'
 import { enhancedConflictDetectionClient } from '@/services/enhanced-conflict-detection-client'
-import { MeetingType, MeetingFormData, ConflictInfo } from '@/types/conflict-detection'
+import {
+  MeetingType,
+  MeetingFormData,
+  ConflictInfo,
+} from '@/types/conflict-detection'
 
 type MeetingFormProps = {
   allUsers: User[]
@@ -92,35 +96,35 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
   const defaultValues =
     isEditMode && existingMeeting
       ? {
-        title: existingMeeting.title,
-        date: new Date(existingMeeting.date),
-        time: format(new Date(existingMeeting.date), 'HH:mm'),
-        duration: existingMeeting.duration,
-        participants: Array.isArray(existingMeeting.participants)
-          ? existingMeeting.participants
-          : typeof existingMeeting.participants === 'string'
-            ? (existingMeeting.participants as string)
-              .split(',')
-              .map((p: string) => p.trim())
-            : [],
-        description: existingMeeting.description || '',
-        zoomPassword: existingMeeting.zoomPassword || 'BPKADJabar',
-        meetingType: existingMeeting.meetingType || 'internal',
-        isZoomMeeting: existingMeeting.isZoomMeeting,
-        meetingRoomId: existingMeeting.meetingRoomId,
-      }
+          title: existingMeeting.title,
+          date: new Date(existingMeeting.date),
+          time: format(new Date(existingMeeting.date), 'HH:mm'),
+          duration: existingMeeting.duration,
+          participants: Array.isArray(existingMeeting.participants)
+            ? existingMeeting.participants
+            : typeof existingMeeting.participants === 'string'
+              ? (existingMeeting.participants as string)
+                  .split(',')
+                  .map((p: string) => p.trim())
+              : [],
+          description: existingMeeting.description || '',
+          zoomPassword: existingMeeting.zoomPassword || 'BPKADJabar',
+          meetingType: existingMeeting.meetingType || 'internal',
+          isZoomMeeting: existingMeeting.isZoomMeeting,
+          meetingRoomId: existingMeeting.meetingRoomId,
+        }
       : {
-        title: '',
-        date: new Date(),
-        time: format(new Date(), 'HH:mm'),
-        duration: 30,
-        participants: [],
-        description: '',
-        zoomPassword: 'BPKADJabar',
-        meetingType: 'internal',
-        isZoomMeeting: true,
-        meetingRoomId: null,
-      }
+          title: '',
+          date: new Date(),
+          time: format(new Date(), 'HH:mm'),
+          duration: 30,
+          participants: [],
+          description: '',
+          zoomPassword: 'BPKADJabar',
+          meetingType: 'internal',
+          isZoomMeeting: true,
+          meetingRoomId: null,
+        }
 
   const form = useForm<z.infer<typeof meetingSchema>>({
     resolver: zodResolver(meetingSchema) as Resolver<
@@ -145,8 +149,15 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
   const watchedMeetingRoomId = form.watch('meetingRoomId')
 
   // Check completion status for each section
-  const isCoreDetailsComplete = !!(watchedTitle && watchedDate && watchedTime && watchedDuration)
-  const isTypeParticipantsComplete = !!(watchedMeetingType && watchedParticipants?.length > 0)
+  const isCoreDetailsComplete = !!(
+    watchedTitle &&
+    watchedDate &&
+    watchedTime &&
+    watchedDuration
+  )
+  const isTypeParticipantsComplete = !!(
+    watchedMeetingType && watchedParticipants?.length > 0
+  )
   const isLocationDetailsComplete = true // Optional section, always considered complete
 
   // Enhanced conflict detection using the new service
@@ -167,7 +178,9 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
         // Determine the correct meeting type based on form state
         let determinedMeetingType: MeetingType
         if (isZoomMeeting) {
-          determinedMeetingType = watchedMeetingRoomId ? MeetingType.HYBRID : MeetingType.ONLINE
+          determinedMeetingType = watchedMeetingRoomId
+            ? MeetingType.HYBRID
+            : MeetingType.ONLINE
         } else {
           determinedMeetingType = MeetingType.OFFLINE
         }
@@ -183,16 +196,18 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
           meetingRoomId: watchedMeetingRoomId || undefined,
           participants: watchedParticipants || [],
           description: form.getValues('description') || undefined,
-          zoomPassword: form.getValues('zoomPassword') || undefined
+          zoomPassword: form.getValues('zoomPassword') || undefined,
         }
 
         // Use enhanced conflict detection service
-        const conflictResult = await enhancedConflictDetectionClient.validateMeeting(meetingFormData)
-        
+        const conflictResult =
+          await enhancedConflictDetectionClient.validateMeeting(meetingFormData)
+
         // Only update conflicts if they've actually changed
-        const conflictsChanged = conflictResult.conflicts.length !== conflicts.length || 
+        const conflictsChanged =
+          conflictResult.conflicts.length !== conflicts.length ||
           JSON.stringify(conflictResult.conflicts) !== JSON.stringify(conflicts)
-        
+
         if (conflictsChanged) {
           setIsConflictAnimating(true)
           setTimeout(() => setIsConflictAnimating(false), 300)
@@ -208,14 +223,14 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
     const timeoutId = setTimeout(validateMeetingData, 500)
     return () => clearTimeout(timeoutId)
   }, [
-    watchedDate, 
-    watchedTime, 
-    watchedDuration, 
+    watchedDate,
+    watchedTime,
+    watchedDuration,
     watchedTitle,
     isZoomMeeting,
     watchedMeetingRoomId,
     watchedParticipants,
-    form
+    form,
   ])
 
   // Handle suggestion clicks
@@ -230,7 +245,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
   }
 
   // Check if there are blocking conflicts
-  const hasBlockingConflicts = conflicts.some(c => c.severity === 'error')
+  const hasBlockingConflicts = conflicts.some((c) => c.severity === 'error')
 
   async function onSubmit(values: z.infer<typeof meetingSchema>) {
     setIsLoading(true)
@@ -306,14 +321,17 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="enhanced-meeting-form">
-        <Card className="mx-auto max-w-4xl border-0 shadow-none md:border md:shadow-sm transition-all duration-300 hover:shadow-md">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="enhanced-meeting-form"
+      >
+        <Card className="mx-auto max-w-4xl border-0 shadow-none transition-all duration-300 hover:shadow-md md:border md:shadow-sm">
           <CardHeader className="space-y-4 pb-8">
             <div className="space-y-2">
-              <CardTitle className="text-2xl font-semibold tracking-tight leading-tight">
+              <CardTitle className="text-2xl leading-tight font-semibold tracking-tight">
                 {isEditMode ? 'Edit Meeting' : 'Create New Meeting'}
               </CardTitle>
-              <CardDescription className="text-base leading-relaxed text-muted-foreground">
+              <CardDescription className="text-muted-foreground text-base leading-relaxed">
                 {isEditMode
                   ? 'Update the details for your meeting.'
                   : 'Fill in the details to schedule your next meeting.'}
@@ -336,13 +354,13 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                     name="title"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
-                        <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        <FormLabel className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                           Meeting Title
                         </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="e.g., Quarterly Review"
-                            className="h-11 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                            className="focus:ring-primary/20 focus:border-primary h-11 transition-all duration-200 focus:ring-2"
                             {...field}
                           />
                         </FormControl>
@@ -350,20 +368,22 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-3 md:gap-8 mt-8">
+                  <div className="mt-8 grid grid-cols-1 items-start gap-6 md:grid-cols-3 md:gap-8">
                     <FormField
                       control={form.control}
                       name="date"
                       render={({ field }) => (
                         <FormItem className="flex flex-col space-y-3">
-                          <FormLabel className="text-sm font-medium leading-none">Date</FormLabel>
+                          <FormLabel className="text-sm leading-none font-medium">
+                            Date
+                          </FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
                                 <Button
                                   variant={'outline'}
                                   className={cn(
-                                    'h-11 pl-3 text-left font-normal transition-all duration-200 hover:bg-accent/50 focus:ring-2 focus:ring-primary/20 focus:border-primary',
+                                    'hover:bg-accent/50 focus:ring-primary/20 focus:border-primary h-11 pl-3 text-left font-normal transition-all duration-200 focus:ring-2',
                                     !field.value && 'text-muted-foreground',
                                   )}
                                 >
@@ -377,7 +397,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                               </FormControl>
                             </PopoverTrigger>
                             <PopoverContent
-                              className="w-auto p-0 shadow-lg border-border/50"
+                              className="border-border/50 w-auto p-0 shadow-lg"
                               align="start"
                             >
                               <Calendar
@@ -404,11 +424,13 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                       name="time"
                       render={({ field }) => (
                         <FormItem className="flex flex-col space-y-3">
-                          <FormLabel className="text-sm font-medium leading-none">Time (24h)</FormLabel>
+                          <FormLabel className="text-sm leading-none font-medium">
+                            Time (24h)
+                          </FormLabel>
                           <FormControl>
                             <Input
                               type="time"
-                              className="h-11 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                              className="focus:ring-primary/20 focus:border-primary h-11 transition-all duration-200 focus:ring-2"
                               {...field}
                             />
                           </FormControl>
@@ -421,7 +443,9 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                       name="duration"
                       render={({ field }) => (
                         <FormItem className="flex flex-col space-y-3">
-                          <FormLabel className="text-sm font-medium leading-none">Duration (min)</FormLabel>
+                          <FormLabel className="text-sm leading-none font-medium">
+                            Duration (min)
+                          </FormLabel>
                           <div className="space-y-3">
                             <DurationPresets
                               value={field.value}
@@ -436,7 +460,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                               <Input
                                 type="number"
                                 placeholder="30"
-                                className="h-11 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                className="focus:ring-primary/20 focus:border-primary h-11 transition-all duration-200 focus:ring-2"
                                 {...field}
                                 onChange={(e) => {
                                   const value = parseInt(e.target.value) || 0
@@ -456,11 +480,13 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
 
               {/* Enhanced Conflict Indicator */}
               {conflicts.length > 0 && (
-                <div className={cn(
-                  "transition-all duration-300 ease-in-out",
-                  isConflictAnimating && "animate-pulse"
-                )}>
-                  <ConflictIndicator 
+                <div
+                  className={cn(
+                    'transition-all duration-300 ease-in-out',
+                    isConflictAnimating && 'animate-pulse',
+                  )}
+                >
+                  <ConflictIndicator
                     conflicts={conflicts}
                     onSuggestionClick={handleSuggestionClick}
                     className="mb-6"
@@ -468,7 +494,10 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                 </div>
               )}
 
-              <AccordionItem value="item-2" isCompleted={isTypeParticipantsComplete}>
+              <AccordionItem
+                value="item-2"
+                isCompleted={isTypeParticipantsComplete}
+              >
                 <AccordionTrigger isCompleted={isTypeParticipantsComplete}>
                   <h3 className="text-lg font-medium">Type & Participants</h3>
                 </AccordionTrigger>
@@ -478,39 +507,53 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                     name="meetingType"
                     render={({ field }) => (
                       <FormItem className="space-y-4">
-                        <FormLabel className="text-sm font-medium leading-none">Meeting Type</FormLabel>
+                        <FormLabel className="text-sm leading-none font-medium">
+                          Meeting Type
+                        </FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
                             defaultValue={field.value}
                             className="flex flex-col space-y-3"
                           >
-                            <FormItem className="flex items-center space-y-0 space-x-3 p-3 rounded-lg border border-border/50 transition-all duration-200 hover:border-border hover:bg-accent/30">
+                            <FormItem className="border-border/50 hover:border-border hover:bg-accent/30 flex items-center space-y-0 space-x-3 rounded-lg border p-3 transition-all duration-200">
                               <FormControl>
-                                <RadioGroupItem value="internal" className="transition-all duration-200" />
+                                <RadioGroupItem
+                                  value="internal"
+                                  className="transition-all duration-200"
+                                />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel className="font-medium cursor-pointer">
+                                <FormLabel className="cursor-pointer font-medium">
                                   Internal
                                 </FormLabel>
-                                <p className="text-xs text-muted-foreground">Private meeting for team members</p>
+                                <p className="text-muted-foreground text-xs">
+                                  Private meeting for team members
+                                </p>
                               </div>
                             </FormItem>
-                            <FormItem className="flex items-center space-y-0 space-x-3 p-3 rounded-lg border border-border/50 transition-all duration-200 hover:border-border hover:bg-accent/30">
+                            <FormItem className="border-border/50 hover:border-border hover:bg-accent/30 flex items-center space-y-0 space-x-3 rounded-lg border p-3 transition-all duration-200">
                               <FormControl>
-                                <RadioGroupItem value="external" className="transition-all duration-200" />
+                                <RadioGroupItem
+                                  value="external"
+                                  className="transition-all duration-200"
+                                />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel className="font-medium cursor-pointer">
+                                <FormLabel className="cursor-pointer font-medium">
                                   Public External
                                 </FormLabel>
-                                <p className="text-xs text-muted-foreground">Visible on public calendar with meeting details</p>
+                                <p className="text-muted-foreground text-xs">
+                                  Visible on public calendar with meeting
+                                  details
+                                </p>
                               </div>
                             </FormItem>
                           </RadioGroup>
                         </FormControl>
                         <FormDescription className="text-xs leading-relaxed">
-                          Internal meetings will not show Meeting ID on the public calendar.
+                          Internal meetings will not show Meeting ID on the
+                          public calendar.
                         </FormDescription>
                         <FormMessage className="text-xs" />
                       </FormItem>
@@ -521,9 +564,11 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                     name="participants"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
-                        <FormLabel className="text-sm font-medium leading-none">Participants</FormLabel>
+                        <FormLabel className="text-sm leading-none font-medium">
+                          Participants
+                        </FormLabel>
                         <FormControl>
-                          <div className="transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/20 rounded-md">
+                          <div className="focus-within:ring-primary/20 rounded-md transition-all duration-200 focus-within:ring-2">
                             <UserCombobox
                               allUsers={allUsers.filter(
                                 (u) => u.email !== user?.email,
@@ -543,7 +588,10 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-3" isCompleted={isLocationDetailsComplete}>
+              <AccordionItem
+                value="item-3"
+                isCompleted={isLocationDetailsComplete}
+              >
                 <AccordionTrigger isCompleted={isLocationDetailsComplete}>
                   <h3 className="text-lg font-medium">
                     Location & Details (Optional)
@@ -554,9 +602,11 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                     control={form.control}
                     name="isZoomMeeting"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border/50 p-5 transition-all duration-200 hover:border-border hover:bg-accent/20">
+                      <FormItem className="border-border/50 hover:border-border hover:bg-accent/20 flex flex-row items-center justify-between rounded-lg border p-5 transition-all duration-200">
                         <div className="space-y-1">
-                          <FormLabel className="text-sm font-medium leading-none">Create Zoom Meeting</FormLabel>
+                          <FormLabel className="text-sm leading-none font-medium">
+                            Create Zoom Meeting
+                          </FormLabel>
                           <FormDescription className="text-xs leading-relaxed">
                             A Zoom meeting link will be generated automatically.
                           </FormDescription>
@@ -571,25 +621,31 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                       </FormItem>
                     )}
                   />
-                  <div className="space-y-6 mt-8">
+                  <div className="mt-8 space-y-6">
                     <FormField
                       control={form.control}
                       name="meetingRoomId"
                       render={({ field }) => (
                         <FormItem className="space-y-3">
-                          <FormLabel className="text-sm font-medium leading-none">Meeting Room</FormLabel>
+                          <FormLabel className="text-sm leading-none font-medium">
+                            Meeting Room
+                          </FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value ?? undefined}
                           >
                             <FormControl>
-                              <SelectTrigger className="h-11 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                              <SelectTrigger className="focus:ring-primary/20 focus:border-primary h-11 transition-all duration-200 focus:ring-2">
                                 <SelectValue placeholder="Select a meeting room" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="shadow-lg border-border/50">
+                            <SelectContent className="border-border/50 shadow-lg">
                               {meetingRooms.map((room) => (
-                                <SelectItem key={room.id} value={room.id} className="transition-colors duration-150">
+                                <SelectItem
+                                  key={room.id}
+                                  value={room.id}
+                                  className="transition-colors duration-150"
+                                >
                                   {room.name}
                                 </SelectItem>
                               ))}
@@ -607,11 +663,13 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                       name="description"
                       render={({ field }) => (
                         <FormItem className="space-y-3">
-                          <FormLabel className="text-sm font-medium leading-none">Description</FormLabel>
+                          <FormLabel className="text-sm leading-none font-medium">
+                            Description
+                          </FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder="Agenda, notes, and links..."
-                              className="min-h-[100px] resize-none transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                              className="focus:ring-primary/20 focus:border-primary min-h-[100px] resize-none transition-all duration-200 focus:ring-2"
                               {...field}
                             />
                           </FormControl>
@@ -624,12 +682,14 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                         control={form.control}
                         name="zoomPassword"
                         render={({ field }) => (
-                          <FormItem className="space-y-3 animate-in slide-in-from-top-2 duration-300">
-                            <FormLabel className="text-sm font-medium leading-none">Zoom Meeting Password</FormLabel>
+                          <FormItem className="animate-in slide-in-from-top-2 space-y-3 duration-300">
+                            <FormLabel className="text-sm leading-none font-medium">
+                              Zoom Meeting Password
+                            </FormLabel>
                             <FormControl>
                               <Input
                                 placeholder="Enter password for Zoom meeting"
-                                className="h-11 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                className="focus:ring-primary/20 focus:border-primary h-11 transition-all duration-200 focus:ring-2"
                                 {...field}
                                 value={field.value || ''}
                               />
@@ -647,12 +707,12 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
               </AccordionItem>
             </Accordion>
           </CardContent>
-          <CardFooter className="flex justify-end gap-4 pt-8 border-t border-border/30 bg-card/30 rounded-b-lg">
+          <CardFooter className="border-border/30 bg-card/30 flex justify-end gap-4 rounded-b-lg border-t pt-8">
             <Button
               type="button"
               variant="outline"
               onClick={() => router.back()}
-              className="h-11 px-6 transition-all duration-200 hover:bg-accent/50 hover:border-border focus:ring-2 focus:ring-primary/20"
+              className="hover:bg-accent/50 hover:border-border focus:ring-primary/20 h-11 px-6 transition-all duration-200 focus:ring-2"
             >
               Cancel
             </Button>
@@ -660,9 +720,9 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
               type="submit"
               disabled={isLoading || hasBlockingConflicts}
               className={cn(
-                "h-11 px-6 transition-all duration-200 focus:ring-2 focus:ring-primary/20",
-                hasBlockingConflicts && "opacity-50 cursor-not-allowed",
-                !hasBlockingConflicts && "hover:shadow-md active:scale-[0.98]"
+                'focus:ring-primary/20 h-11 px-6 transition-all duration-200 focus:ring-2',
+                hasBlockingConflicts && 'cursor-not-allowed opacity-50',
+                !hasBlockingConflicts && 'hover:shadow-md active:scale-[0.98]',
               )}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -3,7 +3,11 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { MeetingType, ConflictType, ConflictSeverity } from '@/types/conflict-detection'
+import {
+  MeetingType,
+  ConflictType,
+  ConflictSeverity,
+} from '@/types/conflict-detection'
 
 // Mock Prisma using vi.hoisted to avoid hoisting issues
 const mockPrisma = vi.hoisted(() => ({
@@ -21,7 +25,9 @@ vi.mock('@/lib/prisma', () => ({
 }))
 
 // Import after mocking
-const { RoomAvailabilityServiceImpl } = await import('../room-availability-service')
+const { RoomAvailabilityServiceImpl } = await import(
+  '../room-availability-service'
+)
 
 describe('RoomAvailabilityService', () => {
   let service: RoomAvailabilityServiceImpl
@@ -50,7 +56,11 @@ describe('RoomAvailabilityService', () => {
 
       mockPrisma.meeting.findMany.mockResolvedValue([])
 
-      const result = await service.checkRoomAvailability(roomId, startTime, endTime)
+      const result = await service.checkRoomAvailability(
+        roomId,
+        startTime,
+        endTime,
+      )
 
       expect(result.isAvailable).toBe(true)
       expect(result.conflictingMeetings).toHaveLength(0)
@@ -85,7 +95,11 @@ describe('RoomAvailabilityService', () => {
 
       mockPrisma.meeting.findMany.mockResolvedValue([conflictingMeeting])
 
-      const result = await service.checkRoomAvailability(roomId, startTime, endTime)
+      const result = await service.checkRoomAvailability(
+        roomId,
+        startTime,
+        endTime,
+      )
 
       expect(result.isAvailable).toBe(false)
       expect(result.conflictingMeetings).toHaveLength(1)
@@ -107,7 +121,12 @@ describe('RoomAvailabilityService', () => {
 
       mockPrisma.meeting.findMany.mockResolvedValue([])
 
-      await service.checkRoomAvailability(roomId, startTime, endTime, excludeMeetingId)
+      await service.checkRoomAvailability(
+        roomId,
+        startTime,
+        endTime,
+        excludeMeetingId,
+      )
 
       expect(mockPrisma.meeting.findMany).toHaveBeenCalledWith({
         where: expect.objectContaining({
@@ -125,7 +144,7 @@ describe('RoomAvailabilityService', () => {
       mockPrisma.meetingRoom.findUnique.mockResolvedValue(null)
 
       await expect(
-        service.checkRoomAvailability(roomId, startTime, endTime)
+        service.checkRoomAvailability(roomId, startTime, endTime),
       ).rejects.toThrow('Room with ID non-existent-room not found')
     })
   })
@@ -180,7 +199,7 @@ describe('RoomAvailabilityService', () => {
       ]
 
       mockPrisma.meetingRoom.findMany.mockResolvedValue(mockRooms)
-      
+
       // Mock conflicts for room-1 only
       mockPrisma.meeting.findMany
         .mockResolvedValueOnce([
@@ -214,7 +233,10 @@ describe('RoomAvailabilityService', () => {
     })
 
     it('should not require room for offline meetings when room is provided', () => {
-      const conflicts = service.validateRoomRequirement(MeetingType.OFFLINE, 'room-1')
+      const conflicts = service.validateRoomRequirement(
+        MeetingType.OFFLINE,
+        'room-1',
+      )
 
       expect(conflicts).toHaveLength(0)
     })
@@ -269,7 +291,7 @@ describe('RoomAvailabilityService', () => {
         startTime,
         endTime,
         participantCount,
-        preferredLocation
+        preferredLocation,
       )
 
       // Should include all available rooms but prioritize room-2 (perfect fit + preferred location)
@@ -297,7 +319,11 @@ describe('RoomAvailabilityService', () => {
 
       mockPrisma.meeting.findMany.mockResolvedValue(mockMeetings)
 
-      const result = await service.getRoomUtilization(roomId, startDate, endDate)
+      const result = await service.getRoomUtilization(
+        roomId,
+        startDate,
+        endDate,
+      )
 
       expect(result.bookedHours).toBe(3) // 1 + 2 hours
       expect(result.meetingCount).toBe(2)

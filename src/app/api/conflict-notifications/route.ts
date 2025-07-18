@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
     const { action, notificationId } = await request.json()
 
     if (action === 'mark_read' && notificationId) {
-      notifications = notifications.map(n => 
-        n.id === notificationId ? { ...n, isRead: true } : n
+      notifications = notifications.map((n) =>
+        n.id === notificationId ? { ...n, isRead: true } : n,
       )
       return NextResponse.json({ success: true })
     }
@@ -28,16 +28,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true })
     }
 
-    return NextResponse.json({
-      success: false,
-      error: 'Invalid action'
-    }, { status: 400 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Invalid action',
+      },
+      { status: 400 },
+    )
   } catch (error) {
     console.error('Error handling notification action:', error)
-    
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error'
-    }, { status: 500 })
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+      },
+      { status: 500 },
+    )
   }
 }

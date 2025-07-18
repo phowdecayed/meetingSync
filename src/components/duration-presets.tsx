@@ -16,7 +16,11 @@ const DURATION_PRESETS = [
   { label: '2hr', value: 120 },
 ]
 
-export function DurationPresets({ value, onChange, className }: DurationPresetsProps) {
+export function DurationPresets({
+  value,
+  onChange,
+  className,
+}: DurationPresetsProps) {
   return (
     <div className={cn('flex flex-wrap gap-2', className)}>
       {DURATION_PRESETS.map((preset) => (
@@ -28,8 +32,8 @@ export function DurationPresets({ value, onChange, className }: DurationPresetsP
           onClick={() => onChange(preset.value)}
           className={cn(
             'transition-all duration-200 hover:scale-105',
-            'text-xs font-medium px-3 py-1.5 h-auto',
-            value === preset.value && 'shadow-md ring-2 ring-primary/20'
+            'h-auto px-3 py-1.5 text-xs font-medium',
+            value === preset.value && 'ring-primary/20 shadow-md ring-2',
           )}
         >
           {preset.label}

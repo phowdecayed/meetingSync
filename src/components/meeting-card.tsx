@@ -37,56 +37,62 @@ const MeetingCard = memo(function MeetingCard({
   const [isExpanded, setIsExpanded] = useState(false)
 
   // Memoize expensive calculations
-  const maxDescriptionLength = useMemo(() => 
-    compact ? 60 : getMaxDescriptionLength('desktop'), 
-    [compact]
+  const maxDescriptionLength = useMemo(
+    () => (compact ? 60 : getMaxDescriptionLength('desktop')),
+    [compact],
   )
-  
-  const shouldTruncate = useMemo(() =>
-    meeting.description && meeting.description.length > maxDescriptionLength,
-    [meeting.description, maxDescriptionLength]
+
+  const shouldTruncate = useMemo(
+    () =>
+      meeting.description && meeting.description.length > maxDescriptionLength,
+    [meeting.description, maxDescriptionLength],
   )
-  
-  const displayDescription = useMemo(() =>
-    shouldTruncate && !isExpanded
-      ? truncateText(meeting.description!, maxDescriptionLength)
-      : meeting.description,
-    [shouldTruncate, isExpanded, meeting.description, maxDescriptionLength]
+
+  const displayDescription = useMemo(
+    () =>
+      shouldTruncate && !isExpanded
+        ? truncateText(meeting.description!, maxDescriptionLength)
+        : meeting.description,
+    [shouldTruncate, isExpanded, meeting.description, maxDescriptionLength],
   )
 
   // Memoize color classes based on meeting status
-  const colorClasses = useMemo(() => getMeetingColorClasses(meeting), [meeting.status])
+  const colorClasses = useMemo(
+    () => getMeetingColorClasses(meeting),
+    [meeting.status],
+  )
 
   // Memoize formatted values
-  const duration = useMemo(() => 
-    meeting.duration ? formatDuration(meeting.duration) : null, 
-    [meeting.duration]
+  const duration = useMemo(
+    () => (meeting.duration ? formatDuration(meeting.duration) : null),
+    [meeting.duration],
   )
-  
-  const timeDisplay = useMemo(() => 
-    formatMeetingTime(meeting.start, meeting.end), 
-    [meeting.start, meeting.end]
+
+  const timeDisplay = useMemo(
+    () => formatMeetingTime(meeting.start, meeting.end),
+    [meeting.start, meeting.end],
   )
-  
-  const dateDisplay = useMemo(() => 
-    showDate ? formatMeetingDate(meeting.start) : null, 
-    [showDate, meeting.start]
+
+  const dateDisplay = useMemo(
+    () => (showDate ? formatMeetingDate(meeting.start) : null),
+    [showDate, meeting.start],
   )
-  
-  const timeRemaining = useMemo(() => 
-    getTimeRemainingText(meeting.start, meeting.end), 
-    [meeting.start, meeting.end]
+
+  const timeRemaining = useMemo(
+    () => getTimeRemainingText(meeting.start, meeting.end),
+    [meeting.start, meeting.end],
   )
 
   // Memoize card size classes
-  const cardSizeClasses = useMemo(() => cn(
-    'transition-all duration-300 ease-in-out hover:shadow-lg',
-    {
-      'h-auto min-h-[120px]': compact || viewMode === 'compact',
-      'h-auto min-h-[160px]': !compact && viewMode === 'grid',
-      'h-auto min-h-[100px]': viewMode === 'list',
-    },
-  ), [compact, viewMode])
+  const cardSizeClasses = useMemo(
+    () =>
+      cn('transition-all duration-300 ease-in-out hover:shadow-lg', {
+        'h-auto min-h-[120px]': compact || viewMode === 'compact',
+        'h-auto min-h-[160px]': !compact && viewMode === 'grid',
+        'h-auto min-h-[100px]': viewMode === 'list',
+      }),
+    [compact, viewMode],
+  )
 
   const handleToggleExpanded = useCallback(() => {
     setIsExpanded(!isExpanded)

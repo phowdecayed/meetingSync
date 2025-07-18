@@ -17,8 +17,8 @@ vi.mock('../zoom-account-service', () => ({
         maxConcurrentMeetings: 2,
         maxParticipants: 1000,
         currentActiveMeetings: 0,
-        scheduledMeetings: []
-      }
+        scheduledMeetings: [],
+      },
     ]),
     clearCache: vi.fn(),
     getAccountLoadBalancing: vi.fn().mockResolvedValue([
@@ -26,10 +26,10 @@ vi.mock('../zoom-account-service', () => ({
         accountId: 'account-1',
         currentLoad: 0,
         maxCapacity: 2,
-        utilizationPercentage: 0
-      }
-    ])
-  }
+        utilizationPercentage: 0,
+      },
+    ]),
+  },
 }))
 
 vi.mock('../enhanced-conflict-detection', () => ({
@@ -39,17 +39,17 @@ vi.mock('../enhanced-conflict-detection', () => ({
     validateMeeting: vi.fn().mockResolvedValue({
       conflicts: [],
       canSubmit: true,
-      suggestions: []
-    })
-  }
+      suggestions: [],
+    }),
+  },
 }))
 
 vi.mock('@/lib/prisma', () => ({
   default: {
     meeting: {
-      findMany: vi.fn().mockResolvedValue([])
-    }
-  }
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+  },
 }))
 
 describe('SettingsIntegrationService', () => {
@@ -63,12 +63,16 @@ describe('SettingsIntegrationService', () => {
 
   describe('initialization', () => {
     it('should initialize successfully', async () => {
-      await expect(settingsIntegrationService.initialize()).resolves.not.toThrow()
+      await expect(
+        settingsIntegrationService.initialize(),
+      ).resolves.not.toThrow()
     })
 
     it('should not initialize twice', async () => {
       await settingsIntegrationService.initialize()
-      await expect(settingsIntegrationService.initialize()).resolves.not.toThrow()
+      await expect(
+        settingsIntegrationService.initialize(),
+      ).resolves.not.toThrow()
     })
   })
 
@@ -85,13 +89,13 @@ describe('SettingsIntegrationService', () => {
       await settingsIntegrationService.handleZoomAccountChange(
         ZoomAccountChangeType.ADDED,
         'new-account-id',
-        { clientId: 'test-client', accountId: 'test-account' }
+        { clientId: 'test-client', accountId: 'test-account' },
       )
 
       const event = await eventPromise
       expect(event).toMatchObject({
         type: 'capacity_updated',
-        totalAccounts: expect.any(Number)
+        totalAccounts: expect.any(Number),
       })
     })
 
@@ -102,13 +106,13 @@ describe('SettingsIntegrationService', () => {
 
       await settingsIntegrationService.handleZoomAccountChange(
         ZoomAccountChangeType.REMOVED,
-        'removed-account-id'
+        'removed-account-id',
       )
 
       const event = await eventPromise
       expect(event).toMatchObject({
         type: 'capacity_updated',
-        totalAccounts: expect.any(Number)
+        totalAccounts: expect.any(Number),
       })
     })
   })
@@ -120,28 +124,30 @@ describe('SettingsIntegrationService', () => {
 
     it('should return capacity status', async () => {
       const status = await settingsIntegrationService.getCapacityStatus()
-      
+
       expect(status).toMatchObject({
         totalAccounts: expect.any(Number),
         totalCapacity: expect.any(Number),
         currentUsage: expect.any(Number),
         availableSlots: expect.any(Number),
-        utilizationPercentage: expect.any(Number)
+        utilizationPercentage: expect.any(Number),
       })
     })
 
     it('should handle errors gracefully', async () => {
       const { zoomAccountService } = await import('../zoom-account-service')
-      vi.mocked(zoomAccountService.getAvailableAccounts).mockRejectedValueOnce(new Error('Test error'))
+      vi.mocked(zoomAccountService.getAvailableAccounts).mockRejectedValueOnce(
+        new Error('Test error'),
+      )
 
       const status = await settingsIntegrationService.getCapacityStatus()
-      
+
       expect(status).toEqual({
         totalAccounts: 0,
         totalCapacity: 0,
         currentUsage: 0,
         availableSlots: 0,
-        utilizationPercentage: 0
+        utilizationPercentage: 0,
       })
     })
   })
@@ -175,7 +181,9 @@ describe('SettingsIntegrationService', () => {
     })
 
     it('should force refresh successfully', async () => {
-      await expect(settingsIntegrationService.forceRefresh()).resolves.not.toThrow()
+      await expect(
+        settingsIntegrationService.forceRefresh(),
+      ).resolves.not.toThrow()
     })
   })
 })
