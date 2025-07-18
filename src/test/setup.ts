@@ -1,4 +1,3 @@
-import { act } from 'react'
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
@@ -8,18 +7,15 @@ global.IntersectionObserver = class IntersectionObserver {
   rootMargin: string = '0px'
   thresholds: ReadonlyArray<number> = []
 
-  constructor(
-    callback: IntersectionObserverCallback,
-    options?: IntersectionObserverInit,
-  ) {}
+  constructor() {}
 
   disconnect() {}
-  observe(target: Element) {}
-  unobserve(target: Element) {}
+  observe() {}
+  unobserve() {}
   takeRecords(): IntersectionObserverEntry[] {
     return []
   }
-} as any
+} as typeof IntersectionObserver
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {

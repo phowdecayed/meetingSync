@@ -10,11 +10,8 @@ import {
   ConflictResult,
   ConflictInfo,
   MeetingFormData,
-  MeetingType,
   ConflictType,
   ConflictSeverity,
-  ConflictSuggestion,
-  SuggestionType,
   ConflictDetectionEvent,
   ConflictSubscription,
   ZoomAccountInfo,
@@ -116,7 +113,7 @@ export class EnhancedConflictDetectionEngineClient
    */
   subscribeToChanges(callback: (conflicts: ConflictInfo[]) => void): void {
     this.on('conflict_detected', (event: ConflictDetectionEvent) => {
-      if (event.payload && event.payload.conflicts) {
+      if (event.type === 'conflict_detected') {
         callback(event.payload.conflicts)
       }
     })

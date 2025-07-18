@@ -20,7 +20,6 @@ import type {
   LayoutConfig,
   LoadingState,
   CalendarError,
-  PerformanceMetrics,
 } from '@/types/public-calendar'
 
 // Memoized error display component
@@ -101,10 +100,7 @@ const PublicCalendar = memo(function PublicCalendar() {
   const [announceMessage, setAnnounceMessage] = useState('')
 
   // Animation state
-  const [isAnimating, setIsAnimating] = useState(false)
-  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(
-    null,
-  )
+  const [isAnimating] = useState(false)
 
   // Accessibility refs
   const skipLinkRef = useRef<HTMLAnchorElement>(null)
@@ -165,32 +161,6 @@ const PublicCalendar = memo(function PublicCalendar() {
 
   // Layout configuration
   const [layoutConfig] = useState<LayoutConfig>(defaultLayoutConfig)
-
-  // Performance monitoring
-  const performanceRef = useRef<PerformanceMetrics>({
-    renderTime: 0,
-    filterTime: 0,
-    dataSize: 0,
-    lastUpdate: Date.now(),
-  })
-
-  // Enhanced date navigation with animations
-  const handleDateChangeWithAnimation = useCallback(
-    (newDate: Date, direction: 'left' | 'right') => {
-      setIsAnimating(true)
-      setSlideDirection(direction)
-
-      // Trigger the date change after a brief delay for animation
-      setTimeout(() => {
-        setCurrentDate(newDate)
-        setTimeout(() => {
-          setIsAnimating(false)
-          setSlideDirection(null)
-        }, 300)
-      }, 150)
-    },
-    [],
-  )
 
   // Data fetching
   const fetchMeetings = useCallback(async (showLoader: boolean = true) => {
@@ -418,7 +388,6 @@ const PublicCalendar = memo(function PublicCalendar() {
           <aside
             className="bg-background/50 hidden w-80 flex-shrink-0 border-r backdrop-blur-sm lg:block"
             aria-label="Calendar filters and search"
-            role="complementary"
           >
             <div
               className="h-full overflow-y-auto p-4"
@@ -471,7 +440,6 @@ const PublicCalendar = memo(function PublicCalendar() {
               {/* Calendar Grid */}
               <section
                 aria-label={`Calendar showing ${filteredMeetings.length} meetings`}
-                role="region"
               >
                 <CalendarGrid
                   meetings={filteredMeetings}

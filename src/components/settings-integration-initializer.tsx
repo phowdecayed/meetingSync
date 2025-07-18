@@ -17,7 +17,6 @@ import { useToast } from '@/hooks/use-toast'
 export function SettingsIntegrationInitializer() {
   const { toast } = useToast()
   const [isInitialized, setIsInitialized] = useState(false)
-  const [notifications, setNotifications] = useState<ConflictNotification[]>([])
 
   useEffect(() => {
     let mounted = true
@@ -33,8 +32,6 @@ export function SettingsIntegrationInitializer() {
         settingsIntegrationServiceClient.subscribeToConflictNotifications(
           (notification) => {
             if (!mounted) return
-
-            setNotifications((prev) => [notification, ...prev.slice(0, 9)]) // Keep last 10 notifications
 
             // Show toast notification for new conflicts
             toast({
@@ -153,14 +150,13 @@ export function useConflictNotifications() {
     fetchNotifications()
 
     // Subscribe to real-time updates
-    const unsubscribe =
-      settingsIntegrationServiceClient.subscribeToConflictNotifications(
-        (notification) => {
-          if (mounted) {
-            setNotifications((prev) => [notification, ...prev])
-          }
-        },
-      )
+    settingsIntegrationServiceClient.subscribeToConflictNotifications(
+      (notification) => {
+        if (mounted) {
+          setNotifications((prev) => [notification, ...prev])
+        }
+      },
+    )
 
     return () => {
       mounted = false
@@ -257,13 +253,12 @@ export function useCapacityStatus() {
     fetchCapacityStatus()
 
     // Subscribe to capacity updates
-    const unsubscribe =
-      settingsIntegrationServiceClient.subscribeToCapacityUpdates((event) => {
-        if (mounted) {
-          // Refresh capacity status when updates occur
-          fetchCapacityStatus()
-        }
-      })
+    settingsIntegrationServiceClient.subscribeToCapacityUpdates(() => {
+      if (mounted) {
+        // Refresh capacity status when updates occur
+        fetchCapacityStatus()
+      }
+    })
 
     // Refresh every 60 seconds
     const interval = setInterval(fetchCapacityStatus, 60000)

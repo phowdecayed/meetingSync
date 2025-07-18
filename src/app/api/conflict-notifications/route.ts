@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { ConflictNotification } from '@/types/conflict-detection'
 
 // In-memory storage for notifications (in production, you'd use a database or Redis)
-let notifications: any[] = []
+let notifications: ConflictNotification[] = []
 
 export async function GET() {
   try {

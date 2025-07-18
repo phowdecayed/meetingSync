@@ -9,11 +9,13 @@ import { EventEmitter } from 'events'
 import { zoomAccountServiceClient } from './zoom-account-service-client'
 import { enhancedConflictDetection } from './enhanced-conflict-detection'
 import {
+  MeetingFormData,
   SettingsIntegrationService,
   SettingsChangeEvent,
   ConflictNotification,
   CapacityUpdateEvent,
   ZoomAccountChangeType,
+  MeetingType,
 } from '@/types/conflict-detection'
 
 export class SettingsIntegrationServiceImpl
@@ -77,7 +79,7 @@ export class SettingsIntegrationServiceImpl
   async handleZoomAccountChange(
     changeType: ZoomAccountChangeType,
     accountId: string,
-    accountData?: any,
+    accountData?: Record<string, unknown>,
   ): Promise<void> {
     try {
       // Clear zoom account service cache to force refresh
@@ -290,7 +292,7 @@ export class SettingsIntegrationServiceImpl
           await this.handleZoomAccountChange(
             ZoomAccountChangeType.UPDATED,
             'system-detected',
-            null,
+            undefined,
           )
         }
       } catch (error) {
@@ -365,7 +367,20 @@ export class SettingsIntegrationServiceImpl
   /**
    * Get upcoming Zoom meetings (next 30 days)
    */
-  private async getUpcomingZoomMeetings(): Promise<any[]> {
+  private async getUpcomingZoomMeetings(): Promise<
+    {
+      id: string
+      title: string
+      date: Date
+      duration: number
+      participants: string
+      meetingType: string
+      isZoomMeeting: boolean
+      meetingRoomId: string | null
+      description: string | null
+      zoomPassword: string | null
+    }[]
+  > {
     try {
       // Use Prisma directly since this is a server-side service
       const prisma = (await import('@/lib/prisma')).default
@@ -407,20 +422,30 @@ export class SettingsIntegrationServiceImpl
   /**
    * Convert meeting data to MeetingFormData format
    */
-  private convertMeetingToFormData(meeting: any): any {
+  private convertMeetingToFormData(meeting: {
+    title: string
+    date: Date
+    duration: number
+    meetingType: string
+    isZoomMeeting: boolean
+    meetingRoomId: string | null
+    participants: string | string[]
+    description: string | null
+    zoomPassword: string | null
+  }): MeetingFormData {
     return {
       title: meeting.title,
       date: new Date(meeting.date),
       time: new Date(meeting.date).toTimeString().slice(0, 5),
       duration: meeting.duration,
-      meetingType: meeting.meetingType || 'hybrid',
+      meetingType: (meeting.meetingType as MeetingType) || MeetingType.HYBRID,
       isZoomMeeting: meeting.isZoomMeeting,
-      meetingRoomId: meeting.meetingRoomId,
+      meetingRoomId: meeting.meetingRoomId ?? undefined,
       participants: Array.isArray(meeting.participants)
         ? meeting.participants
         : meeting.participants?.split(',').map((p: string) => p.trim()) || [],
-      description: meeting.description,
-      zoomPassword: meeting.zoomPassword,
+      description: meeting.description ?? undefined,
+      zoomPassword: meeting.zoomPassword ?? undefined,
     }
   }
 

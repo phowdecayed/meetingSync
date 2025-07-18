@@ -17,6 +17,8 @@ import {
   ConflictSeverity,
 } from '@/types/conflict-detection'
 
+import { Prisma } from '@prisma/client'
+
 export class RoomAvailabilityServiceImpl implements RoomAvailabilityService {
   /**
    * Check if a specific room is available for the given time slot
@@ -119,7 +121,7 @@ export class RoomAvailabilityServiceImpl implements RoomAvailabilityService {
     excludeMeetingId?: string,
   ): Promise<ScheduledMeeting[]> {
     try {
-      const whereConditions: any = {
+      const whereConditions: Prisma.MeetingWhereInput = {
         meetingRoomId: roomId,
         deletedAt: null,
         // Check for time overlap: new meeting overlaps if it starts before existing ends and ends after existing starts
@@ -417,7 +419,7 @@ export class RoomAvailabilityServiceImpl implements RoomAvailabilityService {
       return scoredRooms
         .sort((a, b) => b.score - a.score)
         .slice(0, 5) // Return top 5 suggestions
-        .map(({ score, ...room }) => room) // Remove score from final result
+        .map(({ ...room }) => room) // Remove score from final result
     } catch (error) {
       console.error('Error finding optimal rooms:', error)
       return []

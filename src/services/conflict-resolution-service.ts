@@ -10,17 +10,14 @@ import {
   ConflictResolutionService,
   ConflictInfo,
   ConflictSuggestion,
-  SuggestionAction,
   SuggestionType,
   ConflictType,
   MeetingFormData,
   MeetingType,
-  TimeSlot,
   MeetingRoomInfo,
 } from '@/types/conflict-detection'
 import { roomAvailabilityService } from './room-availability-service'
 import { zoomAccountServiceClient } from './zoom-account-service-client'
-import prisma from '@/lib/prisma'
 
 export class ConflictResolutionServiceImpl
   implements ConflictResolutionService
@@ -234,7 +231,7 @@ export class ConflictResolutionServiceImpl
       meetingData.date,
       meetingData.time,
     )
-    let searchTime = new Date(initialStartTime.getTime() + 15 * 60 * 1000)
+    const searchTime = new Date(initialStartTime.getTime() + 15 * 60 * 1000)
     const searchLimit = new Date(searchTime)
     searchLimit.setHours(searchLimit.getHours() + 8)
 
@@ -308,7 +305,7 @@ export class ConflictResolutionServiceImpl
   /**
    * Prioritize suggestions based on type, feasibility, and user preference
    */
-  private prioritizeSuggestions(
+  prioritizeSuggestions(
     suggestions: ConflictSuggestion[],
   ): ConflictSuggestion[] {
     return suggestions
@@ -321,6 +318,21 @@ export class ConflictResolutionServiceImpl
         return typeOrderA - typeOrderB
       })
       .slice(0, this.MAX_SUGGESTIONS)
+  }
+
+  /**
+   * Applies a suggestion to the meeting form data.
+   */
+  applySuggestion(suggestion: ConflictSuggestion): Partial<MeetingFormData> {
+    const changes: Partial<MeetingFormData> = {
+      [suggestion.action.field]: suggestion.action.value,
+    }
+
+    if (suggestion.action.additionalChanges) {
+      Object.assign(changes, suggestion.action.additionalChanges)
+    }
+
+    return changes
   }
 
   /**

@@ -5,12 +5,12 @@ import type { PublicMeeting } from '@/types/public-calendar'
 
 // Mock the calendar utils
 vi.mock('@/lib/calendar-utils', () => ({
-  formatMeetingTime: vi.fn((start: string, end: string) => '10:00 - 11:00'),
-  formatMeetingDate: vi.fn((date: string) => 'Hari Ini'),
+  formatMeetingTime: vi.fn(() => '10:00 - 11:00'),
+  formatMeetingDate: vi.fn(() => 'Hari Ini'),
   formatDuration: vi.fn((minutes: number) => `${minutes} menit`),
-  formatMeetingId: vi.fn((id: string) => '123 4567 890'),
-  getStatusBadgeVariant: vi.fn((status: string) => 'default'),
-  getTypeBadgeVariant: vi.fn((type: string) => 'secondary'),
+  formatMeetingId: vi.fn(() => '123 4567 890'),
+  getStatusBadgeVariant: vi.fn(() => 'default'),
+  getTypeBadgeVariant: vi.fn(() => 'secondary'),
   getMeetingColorClasses: vi.fn(() => ({
     background: 'bg-green-500/20',
     border: 'border-green-500',
@@ -36,7 +36,11 @@ vi.mock('lucide-react', () => ({
 
 // Mock UI components
 vi.mock('@/components/ui/badge', () => ({
-  Badge: ({ children, variant, className }: any) => (
+  Badge: ({
+    children,
+    variant,
+    className,
+  }: React.HTMLAttributes<HTMLElement> & { variant?: string }) => (
     <span data-testid="badge" data-variant={variant} className={className}>
       {children}
     </span>
@@ -44,7 +48,16 @@ vi.mock('@/components/ui/badge', () => ({
 }))
 
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, variant, size, className }: any) => (
+  Button: ({
+    children,
+    onClick,
+    variant,
+    size,
+    className,
+  }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    variant?: string
+    size?: string
+  }) => (
     <button
       data-testid="button"
       onClick={onClick}
@@ -58,17 +71,23 @@ vi.mock('@/components/ui/button', () => ({
 }))
 
 vi.mock('@/components/ui/card', () => ({
-  Card: ({ children, className }: any) => (
+  Card: ({ children, className }: React.HTMLAttributes<HTMLDivElement>) => (
     <div data-testid="card" className={className}>
       {children}
     </div>
   ),
-  CardContent: ({ children, className }: any) => (
+  CardContent: ({
+    children,
+    className,
+  }: React.HTMLAttributes<HTMLDivElement>) => (
     <div data-testid="card-content" className={className}>
       {children}
     </div>
   ),
-  CardHeader: ({ children, className }: any) => (
+  CardHeader: ({
+    children,
+    className,
+  }: React.HTMLAttributes<HTMLDivElement>) => (
     <div data-testid="card-header" className={className}>
       {children}
     </div>
@@ -76,7 +95,7 @@ vi.mock('@/components/ui/card', () => ({
 }))
 
 vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => {
+  cn: (...classes: (string | undefined | null | false)[]) => {
     return classes
       .filter(Boolean)
       .map((cls) => {

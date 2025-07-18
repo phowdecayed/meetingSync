@@ -111,10 +111,7 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
         suggestedAccount,
         conflictingMeetings,
       }
-    } catch (error) {
-      if (error instanceof ConflictDetectionError) {
-        throw error
-      }
+    } catch {
       throw new ConflictDetectionError(
         'Failed to check Zoom capacity',
         'validation',
@@ -136,7 +133,7 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
         endTime,
       )
       return capacityResult.suggestedAccount || null
-    } catch (error) {
+    } catch {
       throw new ConflictDetectionError(
         'Failed to find available Zoom account',
         'resource',
@@ -170,7 +167,7 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
       return loadInfo.sort(
         (a, b) => a.utilizationPercentage - b.utilizationPercentage,
       )
-    } catch (error) {
+    } catch {
       throw new ConflictDetectionError(
         'Failed to get account load balancing info',
         'resource',
@@ -193,7 +190,7 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
       if (account) {
         account.maxConcurrentMeetings = capacity
       }
-    } catch (error) {
+    } catch {
       throw new ConflictDetectionError(
         'Failed to update account capacity',
         'resource',
@@ -217,7 +214,7 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
       return (
         accounts.find((account) => account.id === leastLoadedAccountId) || null
       )
-    } catch (error) {
+    } catch {
       throw new ConflictDetectionError(
         'Failed to get least loaded account',
         'resource',
@@ -245,7 +242,7 @@ export class ZoomAccountServiceImpl implements ZoomAccountService {
       return overlappingMeetings.filter(
         (meeting) => meeting.zoomAccountId === accountId,
       ).length
-    } catch (error) {
+    } catch {
       throw new ConflictDetectionError(
         'Failed to count concurrent meetings',
         'validation',

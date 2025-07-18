@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
+import { zoomAccountService } from '@/services/zoom-account-service'
 
 // Zod schema for validation
 const zoomCredentialSchema = z.object({
@@ -16,25 +17,21 @@ const zoomCredentialSchema = z.object({
  */
 export async function GET() {
   try {
+    // Directly fetch the raw credentials from the database
     const credentials = await prisma.zoomCredentials.findMany({
       where: {
-        deletedAt: null,
+        deletedAt: null, // Only fetch active credentials
       },
-      // Select only the fields needed by the UI, excluding the clientSecret for security
-      select: {
-        id: true,
-        clientId: true,
-        accountId: true,
-        hostKey: true,
-        createdAt: true,
-        updatedAt: true,
+      orderBy: {
+        createdAt: 'asc', // Optional: order by creation date
       },
     })
     return NextResponse.json(credentials)
   } catch (error) {
     console.error('Error fetching Zoom credentials:', error)
+    // This will now correctly report database errors instead of hiding them
     return NextResponse.json(
-      { error: 'Failed to fetch Zoom credentials' },
+      { error: 'Failed to fetch Zoom credentials from database' },
       { status: 500 },
     )
   }

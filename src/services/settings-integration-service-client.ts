@@ -81,7 +81,7 @@ export class SettingsIntegrationServiceClient
   async handleZoomAccountChange(
     changeType: ZoomAccountChangeType,
     accountId: string,
-    accountData?: any,
+    accountData?: Record<string, unknown>,
   ): Promise<void> {
     try {
       // Clear zoom account service cache to force refresh
@@ -276,7 +276,7 @@ export class SettingsIntegrationServiceClient
           await this.handleZoomAccountChange(
             ZoomAccountChangeType.UPDATED,
             'system-detected',
-            null,
+            undefined,
           )
         }
       } catch (error) {

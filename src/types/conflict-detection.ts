@@ -65,7 +65,7 @@ export interface ConflictSuggestion {
 
 export interface SuggestionAction {
   field: keyof MeetingFormData
-  value: any
+  value: string | number | boolean | string[] | undefined | null
   additionalChanges?: Partial<MeetingFormData>
 }
 
@@ -216,9 +216,18 @@ export interface ZoomAccountService {
 }
 
 export interface ConflictResolutionService {
-  generateSuggestions(conflicts: ConflictInfo[]): ConflictSuggestion[]
+  generateComprehensiveSuggestions(
+    conflicts: ConflictInfo[],
+    meetingData: MeetingFormData,
+  ): Promise<ConflictSuggestion[]>
   applySuggestion(suggestion: ConflictSuggestion): Partial<MeetingFormData>
   prioritizeSuggestions(suggestions: ConflictSuggestion[]): ConflictSuggestion[]
+  getRoomSuggestions(
+    startTime: Date,
+    endTime: Date,
+    participantCount: number,
+    excludeRoomId?: string,
+  ): Promise<Array<MeetingRoomInfo & { feasibilityScore: number }>>
 }
 
 // Error Handling
@@ -264,15 +273,39 @@ export interface ConflictDetectionConfig {
 }
 
 // Event Types for Real-time Updates
-export interface ConflictDetectionEvent {
-  type:
-    | 'conflict_detected'
-    | 'conflict_resolved'
-    | 'capacity_updated'
-    | 'room_availability_changed'
-  payload: any
-  timestamp: Date
-}
+export type ConflictDetectionEvent =
+  | {
+      type: 'conflict_detected'
+      payload: {
+        meetingData: MeetingFormData
+        result: ConflictResult
+        conflicts: ConflictInfo[]
+      }
+      timestamp: Date
+    }
+  | {
+      type: 'conflict_resolved'
+      payload: {
+        meetingId: string
+      }
+      timestamp: Date
+    }
+  | {
+      type: 'capacity_updated'
+      payload: {
+        totalAccounts: number
+        totalCapacity: number
+      }
+      timestamp: Date
+    }
+  | {
+      type: 'room_availability_changed'
+      payload: {
+        roomId: string
+        isAvailable: boolean
+      }
+      timestamp: Date
+    }
 
 export interface ConflictSubscription {
   id: string
@@ -314,7 +347,7 @@ export interface SettingsChangeEvent {
   timestamp: Date
   changeType: ZoomAccountChangeType
   affectedAccountId: string
-  newAccountData?: any
+  newAccountData?: Record<string, unknown>
   totalAccounts: number
 }
 
@@ -344,7 +377,7 @@ export interface SettingsIntegrationService {
   handleZoomAccountChange(
     changeType: ZoomAccountChangeType,
     accountId: string,
-    accountData?: any,
+    accountData?: Record<string, unknown>,
   ): Promise<void>
   subscribeToSettingsChanges(
     callback: (event: SettingsChangeEvent) => void,

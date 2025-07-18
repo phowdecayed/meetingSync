@@ -5,10 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest'
-import {
-  ZoomAccountServiceImpl,
-  zoomAccountService,
-} from '../zoom-account-service'
+import { ZoomAccountServiceImpl } from '../zoom-account-service'
 import { ConflictDetectionError } from '@/types/conflict-detection'
 import prisma from '@/lib/prisma'
 
@@ -24,7 +21,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-const mockPrisma = prisma as {
+const mockPrisma = prisma as unknown as {
   zoomCredentials: { findMany: Mock }
   meeting: { findMany: Mock }
 }

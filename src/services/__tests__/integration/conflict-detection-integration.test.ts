@@ -10,7 +10,6 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest'
 import { EnhancedConflictDetectionEngine } from '../../enhanced-conflict-detection'
-import { meetingTypeValidator } from '../../meeting-type-validator'
 import { zoomAccountService } from '../../zoom-account-service'
 import { roomAvailabilityService } from '../../room-availability-service'
 import { conflictResolutionService } from '../../conflict-resolution-service'
@@ -18,7 +17,6 @@ import {
   MeetingFormData,
   MeetingType,
   ConflictType,
-  ConflictSeverity,
   SuggestionType,
 } from '@/types/conflict-detection'
 import prisma from '@/lib/prisma'
@@ -39,7 +37,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-const mockPrisma = prisma as {
+const mockPrisma = prisma as unknown as {
   zoomCredentials: { findMany: Mock }
   meeting: { findMany: Mock }
   meetingRoom: { findMany: Mock; findUnique: Mock }
@@ -459,9 +457,6 @@ describe('Conflict Detection Integration Tests', () => {
     })
 
     it('should handle room utilization and availability patterns', async () => {
-      const startTime = new Date('2025-12-15T10:00:00Z')
-      const endTime = new Date('2025-12-15T11:00:00Z')
-
       // Mock room with some utilization
       mockPrisma.meeting.findMany.mockResolvedValue([
         {

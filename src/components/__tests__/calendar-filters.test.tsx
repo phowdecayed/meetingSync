@@ -278,7 +278,7 @@ describe('CalendarFilters', () => {
       const mockUseDebounce = vi.mocked(useDebounce)
 
       // Mock debounce to return the value after a delay
-      mockUseDebounce.mockImplementation((value, delay) => {
+      mockUseDebounce.mockImplementation((value) => {
         return value // For testing, return immediately
       })
 

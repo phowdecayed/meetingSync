@@ -14,8 +14,8 @@ vi.mock('date-fns', async () => {
       }
       return '01 Jan 2024'
     }),
-    addWeeks: vi.fn((date, weeks) => new Date(2024, 0, 8)), // Next week
-    subWeeks: vi.fn((date, weeks) => new Date(2023, 11, 25)), // Previous week
+    addWeeks: vi.fn(() => new Date(2024, 0, 8)), // Next week
+    subWeeks: vi.fn(() => new Date(2023, 11, 25)), // Previous week
     startOfWeek: vi.fn(() => new Date(2024, 0, 1)),
     endOfWeek: vi.fn(() => new Date(2024, 0, 7)),
   }
@@ -28,13 +28,27 @@ vi.mock('@/lib/calendar-utils', () => ({
 
 // Mock lucide-react icons
 vi.mock('lucide-react', () => ({
-  ChevronLeft: (props: any) => <div data-testid="chevron-left" {...props} />,
-  ChevronRight: (props: any) => <div data-testid="chevron-right" {...props} />,
-  Calendar: (props: any) => <div data-testid="calendar-icon" {...props} />,
-  Maximize: (props: any) => <div data-testid="maximize-icon" {...props} />,
-  Minimize: (props: any) => <div data-testid="minimize-icon" {...props} />,
-  RefreshCw: (props: any) => <div data-testid="refresh-icon" {...props} />,
-  Home: (props: any) => <div data-testid="home-icon" {...props} />,
+  ChevronLeft: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg data-testid="chevron-left" {...props} />
+  ),
+  ChevronRight: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg data-testid="chevron-right" {...props} />
+  ),
+  Calendar: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg data-testid="calendar-icon" {...props} />
+  ),
+  Maximize: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg data-testid="maximize-icon" {...props} />
+  ),
+  Minimize: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg data-testid="minimize-icon" {...props} />
+  ),
+  RefreshCw: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg data-testid="refresh-icon" {...props} />
+  ),
+  Home: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg data-testid="home-icon" {...props} />
+  ),
 }))
 
 describe('CalendarHeader', () => {

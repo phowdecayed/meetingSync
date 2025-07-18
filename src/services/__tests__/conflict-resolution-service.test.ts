@@ -10,6 +10,7 @@ import { conflictResolutionService } from '../conflict-resolution-service'
 import { roomAvailabilityService } from '../room-availability-service'
 import {
   ConflictInfo,
+  ConflictSuggestion,
   ConflictType,
   ConflictSeverity,
   SuggestionType,
@@ -68,8 +69,8 @@ describe('ConflictResolutionService', () => {
     vi.restoreAllMocks()
   })
 
-  describe('generateSuggestions', () => {
-    it('should generate room change suggestions for room conflicts', () => {
+  describe('generateComprehensiveSuggestions', () => {
+    it('should generate room change suggestions for room conflicts', async () => {
       const conflicts: ConflictInfo[] = [
         {
           type: ConflictType.ROOM_CONFLICT,
@@ -83,16 +84,17 @@ describe('ConflictResolutionService', () => {
         },
       ]
 
-      const suggestions = conflictResolutionService.generateSuggestions(
-        conflicts,
-        mockMeetingData,
-      )
+      const suggestions =
+        await conflictResolutionService.generateComprehensiveSuggestions(
+          conflicts,
+          mockMeetingData,
+        )
 
       expect(suggestions).toHaveLength(2)
 
       // Check room change suggestion
       const roomSuggestion = suggestions.find(
-        (s) => s.type === SuggestionType.ROOM_CHANGE,
+        (s: ConflictSuggestion) => s.type === SuggestionType.ROOM_CHANGE,
       )
       expect(roomSuggestion).toBeDefined()
       expect(roomSuggestion?.description).toBe('Use Conference Room B instead')
@@ -101,7 +103,7 @@ describe('ConflictResolutionService', () => {
 
       // Check time change suggestion
       const timeSuggestion = suggestions.find(
-        (s) => s.type === SuggestionType.TIME_CHANGE,
+        (s: ConflictSuggestion) => s.type === SuggestionType.TIME_CHANGE,
       )
       expect(timeSuggestion).toBeDefined()
       expect(timeSuggestion?.description).toBe(
@@ -111,7 +113,7 @@ describe('ConflictResolutionService', () => {
       expect(timeSuggestion?.action.value).toBe('11:00')
     })
 
-    it('should generate room selection suggestions for missing room conflicts', () => {
+    it('should generate room selection suggestions for missing room conflicts', async () => {
       const conflicts: ConflictInfo[] = [
         {
           type: ConflictType.MISSING_ROOM,
@@ -121,15 +123,16 @@ describe('ConflictResolutionService', () => {
         },
       ]
 
-      const suggestions = conflictResolutionService.generateSuggestions(
-        conflicts,
-        mockMeetingData,
-      )
+      const suggestions =
+        await conflictResolutionService.generateComprehensiveSuggestions(
+          conflicts,
+          mockMeetingData,
+        )
 
       expect(suggestions).toHaveLength(2)
 
       // Check room selection suggestion
-      const roomSuggestion = suggestions.find((s) =>
+      const roomSuggestion = suggestions.find((s: ConflictSuggestion) =>
         s.description.includes('Select a meeting room'),
       )
       expect(roomSuggestion).toBeDefined()
@@ -139,7 +142,7 @@ describe('ConflictResolutionService', () => {
 
       // Check meeting type change suggestion
       const typeSuggestion = suggestions.find(
-        (s) => s.type === SuggestionType.TYPE_CHANGE,
+        (s: ConflictSuggestion) => s.type === SuggestionType.TYPE_CHANGE,
       )
       expect(typeSuggestion).toBeDefined()
       expect(typeSuggestion?.description).toBe(
@@ -149,7 +152,7 @@ describe('ConflictResolutionService', () => {
       expect(typeSuggestion?.action.value).toBe(MeetingType.ONLINE)
     })
 
-    it('should generate time slot suggestions for Zoom capacity conflicts', () => {
+    it('should generate time slot suggestions for Zoom capacity conflicts', async () => {
       const onlineMeetingData = {
         ...mockMeetingData,
         meetingType: MeetingType.ONLINE,
@@ -165,22 +168,23 @@ describe('ConflictResolutionService', () => {
         },
       ]
 
-      const suggestions = conflictResolutionService.generateSuggestions(
-        conflicts,
-        onlineMeetingData,
-      )
+      const suggestions =
+        await conflictResolutionService.generateComprehensiveSuggestions(
+          conflicts,
+          onlineMeetingData,
+        )
 
       expect(suggestions.length).toBeGreaterThan(0)
 
       // Should include time change suggestions
       const timeChangeSuggestions = suggestions.filter(
-        (s) => s.type === SuggestionType.TIME_CHANGE,
+        (s: ConflictSuggestion) => s.type === SuggestionType.TIME_CHANGE,
       )
       expect(timeChangeSuggestions.length).toBeGreaterThan(0)
 
       // Should include meeting type change to offline
       const typeSuggestion = suggestions.find(
-        (s) =>
+        (s: ConflictSuggestion) =>
           s.type === SuggestionType.TYPE_CHANGE &&
           s.action.value === MeetingType.OFFLINE,
       )
@@ -190,7 +194,7 @@ describe('ConflictResolutionService', () => {
       )
     })
 
-    it('should generate type change suggestions for invalid type conflicts', () => {
+    it('should generate type change suggestions for invalid type conflicts', async () => {
       const conflicts: ConflictInfo[] = [
         {
           type: ConflictType.INVALID_TYPE,
@@ -200,10 +204,11 @@ describe('ConflictResolutionService', () => {
         },
       ]
 
-      const suggestions = conflictResolutionService.generateSuggestions(
-        conflicts,
-        mockMeetingData,
-      )
+      const suggestions =
+        await conflictResolutionService.generateComprehensiveSuggestions(
+          conflicts,
+          mockMeetingData,
+        )
 
       expect(suggestions).toHaveLength(1)
 
@@ -428,7 +433,9 @@ describe('ConflictResolutionService', () => {
       expect(suggestions[0].feasibilityScore).toBeLessThanOrEqual(1)
 
       // Should exclude the specified room
-      expect(suggestions.find((s) => s.id === 'room-1')).toBeUndefined()
+      expect(
+        suggestions.find((s: MeetingRoomInfo) => s.id === 'room-1'),
+      ).toBeUndefined()
     })
 
     it('should handle errors gracefully', async () => {
@@ -467,13 +474,13 @@ describe('ConflictResolutionService', () => {
 
       // Should include enhanced room suggestions
       const roomSuggestions = suggestions.filter(
-        (s) => s.type === SuggestionType.ROOM_CHANGE,
+        (s: ConflictSuggestion) => s.type === SuggestionType.ROOM_CHANGE,
       )
       expect(roomSuggestions.length).toBeGreaterThan(0)
 
       // Check that room suggestions include capacity and match percentage
       const enhancedRoomSuggestion = roomSuggestions.find(
-        (s) =>
+        (s: ConflictSuggestion) =>
           s.description.includes('capacity:') &&
           s.description.includes('% match'),
       )
@@ -489,10 +496,10 @@ describe('ConflictResolutionService', () => {
         },
       ]
 
-      const incompleteMeetingData = {
+      const incompleteMeetingData: MeetingFormData = {
         ...mockMeetingData,
-        date: undefined as any,
-        time: undefined as any,
+        date: undefined as unknown as Date,
+        time: undefined as unknown as string,
       }
 
       const suggestions =
@@ -508,12 +515,16 @@ describe('ConflictResolutionService', () => {
   })
 
   describe('edge cases and error handling', () => {
-    it('should handle empty conflicts array', () => {
-      const suggestions = conflictResolutionService.generateSuggestions([])
+    it('should handle empty conflicts array', async () => {
+      const suggestions =
+        await conflictResolutionService.generateComprehensiveSuggestions(
+          [],
+          mockMeetingData,
+        )
       expect(suggestions).toEqual([])
     })
 
-    it('should handle conflicts without suggestions', () => {
+    it('should handle conflicts without suggestions', async () => {
       const conflicts: ConflictInfo[] = [
         {
           type: ConflictType.ROOM_CONFLICT,
@@ -523,13 +534,16 @@ describe('ConflictResolutionService', () => {
       ]
 
       const suggestions =
-        conflictResolutionService.generateSuggestions(conflicts)
+        await conflictResolutionService.generateComprehensiveSuggestions(
+          conflicts,
+          mockMeetingData,
+        )
 
       // Should generate at least a generic suggestion
       expect(suggestions.length).toBeGreaterThanOrEqual(0)
     })
 
-    it('should handle malformed time suggestions', () => {
+    it('should handle malformed time suggestions', async () => {
       const conflicts: ConflictInfo[] = [
         {
           type: ConflictType.ROOM_CONFLICT,
@@ -540,11 +554,14 @@ describe('ConflictResolutionService', () => {
       ]
 
       const suggestions =
-        conflictResolutionService.generateSuggestions(conflicts)
+        await conflictResolutionService.generateComprehensiveSuggestions(
+          conflicts,
+          mockMeetingData,
+        )
 
       // Should not crash and should not include invalid time suggestions
       const timeSuggestions = suggestions.filter(
-        (s) => s.type === SuggestionType.TIME_CHANGE,
+        (s: ConflictSuggestion) => s.type === SuggestionType.TIME_CHANGE,
       )
       expect(timeSuggestions).toHaveLength(0)
     })

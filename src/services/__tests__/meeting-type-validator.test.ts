@@ -294,7 +294,7 @@ describe('MeetingTypeValidator', () => {
     })
 
     it('should validate required date', () => {
-      mockMeetingData.date = null as any
+      mockMeetingData.date = null as unknown as Date
 
       const result =
         meetingTypeValidator.validateOfflineMeeting(mockMeetingData)
@@ -491,11 +491,11 @@ describe('MeetingTypeValidator', () => {
   describe('Error Handling', () => {
     it('should handle validation errors gracefully', () => {
       // Mock an error in the validation process by passing completely invalid data
-      const invalidData = { ...mockMeetingData }
-      // @ts-ignore - Intentionally pass invalid data to test error handling
-      invalidData.date = 'invalid-date' as any
-      // @ts-ignore - Intentionally pass invalid data to test error handling
-      invalidData.time = null as any
+      const invalidData: MeetingFormData = { ...mockMeetingData }
+      // @ts-expect-error - Intentionally pass invalid data to test error handling
+      invalidData.date = 'invalid-date'
+      // @ts-expect-error - Intentionally pass invalid data to test error handling
+      invalidData.time = null
 
       const result = meetingTypeValidator.validateMeetingType(invalidData)
 

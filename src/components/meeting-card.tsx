@@ -57,10 +57,7 @@ const MeetingCard = memo(function MeetingCard({
   )
 
   // Memoize color classes based on meeting status
-  const colorClasses = useMemo(
-    () => getMeetingColorClasses(meeting),
-    [meeting.status],
-  )
+  const colorClasses = useMemo(() => getMeetingColorClasses(meeting), [meeting])
 
   // Memoize formatted values
   const duration = useMemo(

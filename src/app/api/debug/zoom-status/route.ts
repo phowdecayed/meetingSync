@@ -9,7 +9,17 @@ export async function GET() {
     const systemStats = await getSystemStats()
 
     // Test Zoom account service
-    let zoomServiceStatus = {
+    const zoomServiceStatus: {
+      working: boolean
+      accounts: {
+        id: string
+        email: string
+        isActive: boolean
+        maxConcurrentMeetings: number
+        scheduledMeetingsCount: number
+      }[]
+      error: string | null
+    } = {
       working: false,
       accounts: [],
       error: null as string | null,

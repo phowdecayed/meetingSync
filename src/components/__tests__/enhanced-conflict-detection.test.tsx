@@ -46,7 +46,8 @@ const mockUsers: User[] = [
     id: '1',
     email: 'user1@example.com',
     name: 'User 1',
-    role: 'USER',
+    role: 'member',
+    passwordHash: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
@@ -55,7 +56,8 @@ const mockUsers: User[] = [
     id: '2',
     email: 'user2@example.com',
     name: 'User 2',
-    role: 'USER',
+    role: 'member',
+    passwordHash: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
@@ -107,15 +109,15 @@ const mockMeetings: Meeting[] = [
 
 describe('Enhanced Conflict Detection', () => {
   beforeEach(() => {
-    ;(useRouter as any).mockReturnValue(mockRouter)
-    ;(global.fetch as any).mockImplementation((url: string) => {
-      if (url.includes('/api/meetings')) {
+    ;(useRouter as jest.Mock).mockReturnValue(mockRouter)
+    ;(global.fetch as jest.Mock).mockImplementation((url: RequestInfo) => {
+      if (url.toString().includes('/api/meetings')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve(mockMeetings),
         })
       }
-      if (url.includes('/api/meeting-rooms')) {
+      if (url.toString().includes('/api/meeting-rooms')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve([]),

@@ -39,7 +39,7 @@ import { Switch } from '@/components/ui/switch'
 import { meetingSchema } from '@/lib/validators/meeting'
 import { Meeting, User, MeetingRoom } from '@/lib/data'
 import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useMeetingStore } from '@/store/use-meeting-store'
 import { useSession } from 'next-auth/react'
 import { useToast } from '@/hooks/use-toast'
@@ -160,63 +160,78 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
   )
   const isLocationDetailsComplete = true // Optional section, always considered complete
 
+  const { getValues } = form
+
+  const validateMeetingData = useCallback(async () => {
+    try {
+      const [hours, minutes] = watchedTime.split(':').map(Number)
+      if (isNaN(hours) || isNaN(minutes)) {
+        setConflicts([])
+        return
+      }
+
+      // Determine the correct meeting type based on form state
+      let determinedMeetingType: MeetingType
+      if (isZoomMeeting) {
+        determinedMeetingType = watchedMeetingRoomId
+          ? MeetingType.HYBRID
+          : MeetingType.ONLINE
+      } else {
+        determinedMeetingType = MeetingType.OFFLINE
+      }
+
+      // Map form data to MeetingFormData interface
+      const meetingFormData: MeetingFormData = {
+        title: watchedTitle,
+        date: watchedDate,
+        time: watchedTime,
+        duration: watchedDuration,
+        meetingType: determinedMeetingType,
+        isZoomMeeting: isZoomMeeting,
+        meetingRoomId: watchedMeetingRoomId || undefined,
+        participants: watchedParticipants || [],
+        description: getValues('description') || undefined,
+        zoomPassword: getValues('zoomPassword') || undefined,
+      }
+
+      // Use enhanced conflict detection service
+      const conflictResult =
+        await enhancedConflictDetectionClient.validateMeeting(meetingFormData)
+
+      // Only update conflicts if they've actually changed
+      setConflicts((prevConflicts) => {
+        const conflictsChanged =
+          conflictResult.conflicts.length !== prevConflicts.length ||
+          JSON.stringify(conflictResult.conflicts) !==
+            JSON.stringify(prevConflicts)
+
+        if (conflictsChanged) {
+          setIsConflictAnimating(true)
+          setTimeout(() => setIsConflictAnimating(false), 300)
+          return conflictResult.conflicts
+        }
+        return prevConflicts
+      })
+    } catch (error) {
+      console.error('Error in enhanced conflict detection:', error)
+      setConflicts([])
+    }
+  }, [
+    watchedDate,
+    watchedTime,
+    watchedDuration,
+    watchedTitle,
+    isZoomMeeting,
+    watchedMeetingRoomId,
+    watchedParticipants,
+    getValues,
+  ])
+
   // Enhanced conflict detection using the new service
   useEffect(() => {
     if (!watchedDate || !watchedTime || !watchedDuration || !watchedTitle) {
       setConflicts([])
       return
-    }
-
-    const validateMeetingData = async () => {
-      try {
-        const [hours, minutes] = watchedTime.split(':').map(Number)
-        if (isNaN(hours) || isNaN(minutes)) {
-          setConflicts([])
-          return
-        }
-
-        // Determine the correct meeting type based on form state
-        let determinedMeetingType: MeetingType
-        if (isZoomMeeting) {
-          determinedMeetingType = watchedMeetingRoomId
-            ? MeetingType.HYBRID
-            : MeetingType.ONLINE
-        } else {
-          determinedMeetingType = MeetingType.OFFLINE
-        }
-
-        // Map form data to MeetingFormData interface
-        const meetingFormData: MeetingFormData = {
-          title: watchedTitle,
-          date: watchedDate,
-          time: watchedTime,
-          duration: watchedDuration,
-          meetingType: determinedMeetingType,
-          isZoomMeeting: isZoomMeeting,
-          meetingRoomId: watchedMeetingRoomId || undefined,
-          participants: watchedParticipants || [],
-          description: form.getValues('description') || undefined,
-          zoomPassword: form.getValues('zoomPassword') || undefined,
-        }
-
-        // Use enhanced conflict detection service
-        const conflictResult =
-          await enhancedConflictDetectionClient.validateMeeting(meetingFormData)
-
-        // Only update conflicts if they've actually changed
-        const conflictsChanged =
-          conflictResult.conflicts.length !== conflicts.length ||
-          JSON.stringify(conflictResult.conflicts) !== JSON.stringify(conflicts)
-
-        if (conflictsChanged) {
-          setIsConflictAnimating(true)
-          setTimeout(() => setIsConflictAnimating(false), 300)
-          setConflicts(conflictResult.conflicts)
-        }
-      } catch (error) {
-        console.error('Error in enhanced conflict detection:', error)
-        setConflicts([])
-      }
     }
 
     // Debounce the validation to avoid too many API calls
@@ -227,10 +242,7 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
     watchedTime,
     watchedDuration,
     watchedTitle,
-    isZoomMeeting,
-    watchedMeetingRoomId,
-    watchedParticipants,
-    form,
+    validateMeetingData,
   ])
 
   // Handle suggestion clicks

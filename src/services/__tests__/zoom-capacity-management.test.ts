@@ -25,7 +25,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-const mockPrisma = prisma as {
+const mockPrisma = prisma as unknown as {
   zoomCredentials: { findMany: Mock }
   meeting: { findMany: Mock }
 }

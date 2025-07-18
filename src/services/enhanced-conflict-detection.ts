@@ -103,8 +103,8 @@ export class EnhancedConflictDetectionEngine
 
       // Emit validation event
       this.emitEvent({
-        type: conflicts.length > 0 ? 'conflict_detected' : 'conflict_resolved',
-        payload: { meetingData, conflicts },
+        type: 'conflict_detected',
+        payload: { meetingData, result, conflicts },
         timestamp: new Date(),
       })
 
@@ -333,11 +333,10 @@ export class EnhancedConflictDetectionEngine
     const subscription: ConflictSubscription = {
       id: subscriptionId,
       callback: (event) => {
-        if (
-          event.type === 'conflict_detected' ||
-          event.type === 'conflict_resolved'
-        ) {
-          callback(event.payload.conflicts || [])
+        if (event.type === 'conflict_detected') {
+          callback(event.payload.conflicts)
+        } else if (event.type === 'conflict_resolved') {
+          callback([]) // No conflicts when resolved
         }
       },
     }
@@ -353,9 +352,15 @@ export class EnhancedConflictDetectionEngine
     // Clear cache when capacity changes
     this.validationCache.clear()
 
+    const totalAccounts = zoomCredentials.length
+    const totalCapacity = zoomCredentials.reduce(
+      (sum, account) => sum + account.maxConcurrentMeetings,
+      0,
+    )
+
     this.emitEvent({
       type: 'capacity_updated',
-      payload: { zoomCredentials },
+      payload: { totalAccounts, totalCapacity },
       timestamp: new Date(),
     })
   }

@@ -25,15 +25,16 @@ vi.mock('@/lib/prisma', () => ({
 }))
 
 // Import after mocking
-const { RoomAvailabilityServiceImpl } = await import(
-  '../room-availability-service'
-)
+import {
+  roomAvailabilityService,
+  RoomAvailabilityServiceImpl,
+} from '../room-availability-service'
 
 describe('RoomAvailabilityService', () => {
   let service: RoomAvailabilityServiceImpl
 
   beforeEach(() => {
-    service = new RoomAvailabilityServiceImpl()
+    service = roomAvailabilityService
     vi.clearAllMocks()
   })
 

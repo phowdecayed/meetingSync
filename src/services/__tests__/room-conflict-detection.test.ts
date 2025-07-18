@@ -16,6 +16,8 @@ import {
   ConflictType,
   ConflictSeverity,
   SuggestionType,
+  ConflictSuggestion,
+  MeetingFormData,
 } from '@/types/conflict-detection'
 import prisma from '@/lib/prisma'
 
@@ -32,7 +34,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-const mockPrisma = prisma as {
+const mockPrisma = prisma as unknown as {
   meetingRoom: { findUnique: Mock; findMany: Mock }
   meeting: { findMany: Mock }
 }
@@ -586,34 +588,37 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
         description: 'Team meeting',
       }
 
-      const suggestions = conflictResolutionService.generateSuggestions(
-        conflicts,
-        meetingData,
-      )
+      const suggestions =
+        await conflictResolutionService.generateComprehensiveSuggestions(
+          conflicts,
+          meetingData,
+        )
 
       expect(suggestions.length).toBeGreaterThan(0)
 
       // Should have room change suggestions
       const roomSuggestions = suggestions.filter(
-        (s) => s.type === SuggestionType.ROOM_CHANGE,
+        (s: ConflictSuggestion) => s.type === SuggestionType.ROOM_CHANGE,
       )
       expect(roomSuggestions.length).toBeGreaterThan(0)
 
       // Should have time change suggestions
       const timeSuggestions = suggestions.filter(
-        (s) => s.type === SuggestionType.TIME_CHANGE,
+        (s: ConflictSuggestion) => s.type === SuggestionType.TIME_CHANGE,
       )
       expect(timeSuggestions.length).toBeGreaterThan(0)
 
       // Verify specific suggestions
       expect(
-        roomSuggestions.some((s) =>
+        roomSuggestions.some((s: ConflictSuggestion) =>
           s.description.includes('Conference Room B'),
         ),
       ).toBe(true)
-      expect(timeSuggestions.some((s) => s.description.includes('12:00'))).toBe(
-        true,
-      )
+      expect(
+        timeSuggestions.some((s: ConflictSuggestion) =>
+          s.description.includes('12:00'),
+        ),
+      ).toBe(true)
     })
 
     it('should prioritize suggestions by feasibility', async () => {
@@ -643,10 +648,11 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
         description: 'Team meeting',
       }
 
-      const suggestions = conflictResolutionService.generateSuggestions(
-        conflicts,
-        meetingData,
-      )
+      const suggestions =
+        await conflictResolutionService.generateComprehensiveSuggestions(
+          conflicts,
+          meetingData,
+        )
       const prioritized =
         conflictResolutionService.prioritizeSuggestions(suggestions)
 
@@ -705,26 +711,29 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
         },
       ])
 
-      const suggestions = conflictResolutionService.generateSuggestions(
-        conflicts,
-        meetingData,
-      )
+      const suggestions =
+        await conflictResolutionService.generateComprehensiveSuggestions(
+          conflicts,
+          meetingData,
+        )
 
       expect(suggestions.length).toBeGreaterThan(0)
 
       // Should have room selection suggestions
       const roomSuggestions = suggestions.filter(
-        (s) => s.type === SuggestionType.ROOM_CHANGE,
+        (s: ConflictSuggestion) => s.type === SuggestionType.ROOM_CHANGE,
       )
       expect(roomSuggestions.length).toBeGreaterThan(0)
 
       // Should also suggest changing meeting type to online
       const typeSuggestions = suggestions.filter(
-        (s) => s.type === SuggestionType.TYPE_CHANGE,
+        (s: ConflictSuggestion) => s.type === SuggestionType.TYPE_CHANGE,
       )
       expect(typeSuggestions.length).toBeGreaterThan(0)
       expect(
-        typeSuggestions.some((s) => s.action.value === MeetingType.ONLINE),
+        typeSuggestions.some(
+          (s: ConflictSuggestion) => s.action.value === MeetingType.ONLINE,
+        ),
       ).toBe(true)
     })
 
@@ -734,7 +743,7 @@ describe('Room Conflict Detection and Suggestion Generation', () => {
         type: SuggestionType.ROOM_CHANGE,
         description: 'Use Conference Room B instead',
         action: {
-          field: 'meetingRoomId' as keyof any,
+          field: 'meetingRoomId' as const,
           value: 'room-2',
           additionalChanges: {},
         },

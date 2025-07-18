@@ -3,7 +3,6 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   formatMeetingTime,
-  formatMeetingDate,
   formatMeetingId,
   calculateMeetingStatus,
   calculateMeetingDuration,
@@ -15,20 +14,19 @@ import {
   truncateText,
   getStatusBadgeVariant,
   getTypeBadgeVariant,
-  formatRelativeTime,
   formatTimeRange,
   formatDateRangeHeader,
   getMeetingStatusDetails,
   getTimeRemainingText,
   getDateRangeForPeriod,
   isDateInRange,
-  groupMeetingsByDateRange,
   sortMeetingsByStartTime,
   sortMeetingsByStatus,
   getMeetingColorClasses,
   calculateMeetingOverlap,
   findOverlappingMeetings,
 } from '../calendar-utils'
+import type { PublicMeeting } from '@/types/public-calendar'
 
 describe('Calendar Utilities', () => {
   describe('Date formatting', () => {
@@ -109,7 +107,7 @@ describe('Calendar Utilities', () => {
 
   describe('Meeting grouping', () => {
     test('groupMeetingsByDate should group meetings correctly', () => {
-      const meetings = [
+      const meetings: PublicMeeting[] = [
         {
           id: '1',
           title: 'Meeting 1',
@@ -128,7 +126,7 @@ describe('Calendar Utilities', () => {
           start: '2024-01-16T09:00:00Z',
           end: '2024-01-16T10:00:00Z',
         },
-      ] as any[]
+      ].map((m: Partial<PublicMeeting>) => enhanceMeeting(m as PublicMeeting))
 
       const grouped = groupMeetingsByDate(meetings)
 
@@ -140,11 +138,11 @@ describe('Calendar Utilities', () => {
 
   describe('Meeting filtering', () => {
     test('filterMeetingsBySearch should filter by title', () => {
-      const meetings = [
+      const meetings: PublicMeeting[] = [
         { id: '1', title: 'Team Meeting', description: null },
         { id: '2', title: 'Client Call', description: null },
         { id: '3', title: 'Project Review', description: null },
-      ] as any[]
+      ].map((m: Partial<PublicMeeting>) => enhanceMeeting(m as PublicMeeting))
 
       const filtered = filterMeetingsBySearch(meetings, 'team')
       expect(filtered).toHaveLength(1)
@@ -152,7 +150,7 @@ describe('Calendar Utilities', () => {
     })
 
     test('filterMeetingsBySearch should filter by description', () => {
-      const meetings = [
+      const meetings: PublicMeeting[] = [
         {
           id: '1',
           title: 'Meeting 1',
@@ -160,7 +158,7 @@ describe('Calendar Utilities', () => {
         },
         { id: '2', title: 'Meeting 2', description: 'Review budget' },
         { id: '3', title: 'Meeting 3', description: 'Team building' },
-      ] as any[]
+      ].map((m: Partial<PublicMeeting>) => enhanceMeeting(m as PublicMeeting))
 
       const filtered = filterMeetingsBySearch(meetings, 'budget')
       expect(filtered).toHaveLength(1)
@@ -345,11 +343,11 @@ describe('Calendar Utilities', () => {
 
   describe('Meeting sorting and grouping', () => {
     test('sortMeetingsByStartTime should sort meetings chronologically', () => {
-      const meetings = [
+      const meetings: PublicMeeting[] = [
         { id: '1', start: '2024-07-17T14:00:00Z' },
         { id: '2', start: '2024-07-17T09:00:00Z' },
         { id: '3', start: '2024-07-17T12:00:00Z' },
-      ] as any[]
+      ].map((m: Partial<PublicMeeting>) => enhanceMeeting(m as PublicMeeting))
 
       const sorted = sortMeetingsByStartTime(meetings)
       expect(sorted[0].id).toBe('2')
@@ -358,7 +356,7 @@ describe('Calendar Utilities', () => {
     })
 
     test('sortMeetingsByStatus should prioritize ongoing meetings', () => {
-      const meetings = [
+      const meetings: Partial<PublicMeeting>[] = [
         { id: '1', status: 'Akan Datang', start: '2024-07-17T14:00:00Z' },
         {
           id: '2',
@@ -366,9 +364,12 @@ describe('Calendar Utilities', () => {
           start: '2024-07-17T09:00:00Z',
         },
         { id: '3', status: 'Selesai', start: '2024-07-17T07:00:00Z' },
-      ] as any[]
+      ]
+      const enhancedMeetings = meetings.map((m) =>
+        enhanceMeeting(m as PublicMeeting),
+      )
 
-      const sorted = sortMeetingsByStatus(meetings)
+      const sorted = sortMeetingsByStatus(enhancedMeetings)
       expect(sorted[0].id).toBe('2') // Ongoing first
       expect(sorted[1].id).toBe('1') // Upcoming second
       expect(sorted[2].id).toBe('3') // Completed last
@@ -380,17 +381,17 @@ describe('Calendar Utilities', () => {
       const meeting1 = {
         start: '2024-07-17T10:00:00Z',
         end: '2024-07-17T11:30:00Z',
-      } as any
+      } as PublicMeeting
 
       const meeting2 = {
         start: '2024-07-17T11:00:00Z',
         end: '2024-07-17T12:00:00Z',
-      } as any
+      } as PublicMeeting
 
       const meeting3 = {
         start: '2024-07-17T12:00:00Z',
         end: '2024-07-17T13:00:00Z',
-      } as any
+      } as PublicMeeting
 
       expect(calculateMeetingOverlap(meeting1, meeting2)).toBe(true)
       expect(calculateMeetingOverlap(meeting1, meeting3)).toBe(false)
@@ -398,12 +399,12 @@ describe('Calendar Utilities', () => {
     })
 
     test('findOverlappingMeetings should identify all overlaps', () => {
-      const meetings = [
+      const meetings: PublicMeeting[] = [
         { id: '1', start: '2024-07-17T10:00:00Z', end: '2024-07-17T11:30:00Z' },
         { id: '2', start: '2024-07-17T11:00:00Z', end: '2024-07-17T12:00:00Z' },
         { id: '3', start: '2024-07-17T12:00:00Z', end: '2024-07-17T13:00:00Z' },
         { id: '4', start: '2024-07-17T11:15:00Z', end: '2024-07-17T12:30:00Z' },
-      ] as any[]
+      ].map((m: Partial<PublicMeeting>) => enhanceMeeting(m as PublicMeeting))
 
       const overlaps = findOverlappingMeetings(meetings)
       expect(Object.keys(overlaps)).toHaveLength(4) // 4 meetings have overlaps
@@ -416,9 +417,9 @@ describe('Calendar Utilities', () => {
 
   describe('Meeting display utilities', () => {
     test('getMeetingColorClasses should return correct classes based on status', () => {
-      const ongoingMeeting = { status: 'Sedang Berlangsung' } as any
-      const upcomingMeeting = { status: 'Akan Datang' } as any
-      const completedMeeting = { status: 'Selesai' } as any
+      const ongoingMeeting = { status: 'Sedang Berlangsung' } as PublicMeeting
+      const upcomingMeeting = { status: 'Akan Datang' } as PublicMeeting
+      const completedMeeting = { status: 'Selesai' } as PublicMeeting
 
       const ongoingClasses = getMeetingColorClasses(ongoingMeeting)
       const upcomingClasses = getMeetingColorClasses(upcomingMeeting)
