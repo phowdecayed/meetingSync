@@ -11,7 +11,7 @@ const roomSchema = z.object({
 
 export async function GET() {
   const session = await auth()
-  if (session?.user?.role !== 'admin') {
+  if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

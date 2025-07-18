@@ -3,23 +3,6 @@ import Credentials from 'next-auth/providers/credentials'
 import { verifyUserCredentials } from '@/lib/data'
 import type { NextAuthConfig } from 'next-auth'
 
-// Membuat secret yang konsisten atau menggunakan environment variable jika tersedia
-const getAuthSecret = () => {
-  const secret = process.env.NEXTAUTH_SECRET
-  if (!secret) {
-    console.error('FATAL: NEXTAUTH_SECRET environment variable is not set.')
-    // Di lingkungan pengembangan, kita bisa menggunakan nilai default,
-    // tetapi di produksi, kita harus menghentikan proses.
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('NEXTAUTH_SECRET is not set in production environment.')
-    } else {
-      // Menggunakan nilai default hanya untuk pengembangan
-      return 'this-is-a-development-secret-do-not-use-in-production'
-    }
-  }
-  return secret
-}
-
 export const authConfig = {
   providers: [
     Credentials({
@@ -48,6 +31,11 @@ export const authConfig = {
     signIn: '/login',
   },
   callbacks: {
+    authorized({ auth }) {
+      // Logika untuk melindungi rute API
+      // Jika token ada (pengguna login), otorisasi berhasil
+      return !!auth?.user
+    },
     async jwt({ token, user, trigger, session }) {
       if (user) {
         // User is available on initial sign-in
@@ -72,8 +60,6 @@ export const authConfig = {
     strategy: 'jwt',
     maxAge: 3 * 60 * 60, // 3 jam
   },
-  secret: getAuthSecret(),
-  trustHost: true,
 } satisfies NextAuthConfig
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)

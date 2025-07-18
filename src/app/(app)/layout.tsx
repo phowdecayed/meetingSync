@@ -6,6 +6,7 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { SidebarNav } from '@/components/sidebar-nav'
 import { Loader2 } from 'lucide-react'
 import { TourProvider } from '@/components/tour-provider'
+import { SettingsIntegrationInitializer } from '@/components/settings-integration-initializer'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { status } = useSession({ required: true })
@@ -30,6 +31,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
       </SidebarInset>
       <TourProvider />
+      <SettingsIntegrationInitializer />
     </SidebarProvider>
   )
 }

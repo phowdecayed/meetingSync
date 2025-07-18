@@ -7,38 +7,21 @@ export default auth((req) => {
   const { nextUrl } = req
   const isLoggedIn = !!req.auth
 
-  const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
   const isPublicRoute = ['/login', '/register'].includes(nextUrl.pathname)
 
-  // Allow API authentication routes to be accessed
-  if (isApiAuthRoute) {
-    return
+  if (isPublicRoute && isLoggedIn) {
+    return Response.redirect(new URL('/dashboard', nextUrl))
   }
 
-  // If the user is on a public route and is logged in, redirect to dashboard
-  if (isPublicRoute) {
-    if (isLoggedIn) {
-      return Response.redirect(new URL('/dashboard', nextUrl))
-    }
-    return
-  }
-
-  // If the user is not logged in and not on a public route, redirect to login
-  if (!isLoggedIn) {
-    let from = nextUrl.pathname
-    if (nextUrl.search) {
-      from += nextUrl.search
-    }
-
-    return Response.redirect(
-      new URL(`/login?from=${encodeURIComponent(from)}`, nextUrl),
-    )
-  }
+  // Untuk semua rute lain yang dilindungi, callback `authorized` di auth.ts
+  // akan secara otomatis menangani pengalihan jika pengguna tidak login.
+  return
 })
 
-// Match all routes except for the root, public API, Next.js static files, etc.
+// Konfigurasi matcher ini memastikan middleware berjalan pada rute yang tepat.
+// Rute yang tidak cocok akan diabaikan oleh middleware.
 export const config = {
   matcher: [
-    '/((?!api/public/meetings|login|register|_next/static|_next/image|favicon.ico|$).*)',
+    '/((?!api/public/meetings|_next/static|_next/image|favicon.ico|$).*)',
   ],
 }

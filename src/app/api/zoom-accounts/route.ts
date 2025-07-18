@@ -1,18 +1,26 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
 import prisma from '@/lib/prisma'
-import { saveZoomCredentials } from '@/lib/zoom'
+import { z } from 'zod'
 
-// GET - Mendapatkan semua akun Zoom (hanya untuk admin)
+// Zod schema for validation
+const zoomCredentialSchema = z.object({
+  clientId: z.string().min(1, 'Client ID is required'),
+  clientSecret: z.string().min(1, 'Client Secret is required'),
+  accountId: z.string().min(1, 'Account ID is required'),
+  hostKey: z.string().optional(),
+})
+
+/**
+ * GET handler to fetch Zoom credentials for the settings page.
+ * It fetches the raw credentials needed by the UI.
+ */
 export async function GET() {
   try {
-    const session = await auth()
-
-    if (!session || session.user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const zoomCredentials = await prisma.zoomCredentials.findMany({
+    const credentials = await prisma.zoomCredentials.findMany({
+      where: {
+        deletedAt: null,
+      },
+      // Select only the fields needed by the UI, excluding the clientSecret for security
       select: {
         id: true,
         clientId: true,
@@ -22,79 +30,87 @@ export async function GET() {
         updatedAt: true,
       },
     })
-
-    return NextResponse.json(zoomCredentials)
+    return NextResponse.json(credentials)
   } catch (error) {
-    console.error('Error fetching Zoom accounts:', error)
+    console.error('Error fetching Zoom credentials:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch Zoom accounts' },
+      { error: 'Failed to fetch Zoom credentials' },
       { status: 500 },
     )
   }
 }
 
-// POST - Menambahkan kredensial Zoom baru (hanya untuk admin)
+/**
+ * POST handler to create a new Zoom credential.
+ */
 export async function POST(request: Request) {
   try {
-    const session = await auth()
+    const body = await request.json()
+    const validation = zoomCredentialSchema.safeParse(body)
 
-    if (!session || session.user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { clientId, clientSecret, accountId, hostKey } = await request.json()
-
-    // Validasi input
-    if (!clientId || !clientSecret) {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Client ID dan Client Secret diperlukan' },
+        { error: validation.error.flatten().fieldErrors },
         { status: 400 },
       )
     }
 
-    // Simpan kredensial
-    await saveZoomCredentials(clientId, clientSecret, accountId, hostKey)
+    const { clientId, clientSecret, accountId, hostKey } = validation.data
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error saving Zoom credentials:', error)
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 409 }) // 409 Conflict
+    // Check for existing credentials to avoid duplicates
+    const existing = await prisma.zoomCredentials.findFirst({
+      where: { clientId, accountId, deletedAt: null },
+    })
+
+    if (existing) {
+      return NextResponse.json(
+        { error: 'Credential with this Client ID and Account ID already exists.' },
+        { status: 409 },
+      )
     }
+
+    const newCredential = await prisma.zoomCredentials.create({
+      data: {
+        clientId,
+        clientSecret, // Note: Storing secrets should ideally use a vault
+        accountId,
+        hostKey,
+      },
+    })
+
+    return NextResponse.json(newCredential, { status: 201 })
+  } catch (error) {
+    console.error('Error creating Zoom credential:', error)
     return NextResponse.json(
-      { error: 'Failed to save Zoom credentials' },
+      { error: 'Failed to save Zoom credential' },
       { status: 500 },
     )
   }
 }
 
-// DELETE - Menghapus akun Zoom (hanya untuk admin)
+/**
+ * DELETE handler to remove a Zoom credential.
+ */
 export async function DELETE(request: Request) {
   try {
-    const session = await auth()
-
-    if (!session || session.user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id } = await request.json()
+    const body = await request.json()
+    const { id } = z.object({ id: z.string() }).parse(body)
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Zoom credentials ID is required' },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: 'Credential ID is required' }, { status: 400 })
     }
 
-    await prisma.zoomCredentials.delete({
+    // Soft delete the credential
+    await prisma.zoomCredentials.update({
       where: { id },
+      data: { deletedAt: new Date() },
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ message: 'Credential deleted successfully' })
   } catch (error) {
-    console.error('Error deleting Zoom account:', error)
+    console.error('Error deleting Zoom credential:', error)
     return NextResponse.json(
-      { error: 'Failed to delete Zoom account' },
+      { error: 'Failed to delete Zoom credential' },
       { status: 500 },
     )
   }

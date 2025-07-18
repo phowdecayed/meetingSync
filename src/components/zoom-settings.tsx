@@ -43,7 +43,7 @@ export function ZoomSettings() {
   const fetchZoomAccounts = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/zoom-accounts')
+      const response = await fetch('/api/zoom-accounts', { credentials: 'same-origin' })
 
       if (!response.ok) {
         throw new Error('Failed to fetch Zoom accounts')
@@ -83,6 +83,7 @@ export function ZoomSettings() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientId, clientSecret, accountId }),
+        credentials: 'same-origin'
       })
 
       const result = await response.json()
@@ -133,6 +134,7 @@ export function ZoomSettings() {
           accountId,
           hostKey,
         }),
+        credentials: 'same-origin'
       })
 
       if (!response.ok) {
@@ -174,6 +176,7 @@ export function ZoomSettings() {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
+        credentials: 'same-origin'
       })
 
       if (!response.ok) {

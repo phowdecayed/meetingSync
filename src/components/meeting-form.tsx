@@ -39,7 +39,7 @@ import { Switch } from '@/components/ui/switch'
 import { meetingSchema } from '@/lib/validators/meeting'
 import { Meeting, User, MeetingRoom } from '@/lib/data'
 import { useRouter } from 'next/navigation'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useMeetingStore } from '@/store/use-meeting-store'
 import { useSession } from 'next-auth/react'
 import { useToast } from '@/hooks/use-toast'
@@ -55,7 +55,10 @@ import {
 } from './ui/card'
 import { UserCombobox } from './user-combobox'
 import { DurationPresets } from './duration-presets'
+import { ConflictIndicator } from './conflict-indicator'
 import { format } from 'date-fns'
+import { enhancedConflictDetectionClient } from '@/services/enhanced-conflict-detection-client'
+import { MeetingType, MeetingFormData, ConflictInfo } from '@/types/conflict-detection'
 
 type MeetingFormProps = {
   allUsers: User[]
@@ -64,7 +67,7 @@ type MeetingFormProps = {
 
 export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
   const router = useRouter()
-  const { toast, dismiss } = useToast()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const { addMeeting, updateMeeting } = useMeetingStore()
   const { data: session } = useSession()
@@ -129,27 +132,8 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
     },
   })
 
-  const [allMeetings, setAllMeetings] = useState<Meeting[]>([])
-  const [overlapError, setOverlapError] = useState<string | null>(null)
-  const overlapToastShown = useRef(false)
-
-  // Fetch all meetings for overlap check
-  useEffect(() => {
-    async function fetchMeetings() {
-      try {
-        const res = await fetch('/api/meetings')
-        const data = await res.json()
-        setAllMeetings(
-          isEditMode && existingMeeting
-            ? data.filter((m: Meeting) => m.id !== existingMeeting.id)
-            : data,
-        )
-      } catch {
-        // ignore
-      }
-    }
-    fetchMeetings()
-  }, [isEditMode, existingMeeting])
+  const [conflicts, setConflicts] = useState<ConflictInfo[]>([])
+  const [isConflictAnimating, setIsConflictAnimating] = useState(false)
 
   const watchedDate = form.watch('date')
   const watchedTime = form.watch('time')
@@ -158,59 +142,95 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
   const watchedTitle = form.watch('title')
   const watchedParticipants = form.watch('participants')
   const watchedMeetingType = form.watch('meetingType')
+  const watchedMeetingRoomId = form.watch('meetingRoomId')
 
   // Check completion status for each section
   const isCoreDetailsComplete = !!(watchedTitle && watchedDate && watchedTime && watchedDuration)
   const isTypeParticipantsComplete = !!(watchedMeetingType && watchedParticipants?.length > 0)
   const isLocationDetailsComplete = true // Optional section, always considered complete
 
-  // Check for overlap
+  // Enhanced conflict detection using the new service
   useEffect(() => {
-    if (!watchedDate || !watchedTime || !watchedDuration) {
-      setOverlapError(null)
-      if (overlapToastShown.current) {
-        overlapToastShown.current = false
-        dismiss()
-      }
+    if (!watchedDate || !watchedTime || !watchedDuration || !watchedTitle) {
+      setConflicts([])
       return
     }
-    const [hours, minutes] = watchedTime.split(':').map(Number)
-    const newStart = new Date(watchedDate)
-    newStart.setHours(hours, minutes, 0, 0)
-    const newEnd = new Date(newStart.getTime() + watchedDuration * 60 * 1000)
-    const meetingsOnDay = allMeetings.filter((m) => {
-      const d = new Date(m.date)
-      return d.toDateString() === newStart.toDateString()
-    })
 
-    const overlapCount = meetingsOnDay.reduce((count, m) => {
-      const existingStart = new Date(m.date)
-      const existingEnd = new Date(
-        existingStart.getTime() + m.duration * 60 * 1000,
-      )
-      return newStart < existingEnd && newEnd > existingStart
-        ? count + 1
-        : count
-    }, 0)
+    const validateMeetingData = async () => {
+      try {
+        const [hours, minutes] = watchedTime.split(':').map(Number)
+        if (isNaN(hours) || isNaN(minutes)) {
+          setConflicts([])
+          return
+        }
 
-    if (overlapCount >= 2) {
-      setOverlapError(
-        'A maximum of 2 meetings can run simultaneously in the same timeslot.',
-      )
-      if (!overlapToastShown.current) {
-        toast({
-          variant: 'destructive',
-          title: 'Double Booking Limit',
-          description:
-            'A maximum of 2 meetings can run simultaneously in the same timeslot.',
-          duration: 5000,
-        })
-        overlapToastShown.current = true
+        // Determine the correct meeting type based on form state
+        let determinedMeetingType: MeetingType
+        if (isZoomMeeting) {
+          determinedMeetingType = watchedMeetingRoomId ? MeetingType.HYBRID : MeetingType.ONLINE
+        } else {
+          determinedMeetingType = MeetingType.OFFLINE
+        }
+
+        // Map form data to MeetingFormData interface
+        const meetingFormData: MeetingFormData = {
+          title: watchedTitle,
+          date: watchedDate,
+          time: watchedTime,
+          duration: watchedDuration,
+          meetingType: determinedMeetingType,
+          isZoomMeeting: isZoomMeeting,
+          meetingRoomId: watchedMeetingRoomId || undefined,
+          participants: watchedParticipants || [],
+          description: form.getValues('description') || undefined,
+          zoomPassword: form.getValues('zoomPassword') || undefined
+        }
+
+        // Use enhanced conflict detection service
+        const conflictResult = await enhancedConflictDetectionClient.validateMeeting(meetingFormData)
+        
+        // Only update conflicts if they've actually changed
+        const conflictsChanged = conflictResult.conflicts.length !== conflicts.length || 
+          JSON.stringify(conflictResult.conflicts) !== JSON.stringify(conflicts)
+        
+        if (conflictsChanged) {
+          setIsConflictAnimating(true)
+          setTimeout(() => setIsConflictAnimating(false), 300)
+          setConflicts(conflictResult.conflicts)
+        }
+      } catch (error) {
+        console.error('Error in enhanced conflict detection:', error)
+        setConflicts([])
       }
-    } else {
-      setOverlapError(null)
     }
-  }, [watchedDate, watchedTime, watchedDuration, allMeetings, dismiss, toast])
+
+    // Debounce the validation to avoid too many API calls
+    const timeoutId = setTimeout(validateMeetingData, 500)
+    return () => clearTimeout(timeoutId)
+  }, [
+    watchedDate, 
+    watchedTime, 
+    watchedDuration, 
+    watchedTitle,
+    isZoomMeeting,
+    watchedMeetingRoomId,
+    watchedParticipants,
+    form
+  ])
+
+  // Handle suggestion clicks
+  const handleSuggestionClick = (suggestion: string) => {
+    const timeMatch = suggestion.match(/(\d{2}:\d{2})/)
+    if (timeMatch) {
+      const suggestedTime = timeMatch[1]
+      form.setValue('time', suggestedTime)
+      // Trigger validation to update conflicts
+      form.trigger('time')
+    }
+  }
+
+  // Check if there are blocking conflicts
+  const hasBlockingConflicts = conflicts.some(c => c.severity === 'error')
 
   async function onSubmit(values: z.infer<typeof meetingSchema>) {
     setIsLoading(true)
@@ -434,6 +454,20 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
                 </AccordionContent>
               </AccordionItem>
 
+              {/* Enhanced Conflict Indicator */}
+              {conflicts.length > 0 && (
+                <div className={cn(
+                  "transition-all duration-300 ease-in-out",
+                  isConflictAnimating && "animate-pulse"
+                )}>
+                  <ConflictIndicator 
+                    conflicts={conflicts}
+                    onSuggestionClick={handleSuggestionClick}
+                    className="mb-6"
+                  />
+                </div>
+              )}
+
               <AccordionItem value="item-2" isCompleted={isTypeParticipantsComplete}>
                 <AccordionTrigger isCompleted={isTypeParticipantsComplete}>
                   <h3 className="text-lg font-medium">Type & Participants</h3>
@@ -624,11 +658,11 @@ export function MeetingForm({ existingMeeting, allUsers }: MeetingFormProps) {
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !!overlapError}
+              disabled={isLoading || hasBlockingConflicts}
               className={cn(
                 "h-11 px-6 transition-all duration-200 focus:ring-2 focus:ring-primary/20",
-                overlapError && "opacity-50 cursor-not-allowed",
-                !overlapError && "hover:shadow-md active:scale-[0.98]"
+                hasBlockingConflicts && "opacity-50 cursor-not-allowed",
+                !hasBlockingConflicts && "hover:shadow-md active:scale-[0.98]"
               )}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
